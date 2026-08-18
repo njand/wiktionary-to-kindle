@@ -1,0 +1,6 @@
+.venv/
+
+# Exclude raw data, dumps, and built dictionary outputs
+*.jsonl
+data/
+outputs/
