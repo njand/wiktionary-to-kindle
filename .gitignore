@@ -1,6 +1,9 @@
 .venv/
+.ipynb_checkpoints/
+__pycache__/
 
 # Exclude raw data, dumps, and built dictionary outputs
 *.jsonl
 data/
 outputs/
+Untitled.ipynb
