@@ -1,0 +1,55 @@
+{%- import 'macros.html.jinja' as macros -%}
+<idx:entry name="Latin" scriptable="yes" spell="yes" exact="yes" id="{{ entry.id_number }}">
+    {%- set main_header = valid_pairs[0][1] -%}
+    <h3>
+        <idx:orth value="{{ entry.head_word | e }}">
+            {{- main_header.prefix -}}{{- main_header.head_word -}}
+            
+            {%- set ns = namespace(inflections=[]) -%}
+            {%- for form in entry.all_forms | sort -%}
+                {%- if form != entry.head_word and " " not in form -%}
+                    {%- set ns.inflections = ns.inflections + [form] -%}
+                {%- endif -%}
+            {%- endfor -%}
+            {%- if ns.inflections -%}
+            <idx:infl>
+                {%- for form in ns.inflections -%}
+                <idx:iform value="{{ form | e }}" exact="yes" />
+                {%- endfor -%}
+            </idx:infl>
+            {%- endif -%}
+        </idx:orth>
+    </h3>
+    {%- if main_header.remainder -%}
+        <i>{{ main_header.remainder | safe }}</i>
+    {%- endif -%}
+
+    {%- if entry.pos -%}
+        <p class="pos">{{ entry.pos }}</p>
+    {%- endif -%}
+
+    {%- for block, header in valid_pairs -%}
+        {%- if loop.index0 > 0 -%}
+            {{- macros.render_header(header) -}}
+            {%- if entry.pos -%}
+                <p class="pos">{{ entry.pos }}</p>
+            {%- endif -%}
+        {%- endif -%}
+        
+        {{- macros.render_senses(block, link_examples, recursive_senses) -}}
+    {%- endfor -%}
+
+    {%- if include_etymology and entry.etymology and entry.etymology.etymology_text -%}
+        <h4>Etymology</h4>
+        <p>{{ format_etymology(entry.etymology) | safe }}</p>
+    {%- endif -%}
+
+    {%- if descendants -%}
+        <h4>Descendants</h4>
+        <ul>
+        {%- for lang_code, word in descendants -%}
+            <li><b>{{ lang_code }}:</b> {{ word }}</li>
+        {%- endfor -%}
+        </ul>
+    {%- endif -%}
+</idx:entry>

@@ -1,0 +1,61 @@
+{# Renders the dictionary headers with optional secondary grammatical info #}
+{%- macro render_header(header) -%}
+    {%- if header.num_headers == 1 -%}
+        <h3>{{ header.prefix }}{{ header.head_word }}</h3>
+        <i>{{ header.remainder | safe }}</i>
+    {%- else -%}
+        <h3>{{ header.prefix }}{{ header.head_word }} <i>{{ header.remainder | safe }}</i></h3>
+    {%- endif -%}
+{%- endmacro -%}
+
+{# Recursively renders nested dictionary definitions #}
+{%- macro render_senses(block, link_examples=True, recursive=True, max_senses=0) -%}
+    {%- if block.senses -%}
+    <ol>
+        {%- set items = block.senses.values() | list -%}
+        {%- set limit = max_senses if max_senses > 0 else items|length -%}
+        
+        {%- for sense in items[:limit] -%}
+        <li>
+            {{- format_gloss(sense) | safe -}}
+            
+            {%- if link_examples and sense.examples -%}
+                <sup><a class="noteref" href="{{ sense.examples_page }}#{{ sense.id_path() }}">{{ 'examples' if sense.examples|length > 1 else 'example' }}</a></sup>
+            {%- endif -%}
+            
+            {%- if recursive and sense.sub_glosses -%}
+                {{- render_senses(sense.sub_glosses, link_examples, recursive, 0) -}}
+            {%- endif -%}
+        </li>
+        {%- endfor -%}
+        
+        {%- if max_senses > 0 and items|length > max_senses -%}
+            <p>...</p>
+        {%- endif -%}
+    </ol>
+    {%- endif -%}
+{%- endmacro -%}
+
+{# Recursively renders the example sentences for footnotes #}
+{%- macro render_examples_block(block) -%}
+    {%- for sense in block.senses.values() -%}
+        {%- if sense.examples -%}
+            <aside class="footnote" id="{{ sense.id_path() }}">
+                {%- for example in sense.examples -%}
+                    {%- set parent_entry = example.get_parent_entry() -%}
+                    <div class="quote">
+                        <p class="example {{ 'roman' if example.is_roman else '' }}">{{ format_example(example, parent_entry) | safe }}</p>
+                        {%- if example.english -%}
+                            <p class="translation">{{ example.english | e }}</p>
+                        {%- endif -%}
+                        {%- if example.ref -%}
+                            <p class="citation">{{ example.ref | e }}</p>
+                        {%- endif -%}
+                    </div>
+                {%- endfor -%}
+            </aside>
+            <hr/>
+        {%- endif -%}
+        {{- render_examples_block(sense.sub_glosses) -}}
+    {%- endfor -%}
+{%- endmacro -%}

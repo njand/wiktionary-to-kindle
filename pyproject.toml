@@ -1,0 +1,28 @@
+[project]
+name = "wiktionary-to-kindle"
+version = "0.1.0"
+description = "A parsing and rendering engine to convert large-scale Wiktionary JSONL dumps into Kindle dictionaries."
+authors = [
+    { name = "Nathan Anderson" }
+]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "jinja2>=3.1.6",
+    "tqdm>=4.66.1",
+]
+
+[project.optional-dependencies]
+fast = [
+    "orjson>=3.9.0",
+]
+
+[project.scripts]
+wiktionary-to-kindle = "wiktionary_to_kindle.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/njand/wiktionary-to-kindle"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

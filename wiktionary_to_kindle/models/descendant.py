@@ -1,20 +1,14 @@
 import re
 
-
 class Descendant:
     def __init__(self, description, word):
         self.description = description
         self.word = word
+        # Strip punctuation but retain internal spaces to allow specific language filtering
         self.language = re.sub(r'[^\w\s]+', '', description).strip()
     
     def matches_lang(self, lang):
         return lang == self.language
 
     def matches_langs(self, langs):
-        for lang in langs:
-            if self.matches_lang(lang):
-                return True
-        return False
-    
-    def to_html(self):
-        return f"<li><b>{self.description}:</b>{self.word}</li>"
+        return any(self.matches_lang(lang) for lang in langs)

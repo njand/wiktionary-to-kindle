@@ -1,11 +1,9 @@
-from utils import normalize, BREVE
 import re
-
+from ..utils import normalize, BREVE
 
 _ABBREVIATION_PATTERN = re.compile(
     r"\b(present infinitive|perfect active|supine|genitive|feminine|neuter)\b\s*"
 )
-
 
 class Header:
     def __init__(self, plain_word, full_header_text, num_headers=0):
@@ -40,9 +38,7 @@ class Header:
                     new_end_idx += 1
                 last_end_idx = new_end_idx
 
-            self.head_word = self.full_header_text[start_idx:last_end_idx]
-            self.head_word = self.head_word.strip()
-            
+            self.head_word = self.full_header_text[start_idx:last_end_idx].strip()
             self.prefix = self.full_header_text[:start_idx]
             self.remainder = self.full_header_text[last_end_idx:].strip()
             self.abbreviate_grammatical_forms()
@@ -50,9 +46,3 @@ class Header:
     def abbreviate_grammatical_forms(self):
         cleaned = _ABBREVIATION_PATTERN.sub("", self.remainder)
         self.remainder = re.sub(r"\s{2,}", " ", cleaned).strip()
-    
-    def to_html(self):
-        if self.num_headers == 1:
-            return f"<h3>{self.prefix}{self.head_word}</h3>\n<i>{self.remainder}</i>"
-        elif self.num_headers > 1:
-            return f"<h3>{self.prefix}{self.head_word} <i>{self.remainder}</i></h3>"

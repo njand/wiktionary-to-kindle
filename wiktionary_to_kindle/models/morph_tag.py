@@ -1,6 +1,5 @@
 from collections import Counter
 
-
 class MorphTag:
     GENDERS = ("masculine", "feminine", "neuter")
     CASES = ("nominative", "accusative", "genitive", "dative", "ablative", "vocative", "locative", "oblique")
@@ -14,7 +13,6 @@ class MorphTag:
     MISC_FORMS = ("sigmatic", "adverb", "possessive", "diminutive", "romanization", "sometimes")
     
     NOUN_ADJ_ORDER = GENDERS + CASES + NUMBERS + DEGREES
-    
     DEFAULT_ORDER = PERSONS + NUMBERS + TENSES + MOODS + VOICES + VERBAL_FORMS + MISC_FORMS
 
     ABBREVIATIONS = {
@@ -67,9 +65,6 @@ class MorphTag:
         return len(self.tags & other.tags) == len(self)
     
     def abbreviate(self):
-        """
-        Converts the Latin grammatical tags into abbreviated strings in sorted order.
-        """
         sorted_tags = sorted(self.tags, key=lambda tag: (self.__class__.NOUN_ADJ_ORDER.index(tag)
                                                       if tag in self.__class__.NOUN_ADJ_ORDER else float('inf'),
                                                     self.__class__.DEFAULT_ORDER.index(tag)
@@ -83,7 +78,6 @@ class MorphTag:
                 abbreviated_tags.append(self.__class__.ABBREVIATIONS[tag])
         self.tags = filtered_tags
         
-        # Ensure person/number pairs are formatted correctly
         for person in ["1", "2", "3"]:
             for number in ["sg", "pl"]:
                 if person in abbreviated_tags and number in abbreviated_tags:

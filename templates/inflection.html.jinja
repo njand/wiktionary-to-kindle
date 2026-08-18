@@ -1,0 +1,39 @@
+{%- import 'macros.html.jinja' as macros -%}
+<idx:entry name="Latin" scriptable="yes" spell="yes" exact="yes" id="{{ entry_id }}_{{ index }}">
+    <h3>
+        <idx:orth value="{{ inflection.form }}">
+            {{ inflection.form }}
+            {%- if inflection.unmacronized_form != inflection.form and " " not in inflection.unmacronized_form -%}
+            <idx:infl>
+                <idx:iform value="{{ inflection.unmacronized_form }}" exact="yes" />
+            </idx:infl>
+            {%- endif -%}
+        </idx:orth>
+    </h3>
+    
+    <h4><i>(&lt; <a href="{{ root_page }}#{{ root_id }}">{{ root_word }}</a>)</i></h4>
+
+    {%- if inflection.parent.pos -%}
+        <p class="pos">{{ inflection.parent.pos }}</p>
+    {%- endif -%}
+
+    {%- set current_max = namespace(value=max_senses) -%}
+    {%- for block in inflection.parent.senses_blocks -%}
+        {%- if current_max.value > 0 and block.senses -%}
+            {{- macros.render_senses(block, link_examples=False, recursive=False, max_senses=current_max.value) -}}
+            {%- set current_max.value = current_max.value - block.senses|length -%}
+        {%- endif -%}
+    {%- endfor -%}
+
+    {%- if inflection.morph_tags -%}
+        <h4>Parses</h4>
+        <ol>
+        {%- for tag in inflection.morph_tags | sort -%}
+            {%- set tag_str = tag | string -%}
+            {%- if tag_str -%}
+                <li class="tag">{{ tag_str }}</li>
+            {%- endif -%}
+        {%- endfor -%}
+        </ol>
+    {%- endif -%}
+</idx:entry>
