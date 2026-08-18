@@ -25,15 +25,14 @@ class Example:
 
     def bold_word(self, text, parent_entry):
         """Find where the key word (possibly inflected) is used in the quote, and wrap it in bold tags"""
-        # Sort subsequences by length (longest first) to prioritize longer matches
-        all_forms = sorted(parent_entry.all_forms, key=len, reverse=True)
-        # Match base forms and optional enclitics (-que, -ne, -ve)
-        pattern = r'\b(?:' + '|'.join(map(re.escape, all_forms)) + r')(?:que|ne|ve)?\b'
-
-        # Wrap matches with <b></b> tags            
-        bolded_text, n = re.subn(pattern, lambda m: f"<b>{m.group(0)}</b>", text, flags=re.IGNORECASE)
+        if parent_entry.bold_pattern is None:
+            return text
+            
+        # Wrap matches with <b></b> tags using the pre-compiled regex
+        bolded_text, n = parent_entry.bold_pattern.subn(lambda m: f"<b>{m.group(0)}</b>", text)
         
         return bolded_text
+    
     
     def to_html(self):
         parent_entry = self.get_parent_entry()

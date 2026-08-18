@@ -1,7 +1,6 @@
 import re
 
-from Example import Example
-
+from .Example import Example
 
 class Sense:
     def __init__(self, parent_block, glosses, raw_glosses,
@@ -101,79 +100,43 @@ class SensesBlock:
         self.alt_page = alt_page
         self.examples_page = examples_page
         self.senses = {}
-    
-    def generate_all_variants(self, lst, spaces_left, start_idx=0, current_options=None):
-        """
-        Recursively generates all possible ways to insert empty strings into `lst`
-        to match a target length by inserting exactly `spaces_left` empty strings.
-
-        Args:
-            lst (list): The list to generate variants for.
-            spaces_left (int): The number of empty strings to insert.
-            start_idx (int): The index from where the function should start inserting empty strings.
-            current_options (list): The list that holds the current generated variants.
-
-        Returns:
-            list: A list containing all the possible variants of the list with empty strings inserted.
-        """
-        if current_options is None:
-            current_options = []
-
-        # If no more spaces are left to insert, add the current list as a variant
-        if spaces_left == 0:
-            current_options.append(lst)
-            return current_options
-
-        # Recursively insert empty strings at different positions
-        for idx in range(start_idx, len(lst) + 1):
-            self.generate_all_variants(lst[:idx] + [''] + lst[idx:], spaces_left - 1, idx + 1, current_options)
-
-        return current_options
-
-    @staticmethod
-    def score_alignment(list1, list2):
-        """
-        Calculates the alignment score between two lists of strings.
-
-        Args:
-            list1 (list): The first list to compare.
-            list2 (list): The second list to compare.
-
-        Returns:
-            int: The score representing the alignment quality.
-        """
-        score = 0
-        for item1, item2 in zip(list1, list2):
-            if len(item2) == 0:
-                continue
-            score += abs(len(item1) - len(item2))
-
-        return score
 
     def align_lists(self, list1, list2):
-        """
-        Aligns two lists by inserting empty strings into the second list to minimize alignment score.
-
-        Args:
-            list1 (list): The first list.
-            list2 (list): The second list.
-
-        Returns:
-            tuple: The aligned lists (list1, list2).
-        """
+        """Aligns list2 to list1 using DP to minimize length differences."""
         if len(list2) > len(list1):
             list2, list1 = self.align_lists(list2, list1)
             return list1, list2
 
-        best_score = float('inf')
-        best_variant = None
-        for variant in self.generate_all_variants(list2, len(list1) - len(list2)):
-            score = self.score_alignment(list1, variant)
-            if score < best_score:
-                best_score = score
-                best_variant = variant
+        n, m = len(list1), len(list2)
+        dp = [[float('inf')] * (m + 1) for _ in range(n + 1)]
+        dp[0][0] = 0
 
-        return list1, best_variant
+        # Base case: matching list1 prefixes against an empty list2
+        for i in range(1, n + 1):
+            dp[i][0] = dp[i-1][0] + len(list1[i-1])
+
+        # Fill DP table
+        for i in range(1, n + 1):
+            for j in range(1, m + 1):
+                match_cost = dp[i-1][j-1] + abs(len(list1[i-1]) - len(list2[j-1]))
+                skip_cost = dp[i-1][j] + len(list1[i-1])
+                dp[i][j] = min(match_cost, skip_cost)
+
+        # Backtrack to reconstruct the padded list2
+        aligned_list2 = []
+        i, j = n, m
+        while i > 0:
+            match_cost = dp[i-1][j-1] + abs(len(list1[i-1]) - len(list2[j-1])) if j > 0 else float('inf')
+            
+            if j > 0 and dp[i][j] == match_cost:
+                aligned_list2.insert(0, list2[j-1])
+                i -= 1
+                j -= 1
+            else:
+                aligned_list2.insert(0, "")
+                i -= 1
+
+        return list1, aligned_list2
 
     def add_glosses(self, glosses, raw_glosses=None):
         if raw_glosses is None or len(raw_glosses) == 0:

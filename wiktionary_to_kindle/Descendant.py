@@ -5,7 +5,7 @@ class Descendant:
     def __init__(self, description, word):
         self.description = description
         self.word = word
-        self.language = re.sub(r'\W+', '', description)
+        self.language = re.sub(r'[^\w\s]+', '', description).strip()
     
     def matches_lang(self, lang):
         return lang == self.language

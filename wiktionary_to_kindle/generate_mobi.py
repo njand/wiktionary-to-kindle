@@ -4,7 +4,7 @@ import gzip
 import json
 from tqdm import tqdm
 
-from KindleDict import KindleDict
+from .KindleDict import KindleDict
 
 
 def download_file(url, dest_path):

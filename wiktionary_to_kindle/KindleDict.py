@@ -1,7 +1,8 @@
-from Entry import Entry
-from Header import Header
-from HTMLPage import HTMLPage
-from utils import normalize
+from pathlib import Path
+from .Entry import Entry
+from .Header import Header
+from .HTMLPage import HTMLPage
+from .utils import normalize
 
 import shutil
 import re
@@ -11,6 +12,9 @@ import subprocess
 from subprocess import CalledProcessError
 from collections import defaultdict
 from tqdm import tqdm
+
+
+TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "templates"
 
 
 class KindleDict:
@@ -42,10 +46,14 @@ class KindleDict:
 
         new_path = f"{base} ({counter})"
         return new_path
-    
-    def init_dict_dir(self, css_fp="../templates/style.css",
-                      cover_fp="../templates/cover.png"):
-        os.makedirs(self.output_sub_dir)
+
+    def init_dict_dir(self, css_fp=None, cover_fp=None):
+        if css_fp is None:
+            css_fp = TEMPLATES_DIR / "style.css"
+        if cover_fp is None:
+            cover_fp = TEMPLATES_DIR / "cover.png"
+
+        os.makedirs(self.output_sub_dir, exist_ok=True)
         shutil.copy(css_fp, self.output_sub_dir)
         shutil.copy(cover_fp, self.output_sub_dir)
 
@@ -235,13 +243,17 @@ class KindleDict:
         with open(self.wiktionary_fp, "rb") as f:
             self.line_count = sum(1 for _ in f)
 
-    def make_opf(self, html_pages, header_fp="../templates/opf_header.txt", output_file="dictionary.opf"):
+    def make_opf(self, html_pages, header_fp=None, output_file="dictionary.opf"):
+        if header_fp is None:
+            header_fp = TEMPLATES_DIR / "opf_header.txt"
+
         entry_page_len = html_pages["main"].index
         inflection_page_len = html_pages["inflections"].index
         example_page_len = html_pages["examples"].index
         
-        html_lines = open(header_fp, "r", encoding="utf-8").read().split('\n')
-        
+        with open(header_fp, "r", encoding="utf-8") as f:
+            html_lines = f.read().split('\n')
+            
         for prefix, page_len in [("", entry_page_len), ("inf-", inflection_page_len), ("ex-", example_page_len)]:
             for page_num in range(page_len):
                 html_lines.append(f'<item id="{prefix}page-{page_num}" href="{prefix}{page_num:04}.xhtml" media-type="application/xhtml+xml"/>')

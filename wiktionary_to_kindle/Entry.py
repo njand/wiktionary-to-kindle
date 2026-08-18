@@ -1,12 +1,12 @@
 import re
 import copy
 
-from Header import Header
-from Sense import SensesBlock
-from Etymology import Etymology
-from Descendant import Descendant
-from Inflection import Inflection
-from utils import remove_breves, normalize, generate_vowel_variants
+from .Header import Header
+from .Sense import SensesBlock
+from .Etymology import Etymology
+from .Descendant import Descendant
+from .Inflection import Inflection
+from .utils import remove_breves, normalize, generate_vowel_variants
 
 
 INVALID_FORMS = {
@@ -159,6 +159,14 @@ class Entry:
         
         self.inflected_forms = self.get_inflected_forms(add_tags)
         self.all_forms = self.get_all_forms()
+        
+        # Compile bolding regex once per entry to save CPU cycles
+        sorted_forms = sorted(self.all_forms, key=len, reverse=True)
+        if sorted_forms:
+            pattern = r'\b(?:' + '|'.join(map(re.escape, sorted_forms)) + r')(?:que|ne|ve)?\b'
+            self.bold_pattern = re.compile(pattern, flags=re.IGNORECASE)
+        else:
+            self.bold_pattern = None
     
     def get_headers(self):
         headers = []
@@ -298,19 +306,14 @@ class Entry:
     
     def senses_html(self, link_examples=True, recursive=True):
         html_lines = []
+
+        # Create a list of valid pairs, ignoring empty sense blocks
+        valid_pairs = [(block, header) for block, header in zip(self.senses_blocks, self.headers) if len(block.senses) > 0]
         
-        if len(self.senses_blocks) > len(self.headers):
-            delete_idxs = []
-            for i, senses_block in enumerate(self.senses_blocks):
-                if len(senses_block.senses) == 0:
-                    delete_idxs.append(i)
-            for i in reversed(delete_idxs):
-                self.senses_blocks.pop(i)
-        
-        if len(self.senses_blocks) == 0:
+        if len(valid_pairs) == 0:
             self.no_senses = True
-        
-        for i, (senses_block, header) in enumerate(zip(self.senses_blocks, self.headers)):
+            
+        for i, (senses_block, header) in enumerate(valid_pairs):
             if i > 0:
                 html_lines.append(header.to_html())
                 html_lines.extend(self.pos_html())
