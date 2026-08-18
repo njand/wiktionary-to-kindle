@@ -22,12 +22,13 @@ class Example:
             if isinstance(parent_block.parent, Entry):
                 return parent_block.parent
             parent_sense = parent_block.parent
-        
+
     def bold_word(self, text, parent_entry):
         """Find where the key word (possibly inflected) is used in the quote, and wrap it in bold tags"""
         # Sort subsequences by length (longest first) to prioritize longer matches
         all_forms = sorted(parent_entry.all_forms, key=len, reverse=True)
-        pattern = r'\b(?:' + '|'.join(map(re.escape, all_forms)) + r')\b'
+        # Match base forms and optional enclitics (-que, -ne, -ve)
+        pattern = r'\b(?:' + '|'.join(map(re.escape, all_forms)) + r')(?:que|ne|ve)?\b'
 
         # Wrap matches with <b></b> tags            
         bolded_text, n = re.subn(pattern, lambda m: f"<b>{m.group(0)}</b>", text, flags=re.IGNORECASE)

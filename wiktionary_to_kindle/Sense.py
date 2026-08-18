@@ -49,12 +49,12 @@ class Sense:
         parts = re.split(f'({pattern})', b)
 
         return ''.join(f"<i>{part}</i>" if part != a else part for part in parts if part)
-    
+
     def link_alt(self, gloss):
         if self.alt_word is None:
             return gloss
         
-        pattern = re.escape(self.alt_word)
+        pattern = r'\b' + re.escape(self.alt_word) + r'\b'
         return re.sub(pattern, lambda m: f'<a href="{self.alt_page}#{self.alt_id}">{m.group(0)}</a>', gloss)
     
     def to_html(self, link_examples=True, recursive=True):       

@@ -99,38 +99,37 @@ class KindleDict:
             processed_forms.append(form)
         
         return processed_forms
-    
+
     def get_addl_forms(self, f, alt_positions, head_word, part_of_speech, seen_words=None, verbose=False):
-#         if head_word == "commūniō":
-#             verbose = True
-       
         if seen_words is None:
             seen_words = set()
         
         seen_words.add(head_word)
-        
         addl_forms = []
-        
-        if verbose:
-            print("HEADWORD:", head_word)
-            print("POS:", part_of_speech)
-        
-        for pos in alt_positions[(head_word, part_of_speech)]:
-            f.seek(pos)
-            line = f.readline()
-            json_entry = json.loads(line)
+        stack = [(head_word, part_of_speech)]
+
+        while stack:
+            curr_word, curr_pos = stack.pop()
             
             if verbose:
-                print(self.preprocess_addl_forms(json_entry))
-            
-            addl_forms.extend(self.preprocess_addl_forms(json_entry))
-            
-            sub_head_word = self.get_header(json_entry)
-            if sub_head_word in alt_positions and sub_head_word not in seen_words:
+                print("HEADWORD:", curr_word)
+                print("POS:", curr_pos)
+
+            for pos in alt_positions.get((curr_word, curr_pos), []):
+                f.seek(pos)
+                line = f.readline()
+                json_entry = json.loads(line)
+
                 if verbose:
-                    print("RECURSE")
-                addl_forms.extend(self.get_addl_forms(f, alt_positions, sub_head_word, seen_words, verbose))
-        
+                    print(self.preprocess_addl_forms(json_entry))
+
+                addl_forms.extend(self.preprocess_addl_forms(json_entry))
+
+                sub_head_word = self.get_header(json_entry)
+                if (sub_head_word, curr_pos) in alt_positions and sub_head_word not in seen_words:
+                    seen_words.add(sub_head_word)
+                    stack.append((sub_head_word, curr_pos))
+
         return addl_forms
 
     def make_sorted_path(self) -> str:
@@ -366,53 +365,31 @@ class KindleDict:
 #                                 print(f"form: {norm_form} ({form}) not in previous forms")
                             entry_prev_forms[norm_form] = (byte_offset, entry.id_number)
                 previous_forms.update(entry_prev_forms)
-    
+
     def make_inflection_ids_unique(self):
         """
         Normalize <idx:entry ... id="..."> across all .xhtml files for inflected forms:
         - Guarantee uniqueness across all files
         - Stable order: files sorted by path, entries by appearance
-        - Always add a numeric suffix (_0, _1, ...) for uniqueness
+        - Always add a numeric suffix (_0, _1, ...) for uniqueness in a single pass.
         """
         entry_pattern = re.compile(r'(<idx:entry[^>]*\bid=["\'])([^"\']+)(["\'])', re.IGNORECASE)
+        counters = defaultdict(int)
 
-        # Step 1: Collect all inflected .xhtml files in stable order
-        xhtml_files = []
-        for root, _, files in os.walk(self.output_sub_dir):
-            for fname in files:
-                if fname.startswith("inf-") and fname.endswith(".xhtml"):
-                    xhtml_files.append(os.path.join(root, fname))
-        xhtml_files.sort()
+        xhtml_files = sorted(
+            os.path.join(root, fname)
+            for root, _, files in os.walk(self.output_sub_dir)
+            for fname in files if fname.startswith("inf-") and fname.endswith(".xhtml")
+        )
 
-        # Step 2: Read and collect entries in order
-        file_contents = {}
-        occurrences = []  # (path, start_pos, old_id, base)
         for path in xhtml_files:
             with open(path, "r", encoding="utf-8") as f:
                 content = f.read()
-            file_contents[path] = content
-
-            for match in entry_pattern.finditer(content):
-                old_id = match.group(2)
-                occurrences.append((path, match.start(), old_id, old_id))
-
-        # Step 3: Assign new ids per base, sequentially by appearance
-        counters = defaultdict(int)
-        new_ids = []  # parallel to occurrences
-        for _, _, _, base in occurrences:
-            new_id = f"{base}_{counters[base]}"
-            new_ids.append(new_id)
-            counters[base] += 1
-
-        # Step 4: Rewrite files with replacements
-        idx = 0
-        for path in xhtml_files:
-            content = file_contents[path]
 
             def repl(match):
-                nonlocal idx
-                new_id = new_ids[idx]
-                idx += 1
+                base = match.group(2)
+                new_id = f"{base}_{counters[base]}"
+                counters[base] += 1
                 return f"{match.group(1)}{new_id}{match.group(3)}"
 
             new_content = entry_pattern.sub(repl, content)
@@ -420,7 +397,6 @@ class KindleDict:
             if new_content != content:
                 with open(path, "w", encoding="utf-8") as f:
                     f.write(new_content)
-#                 print(f"Updated {path}")
 
     def make_mobi(self):
         opf_path = "dictionary.opf"

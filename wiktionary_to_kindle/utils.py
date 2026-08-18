@@ -35,17 +35,23 @@ def generate_vowel_variants(word: str) -> list:
     disputed_vowel_positions = []
     base_word_chars = []
     i = 0
-    
+
     while i < len(decomposed):
         char = decomposed[i]
         base_word_chars.append(char)
-        if i + 1 < len(decomposed) and decomposed[i+1] == MACRON:
-            if i + 2 < len(decomposed) and decomposed[i+2] == BREVE:  # Check for disputed length marks
-                disputed_vowel_positions.append(len(base_word_chars) - 1)
-                i += 2
-            else:
+        if i + 1 < len(decomposed):
+            next_char = decomposed[i+1]
+            if i + 2 < len(decomposed):
+                next_next_char = decomposed[i+2]
+                # Check for disputed length marks in either combining order
+                if (next_char == MACRON and next_next_char == BREVE) or (next_char == BREVE and next_next_char == MACRON):
+                    disputed_vowel_positions.append(len(base_word_chars) - 1)
+                    i += 3
+                    continue
+            if next_char == MACRON:
                 base_word_chars[-1] = MACRONIZED_VOWELS.get(char, char)
-                i += 1    
+                i += 2
+                continue
         i += 1
     
     base_word = unicodedata.normalize("NFC", "".join(base_word_chars))
