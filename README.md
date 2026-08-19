@@ -91,6 +91,6 @@ Contributions are welcome. To add default support for a new language:
 
 ## License & Credits
 
-This project is open-source software licensed under the [MIT License](main/LICENSE).
+This project is open-source software licensed under the [MIT License](/LICENSE).
 
 Dictionary data is sourced from [Wiktionary](https://www.wiktionary.org/) via the [Kaikki.org](https://kaikki.org/) machine-readable parsing project.
