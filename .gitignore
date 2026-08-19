@@ -10,3 +10,5 @@ Untitled.ipynb
 codefetch/
 old_code/
 downloads/
+codefetch.config.mjs
+.codefetchignore
