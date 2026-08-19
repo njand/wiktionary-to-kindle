@@ -1,4 +1,5 @@
 import difflib
+
 from .example import Example
 
 

@@ -1,4 +1,5 @@
 from collections import Counter
+from typing import ClassVar
 
 
 class MorphTag:
@@ -42,7 +43,7 @@ class MorphTag:
         PERSONS + NUMBERS + TENSES + MOODS + VOICES + VERBAL_FORMS + MISC_FORMS
     )
 
-    ABBREVIATIONS = {
+    ABBREVIATIONS: ClassVar[dict[str, str]] = {
         "masculine": "m",
         "feminine": "f",
         "neuter": "n",
@@ -133,26 +134,27 @@ class MorphTag:
         "sig",
     )
 
-    CLASS_ABBREVIATIONS = {
-        "GENDER": {"m", "f", "n"},
-        "CASE": {"nom", "gen", "dat", "acc", "abl", "voc", "loc", "obl"},
-        "NUMBER": {"sg", "pl"},
-        "DEGREE": {"comp", "sup"},
-        "MOOD": {"ind", "subj", "imp", "cond"},
-        "VOICE": {"act", "pass"},
-        "TENSE": {"pres", "impf", "fut", "perf", "plup", "aor", "pret"},
-        "PERSON": {"1sg", "2sg", "3sg", "1pl", "2pl", "3pl"},
-        "VERBAL_FORM": {"inf", "part", "sup", "ger"},
-        "MISC_FORM": {"adv", "poss", "dim", "rom", "smt", "sig"},
+    CLASS_ABBREVIATIONS: ClassVar[dict[str, frozenset[str]]] = {
+        "GENDER": frozenset({"m", "f", "n"}),
+        "CASE": frozenset({"nom", "gen", "dat", "acc", "abl", "voc", "loc", "obl"}),
+        "NUMBER": frozenset({"sg", "pl"}),
+        "DEGREE": frozenset({"comp", "sup"}),
+        "MOOD": frozenset({"ind", "subj", "imp", "cond"}),
+        "VOICE": frozenset({"act", "pass"}),
+        "TENSE": frozenset({"pres", "impf", "fut", "perf", "plup", "aor", "pret"}),
+        "PERSON": frozenset({"1sg", "2sg", "3sg", "1pl", "2pl", "3pl"}),
+        "VERBAL_FORM": frozenset({"inf", "part", "sup", "ger"}),
+        "MISC_FORM": frozenset({"adv", "poss", "dim", "rom", "smt", "sig"}),
     }
-    ABBREVIATED_CLASS = {
+
+    ABBREVIATED_CLASS: ClassVar[dict[str, str]] = {
         ab: c for c, abvs in CLASS_ABBREVIATIONS.items() for ab in abvs
     }
 
     def __init__(self, tags):
         self.tags = tags
         self.abbreviated_tags = self.abbreviate()
-
+        
     def is_subset(self, other):
         return len(self.tags & other.tags) == len(self)
 

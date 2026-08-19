@@ -1,11 +1,11 @@
-import re
 import copy
+import re
 
-from .header import Header
-from .sense import SensesBlock
+from ..utils import generate_vowel_variants, normalize, remove_breves
 from .etymology import Etymology
+from .header import Header
 from .inflection import Inflection
-from ..utils import remove_breves, normalize, generate_vowel_variants
+from .sense import SensesBlock
 
 INVALID_FORMS = {
     "-",

@@ -1,19 +1,21 @@
 import copy
+import heapq
 import os
 import shutil
 import subprocess
 import tempfile
-import heapq
 from collections import defaultdict
+from contextlib import ExitStack
 from pathlib import Path
 from subprocess import CalledProcessError
+
 from tqdm import tqdm
 
 from ..models.entry import Entry
 from ..models.header import Header
 from ..renderers.html_renderer import HTMLRenderer
-from .html_page import HTMLPage
 from ..utils import normalize
+from .html_page import HTMLPage
 
 USING_ORJSON = False
 try:
@@ -113,7 +115,7 @@ class KindleDict:
         stack = [(head_word, part_of_speech)]
 
         while stack:
-            curr_word, curr_pos = stack.pop()
+            curr_word, _curr_pos = stack.pop()
             # Fast O(1) Dictionary Lookup
             matching_items = alt_forms_dict.get(curr_word, [])
 
@@ -187,12 +189,10 @@ class KindleDict:
                         pbar.update(f.tell() - pos)
                         obj = json_loads(line)
 
-                        # Add this guard to drop non-Latin false positives
                         if obj.get("lang_code") != self.lang_code:
                             continue
 
                         word = normalize(obj["word"], lowercase=False)
-
                         part_of_speech = obj.get("pos")
 
                         if (
@@ -213,25 +213,32 @@ class KindleDict:
                                     current_chunk = []
                                     chunk_index += 1
                             else:
-                                # Key only by root to drastically speed up processing during the merge
                                 alt_forms_dict[root].append((part_of_speech, obj))
 
             output_path = self.make_sorted_path()
-            with open(output_path, "w", encoding="utf-8") as out_f:
-                files = [open(cf, "r", encoding="utf-8") for cf in chunk_files]
 
-                def read_lines(file_obj):
-                    for fl in file_obj:
-                        obj = json_loads(fl)
-                        word = normalize(self.get_header(obj), lowercase=True)
-                        yield (word, obj.get("pos"), obj)
+            def read_lines(file_obj):
+                for fl in file_obj:
+                    obj = json_loads(fl)
+                    header = self.get_header(obj)
+                    # Compute exact sort keys once per line to match write_chunk logic
+                    yield (
+                        normalize(header, lowercase=True),
+                        normalize(header, lowercase=False),
+                        obj.get("pos"),
+                        obj,
+                    )
+
+            with ExitStack() as stack:
+                out_f = stack.enter_context(open(output_path, "w", encoding="utf-8"))
+                files = [
+                    stack.enter_context(open(cf, "r", encoding="utf-8"))
+                    for cf in chunk_files
+                ]
 
                 merged_iter = heapq.merge(
-                    *[read_lines(f) for f in files],
-                    key=lambda x: (
-                        normalize(x[0], lowercase=True),
-                        normalize(x[0], lowercase=False),
-                    ),
+                    *(read_lines(f) for f in files),
+                    key=lambda x: (x[0], x[1]),
                 )
 
                 with tqdm(
@@ -240,20 +247,17 @@ class KindleDict:
                     unit_scale=True,
                     desc="Merging Chunks",
                 ) as pbar:
-                    for word, pos, obj in merged_iter:
-                        addl_forms = self.get_addl_forms(alt_forms_dict, word, pos)
-                        if addl_forms:
-                            if "forms" not in obj:
-                                obj["forms"] = []
-                            obj["forms"].extend(addl_forms)
+                    for lower_word, _raw_word, pos, obj in merged_iter:
+                        if addl_forms := self.get_addl_forms(
+                            alt_forms_dict, lower_word, pos
+                        ):
+                            obj.setdefault("forms", []).extend(addl_forms)
+
                         out_f.write(json_dumps(obj) + "\n")
                         pbar.update(1)
 
-                for f in files:
-                    f.close()
-
-            self.wiktionary_fp = output_path
-
+        self.wiktionary_fp = output_path
+        
     def add_entry_to_dictionary(
         self,
         entry,
@@ -345,7 +349,7 @@ class KindleDict:
                 print(
                     f"Error compiling MOBI (exit code {e.returncode}). No binary generated."
                 )
-                raise e
+                raise
 
     def count_lines(self):
         with open(self.wiktionary_fp, "rb") as f:
@@ -462,7 +466,7 @@ class KindleDict:
                         )
                     )
 
-        for title, page in html_pages.items():
+        for page in html_pages.values():
             page.write()
         self.make_opf(html_pages)
         self.make_mobi()

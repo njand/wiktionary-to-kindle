@@ -4,6 +4,7 @@ import shutil
 import subprocess
 import urllib.request
 from pathlib import Path
+
 from tqdm import tqdm
 
 KAIKKI_RAW_DUMP_URL = "https://kaikki.org/dictionary/raw-wiktextract-data.jsonl.gz"
@@ -63,8 +64,7 @@ def download_kaikki_dump(lang: str, output_dir: Path) -> Path:
     ):
         target_token = f'"lang_code": "{lang}"'
         for line in gz_in:
-            if target_token in line:
-                if json.loads(line).get("lang_code") == lang:
-                    jsonl_out.write(line)
+            if target_token in line and json.loads(line).get("lang_code") == lang:
+                jsonl_out.write(line)
 
     return filtered_output_path

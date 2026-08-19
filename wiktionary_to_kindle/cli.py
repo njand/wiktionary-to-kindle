@@ -1,5 +1,6 @@
 import argparse
 from pathlib import Path
+
 from .builders.kindle_dict import KindleDict
 from .downloader import download_kaikki_dump
 from .utils import find_kindlegen

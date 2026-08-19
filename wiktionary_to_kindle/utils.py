@@ -1,12 +1,10 @@
 import os
+import re
 import shutil
 import sys
-import re
 import unicodedata
 from itertools import product
 from pathlib import Path
-from typing import Optional
-
 
 MACRON = "̄"
 BREVE = "̆"
@@ -107,7 +105,7 @@ def sanitize_xhtml(text: str) -> str:
     )
 
 
-def find_kindlegen() -> Optional[Path]:
+def find_kindlegen() -> Path | None:
     """Locates the kindlegen binary via PATH or common installation directories."""
     # 1. Check system PATH first
     binary_name = "kindlegen.exe" if sys.platform == "win32" else "kindlegen"

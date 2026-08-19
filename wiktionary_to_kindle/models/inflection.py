@@ -1,5 +1,5 @@
-from .morph_tag import MorphTag
 from ..utils import normalize
+from .morph_tag import MorphTag
 
 
 class Inflection:

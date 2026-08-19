@@ -1,5 +1,6 @@
 import re
-from ..utils import normalize, BREVE, sanitize_xhtml
+
+from ..utils import BREVE, normalize, sanitize_xhtml
 
 _ABBREVIATION_PATTERN = re.compile(
     r"\b(present infinitive|perfect active|supine|genitive|feminine|neuter)\b\s*"
