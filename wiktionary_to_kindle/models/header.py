@@ -1,5 +1,5 @@
 import re
-from ..utils import normalize, BREVE
+from ..utils import normalize, BREVE, sanitize_xhtml
 
 _ABBREVIATION_PATTERN = re.compile(
     r"\b(present infinitive|perfect active|supine|genitive|feminine|neuter)\b\s*"
@@ -42,6 +42,9 @@ class Header:
             self.prefix = self.full_header_text[:start_idx]
             self.remainder = self.full_header_text[last_end_idx:].strip()
             self.abbreviate_grammatical_forms()
+
+        self.prefix = sanitize_xhtml(self.prefix)
+        self.remainder = sanitize_xhtml(self.remainder)
     
     def abbreviate_grammatical_forms(self):
         cleaned = _ABBREVIATION_PATTERN.sub("", self.remainder)

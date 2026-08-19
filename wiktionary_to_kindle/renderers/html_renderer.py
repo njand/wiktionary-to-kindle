@@ -3,28 +3,9 @@ import re
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
 
+
 TEMPLATES_DIR = Path(__file__).resolve().parent.parent.parent / "templates"
 
-def format_gloss(sense):
-    """Helper passed to Jinja to highlight differences and link alternate words."""
-    def highlight_difference(a, b):
-        # Escape Wiktionary HTML artifacts before generating safe XML components
-        safe_a = html.escape(a) if a else ""
-        safe_b = html.escape(b) if b else ""
-
-        if not safe_a: return f"<i>{safe_b}</i>"
-        pattern = re.escape(safe_a)
-        parts = re.split(f'({pattern})', safe_b)
-        return ''.join(f"<i>{part}</i>" if part != safe_a else part for part in parts if part)
-
-    def link_alt(gloss, alt_word, alt_page, alt_id):
-        if alt_word is None: return gloss
-        safe_alt = html.escape(alt_word)
-        pattern = r'\b' + re.escape(safe_alt) + r'\b'
-        return re.sub(pattern, lambda m: f'<a href="{alt_page}#{alt_id}">{m.group(0)}</a>', gloss)
-
-    formatted = highlight_difference(sense.gloss, sense.raw_gloss)
-    return link_alt(formatted, sense.alt_word, sense.alt_page, sense.alt_id)
 
 def format_etymology(etymology):
     """Helper passed to Jinja to wrap etymology templates."""
@@ -62,6 +43,28 @@ def format_example(example, parent_entry):
     bolded_text, _ = parent_entry.bold_pattern.subn(lambda m: f"<b>{m.group(0)}</b>", text)
     return bolded_text
 
+def format_gloss(sense):
+    """Helper passed to Jinja to highlight differences and link alternate words."""
+    def highlight_difference(a, b):
+        # Escape Wiktionary HTML artifacts before generating safe XML components
+        safe_a = html.escape(a) if a else ""
+        safe_b = html.escape(b) if b else ""
+
+        if not safe_a: return f"<i>{safe_b}</i>"
+        pattern = re.escape(safe_a)
+        parts = re.split(f'({pattern})', safe_b)
+        return ''.join(f"<i>{part}</i>" if part != safe_a else part for part in parts if part)
+
+    def link_alt(gloss, alt_word, alt_page, alt_id):
+        if alt_word is None or not alt_page or not alt_id: return gloss
+        safe_alt = html.escape(alt_word)
+        pattern = r'\b' + re.escape(safe_alt) + r'\b'
+        return re.sub(pattern, lambda m: f'<a href="{alt_page}#{alt_id}">{m.group(0)}</a>', gloss)
+
+    formatted = highlight_difference(sense.gloss, sense.raw_gloss)
+
+    return link_alt(formatted, sense.alt_word, sense.alt_page, sense.alt_id)
+
 
 class HTMLRenderer:
     env = Environment(loader=FileSystemLoader(str(TEMPLATES_DIR)))
@@ -95,13 +98,14 @@ class HTMLRenderer:
         return html_str.strip().split('\n')
 
     @classmethod
-    def render_inflections_html(cls, entry, max_senses=1):
+    def render_inflections_html(cls, entry, max_senses=1, entry_ids=None):
         html_lines = []
+        ids_map = entry_ids if entry_ids is not None else entry.entry_ids
 
         for i, (form, inflection) in enumerate(sorted(entry.inflected_forms.items(), key=lambda item: item[1])):
             root_id = inflection.parent.id_number
             root_word = inflection.parent.head_word
-            root_page = entry.entry_ids.get(root_id, "") if entry.entry_ids else ""
+            root_page = ids_map.get(root_id, "") if ids_map else ""
 
             html_str = cls.inflection_tmpl.render(
                 inflection=inflection,

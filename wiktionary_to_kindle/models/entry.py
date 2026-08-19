@@ -11,9 +11,9 @@ from ..utils import remove_breves, normalize, generate_vowel_variants
 INVALID_FORMS = {
      '-', 'no future', 'plural only.', 'singular only.', 'semi-deponent', 'i-stem'
 }
-PATTERN_INVALID_FORMS = r'^(?:' + '|'.join(map(re.escape, INVALID_FORMS)) + r')$'
+PATTERN_INVALID_FORMS = r'^(?:' + '|'.join(map(re.escape, INVALID_FORMS)) + r')'
 PATTERN_CONTAINS_PLUS = r'.*\+.*'
-PATTERN_PERIPHRASTIC = r'.* (sum|esse|fuisse|fore|erat|erit|est|sit|esset|iri|īrī)$'
+PATTERN_PERIPHRASTIC = r'.* (sum|esse|fuisse|fore|erat|erit|est|sit|esset|iri|īrī)'
 INVALID_PATTERN = re.compile(f"{PATTERN_INVALID_FORMS}|{PATTERN_CONTAINS_PLUS}|{PATTERN_PERIPHRASTIC}")
 
 class Entry:
@@ -72,14 +72,20 @@ class Entry:
 
     def get_senses_blocks(self):
         blocks = []
-        for i, sense in enumerate(self.json_entry["senses"]):
+        senses = self.json_entry.get("senses", [])
+        for i, sense in enumerate(senses):
             if "form_of" in sense:
                 continue            
             
             glosses = sense.get("glosses", None)
-            if glosses is None:
-                continue
             raw_glosses = sense.get("raw_glosses", [])
+
+            if not glosses:
+                if raw_glosses:
+                    glosses = raw_glosses
+                else:
+                    glosses = ["<i>Definition not available</i>"]
+                    raw_glosses = ["<i>Definition not available</i>"]
             
             if "alt_of" in sense:
                 self.alt_word = sense["alt_of"][0]["word"]
@@ -96,6 +102,12 @@ class Entry:
             block.add_glosses(glosses, raw_glosses)
             sense_obj = block.lookup_sense(glosses, raw_glosses)
             sense_obj.add_examples(examples)
+
+        if not blocks and senses:
+            block = SensesBlock(self, 1, self.alt_word, self.alt_id, self.alt_page, self.examples_page)
+            block.add_glosses(["<i>Definition not available</i>"], ["<i>Definition not available</i>"])
+            blocks.append(block)
+
         return blocks
 
     def get_etymology(self):
@@ -125,7 +137,7 @@ class Entry:
         forms = {}
         for form_obj in self.json_entry.get("forms", []):
             form = form_obj.get("form")
-            if form == self.head_word or INVALID_PATTERN.match(form):
+            if not form or form == self.head_word or '<' in form or '>' in form or INVALID_PATTERN.match(form):
                 continue
             
             tags = set(form_obj.get("tags", []))

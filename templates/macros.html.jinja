@@ -1,10 +1,12 @@
 {# Renders the dictionary headers with optional secondary grammatical info #}
 {%- macro render_header(header) -%}
     {%- if header.num_headers == 1 -%}
-        <h3>{{ header.prefix }}{{ header.head_word }}</h3>
-        <i>{{ header.remainder | safe }}</i>
+        <h3>{{ header.prefix | e }}{{ header.head_word | e }}</h3>
+        {%- if header.remainder -%}
+            <span>{{ header.remainder | safe }}</span>
+        {%- endif -%}
     {%- else -%}
-        <h3>{{ header.prefix }}{{ header.head_word }} <i>{{ header.remainder | safe }}</i></h3>
+        <h3>{{ header.prefix | e }}{{ header.head_word | e }}{% if header.remainder %} <span>{{ header.remainder | safe }}</span>{% endif %}</h3>
     {%- endif -%}
 {%- endmacro -%}
 
@@ -30,7 +32,7 @@
         {%- endfor -%}
         
         {%- if max_senses > 0 and items|length > max_senses -%}
-            <p>...</p>
+            <li>...</li>
         {%- endif -%}
     </ol>
     {%- endif -%}

@@ -3,7 +3,7 @@
     {%- set main_header = valid_pairs[0][1] -%}
     <h3>
         <idx:orth value="{{ entry.head_word | e }}">
-            {{- main_header.prefix -}}{{- main_header.head_word -}}
+            {{- main_header.prefix | e -}}{{- main_header.head_word | e -}}
             
             {%- set ns = namespace(inflections=[]) -%}
             {%- for form in entry.all_forms | sort -%}
@@ -21,18 +21,18 @@
         </idx:orth>
     </h3>
     {%- if main_header.remainder -%}
-        <i>{{ main_header.remainder | safe }}</i>
+        <span>{{ main_header.remainder | safe }}</span>
     {%- endif -%}
 
     {%- if entry.pos -%}
-        <p class="pos">{{ entry.pos }}</p>
+        <p class="pos">{{ entry.pos | e }}</p>
     {%- endif -%}
 
     {%- for block, header in valid_pairs -%}
         {%- if loop.index0 > 0 -%}
             {{- macros.render_header(header) -}}
             {%- if entry.pos -%}
-                <p class="pos">{{ entry.pos }}</p>
+                <p class="pos">{{ entry.pos | e }}</p>
             {%- endif -%}
         {%- endif -%}
         
@@ -48,7 +48,7 @@
         <h4>Descendants</h4>
         <ul>
         {%- for lang_code, word in descendants -%}
-            <li><b>{{ lang_code }}:</b> {{ word }}</li>
+            <li><b>{{ lang_code | e }}:</b> {{ word | e }}</li>
         {%- endfor -%}
         </ul>
     {%- endif -%}

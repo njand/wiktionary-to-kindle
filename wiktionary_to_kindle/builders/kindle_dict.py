@@ -219,21 +219,32 @@ class KindleDict:
             for page_num in range(page_len):
                 html_lines.append(f'<itemref idref="{prefix}page-{page_num}"/>')
 
-        html_lines.extend(['</spine>', '</package>'])
+        html_lines.extend([
+            '</spine>',
+            '<guide>',
+            '    <reference type="index" title="Dictionary" href="0000.xhtml"/>',
+            '</guide>',
+            '</package>'
+        ])
         with open(os.path.join(self.output_sub_dir, "dictionary.opf"), "w", encoding="utf-8") as f:
             f.write('\n'.join(html_lines))
-    
+
     def make_mobi(self):
         mobi_name = f"{self.lang_code}-wiktionary.mobi"
+        src_path = os.path.join(self.output_sub_dir, mobi_name)
+        dst_path = os.path.join(self.output_dir, mobi_name)
+        
         try:
             subprocess.run([self.kindlegen_path, "dictionary.opf", "-o", mobi_name], cwd=self.output_sub_dir, check=True)
-            shutil.move(os.path.join(self.output_sub_dir, mobi_name), os.path.join(self.output_dir, mobi_name))
-        except CalledProcessError as e: 
-            if e.returncode == 1:
-                shutil.move(os.path.join(self.output_sub_dir, mobi_name), os.path.join(self.output_dir, mobi_name))
+            if os.path.exists(src_path):
+                shutil.move(src_path, dst_path)
+        except CalledProcessError as e:
+            if os.path.exists(src_path):
+                shutil.move(src_path, dst_path)
             else:
-                print(f"Error compiling MOBI: {e}")
-                
+                print(f"Error compiling MOBI (exit code {e.returncode}). No binary generated.")
+                raise e
+        
     def count_lines(self):
         with open(self.wiktionary_fp, "rb") as f: self.line_count = sum(1 for _ in f)
 
@@ -257,7 +268,7 @@ class KindleDict:
                 json_entry = json_loads(line)
                 alt_id, alt_page = self.entries.get(json_entry.get("alt_of"), (None, None))
                 entry = Entry(json_entry, last_entry_id + 1, alt_id, alt_page, html_pages["examples"].get_filename())
-                
+
                 for split_entry in entry.split():
                     last_entry_id += 1
                     new_id_str = f"i{last_entry_id}_1"
@@ -310,7 +321,9 @@ class KindleDict:
 
                     temp_entry.inflected_forms = {inflection.form: inflection}
                     html_pages["inflections"].add_lines(
-                        HTMLRenderer.render_inflections_html(temp_entry, 1)
+                        HTMLRenderer.render_inflections_html(
+                            temp_entry, 1, entry_ids=self.entry_ids
+                        )
                     )
 
         for title, page in html_pages.items(): page.write()

@@ -6,7 +6,7 @@ from .utils import find_kindlegen
 
 def main():
     parser = argparse.ArgumentParser(description="Build a Kindle Dictionary from Wiktionary JSONL Dumps.")
-    parser.add_argument("--lang", required=True, help="Language code or name (e.g., 'Latin')")
+    parser.add_argument("--lang", required=True, default="la", help="Language code")
     parser.add_argument("--input", type=Path, default=None, help="Path to existing JSONL file")
     parser.add_argument("--download", dest="auto_download", action="store_true", default=True, help="Automatically download Kaikki dump")
     parser.add_argument("--no-download", dest="auto_download", action="store_false", help="Use local file provided in --input")

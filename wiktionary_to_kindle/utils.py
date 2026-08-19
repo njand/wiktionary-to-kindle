@@ -1,6 +1,7 @@
 import os
 import shutil
 import sys
+import re
 import unicodedata
 from itertools import product
 from pathlib import Path
@@ -74,6 +75,18 @@ def generate_vowel_variants(word: str) -> list[str]:
             options_per_group.append([normal_str])
 
     return ["".join(comb) for comb in product(*options_per_group)]
+
+def sanitize_xhtml(text: str) -> str:
+    """Escapes stray `<` characters that break KindleGen XML parsing."""
+    if not text:
+        return text
+    # Escapes `<` if it does not start a valid standard XHTML tag
+    return re.sub(
+        r'<(?!(?:/?(?:br|b|i|span|a|p|sup|sub|small|strong|em|div|ul|ol|li|hr|idx:[a-z]+)\b))',
+        '&lt;',
+        text,
+        flags=re.IGNORECASE,
+    )
 
 def find_kindlegen() -> Optional[Path]:
     """Locates the kindlegen binary via PATH or common installation directories."""
