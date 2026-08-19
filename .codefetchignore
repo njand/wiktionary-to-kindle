@@ -1,7 +1,0 @@
-test/
-vitest.config.ts
-uv.lock
-diagnose_anchors.py
-diagnose_xhtml.py
-diagnose_ids.py
-diagnose_jsonl.py
