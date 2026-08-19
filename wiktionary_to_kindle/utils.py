@@ -8,34 +8,45 @@ from pathlib import Path
 from typing import Optional
 
 
-MACRON = '̄'
-BREVE = '̆'
+MACRON = "̄"
+BREVE = "̆"
 MACRONIZED_VOWELS = {
-    "a": "ā", "A": "Ā",
-    "e": "ē", "E": "Ē",
-    "i": "ī", "I": "Ī",
-    "o": "ō", "O": "Ō",
-    "u": "ū", "U": "Ū",
-    "y": "ȳ", "Y": "Ȳ"
+    "a": "ā",
+    "A": "Ā",
+    "e": "ē",
+    "E": "Ē",
+    "i": "ī",
+    "I": "Ī",
+    "o": "ō",
+    "O": "Ō",
+    "u": "ū",
+    "U": "Ū",
+    "y": "ȳ",
+    "Y": "Ȳ",
 }
+
 
 def normalize(text: str, lowercase: bool = False) -> str:
     """Normalize text by stripping diacritics and optionally converting to lowercase."""
-    normalized = ''.join(c for c in unicodedata.normalize('NFKD', text) if not unicodedata.combining(c))
+    normalized = "".join(
+        c for c in unicodedata.normalize("NFKD", text) if not unicodedata.combining(c)
+    )
     if lowercase:
         normalized = normalized.lower()
     return normalized
 
+
 def remove_breves(text: str) -> str:
     """Remove breve diacritics from characters in a given string."""
     normalized = unicodedata.normalize("NFD", text)
-    filtered = ''.join(c for c in normalized if c != BREVE)
+    filtered = "".join(c for c in normalized if c != BREVE)
     return unicodedata.normalize("NFC", filtered)
+
 
 def generate_vowel_variants(word: str) -> list[str]:
     """Generate all possible variants of a Latin word with disputed vowel lengths resolved."""
     decomposed = unicodedata.normalize("NFD", word)
-    
+
     # Group into (base_char, [combining_marks])
     groups = []
     for char in decomposed:
@@ -55,20 +66,26 @@ def generate_vowel_variants(word: str) -> list[str]:
         if has_macron and has_breve:
             # Disputed vowel length: generate both short (unmacronized) and long (macronized) options
             remaining_marks = [m for m in marks if m not in (MACRON, BREVE)]
-            short_str = unicodedata.normalize("NFC", base_char + "".join(remaining_marks))
-            
+            short_str = unicodedata.normalize(
+                "NFC", base_char + "".join(remaining_marks)
+            )
+
             if base_char in MACRONIZED_VOWELS and not remaining_marks:
                 long_str = MACRONIZED_VOWELS[base_char]
             else:
-                long_str = unicodedata.normalize("NFC", base_char + MACRON + "".join(remaining_marks))
-                
+                long_str = unicodedata.normalize(
+                    "NFC", base_char + MACRON + "".join(remaining_marks)
+                )
+
             options_per_group.append([short_str, long_str])
         elif has_macron:
             remaining_marks = [m for m in marks if m != MACRON]
             if base_char in MACRONIZED_VOWELS and not remaining_marks:
                 macron_str = MACRONIZED_VOWELS[base_char]
             else:
-                macron_str = unicodedata.normalize("NFC", base_char + MACRON + "".join(remaining_marks))
+                macron_str = unicodedata.normalize(
+                    "NFC", base_char + MACRON + "".join(remaining_marks)
+                )
             options_per_group.append([macron_str])
         else:
             normal_str = unicodedata.normalize("NFC", base_char + "".join(marks))
@@ -76,17 +93,19 @@ def generate_vowel_variants(word: str) -> list[str]:
 
     return ["".join(comb) for comb in product(*options_per_group)]
 
+
 def sanitize_xhtml(text: str) -> str:
     """Escapes stray `<` characters that break KindleGen XML parsing."""
     if not text:
         return text
     # Escapes `<` if it does not start a valid standard XHTML tag
     return re.sub(
-        r'<(?!(?:/?(?:br|b|i|span|a|p|sup|sub|small|strong|em|div|ul|ol|li|hr|idx:[a-z]+)\b))',
-        '&lt;',
+        r"<(?!(?:/?(?:br|b|i|span|a|p|sup|sub|small|strong|em|div|ul|ol|li|hr|idx:[a-z]+)\b))",
+        "&lt;",
         text,
         flags=re.IGNORECASE,
     )
+
 
 def find_kindlegen() -> Optional[Path]:
     """Locates the kindlegen binary via PATH or common installation directories."""

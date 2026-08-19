@@ -4,21 +4,50 @@ from .builders.kindle_dict import KindleDict
 from .downloader import download_kaikki_dump
 from .utils import find_kindlegen
 
+
 def main():
-    parser = argparse.ArgumentParser(description="Build a Kindle Dictionary from Wiktionary JSONL Dumps.")
+    parser = argparse.ArgumentParser(
+        description="Build a Kindle Dictionary from Wiktionary JSONL Dumps."
+    )
     parser.add_argument("--lang", required=True, default="la", help="Language code")
-    parser.add_argument("--input", type=Path, default=None, help="Path to existing JSONL file")
-    parser.add_argument("--download", dest="auto_download", action="store_true", default=True, help="Automatically download Kaikki dump")
-    parser.add_argument("--no-download", dest="auto_download", action="store_false", help="Use local file provided in --input")
-    parser.add_argument("--kindlegen", type=Path, help="Path to kindlegen executable", default=None)
-    parser.add_argument("--sort", action="store_true", help="Run external merge sort on JSONL before dictionary generation")
-    parser.add_argument("--descendants", nargs="+", default=["English", "Portuguese", "Spanish", "French", "Italian"], help="Descendant languages to retain")
-    
+    parser.add_argument(
+        "--input", type=Path, default=None, help="Path to existing JSONL file"
+    )
+    parser.add_argument(
+        "--download",
+        dest="auto_download",
+        action="store_true",
+        default=True,
+        help="Automatically download Kaikki dump",
+    )
+    parser.add_argument(
+        "--no-download",
+        dest="auto_download",
+        action="store_false",
+        help="Use local file provided in --input",
+    )
+    parser.add_argument(
+        "--kindlegen", type=Path, help="Path to kindlegen executable", default=None
+    )
+    parser.add_argument(
+        "--sort",
+        action="store_true",
+        help="Run external merge sort on JSONL before dictionary generation",
+    )
+    parser.add_argument(
+        "--descendants",
+        nargs="+",
+        default=["English", "Portuguese", "Spanish", "French", "Italian"],
+        help="Descendant languages to retain",
+    )
+
     args = parser.parse_args()
 
     kindlegen_path = args.kindlegen or find_kindlegen()
     if not kindlegen_path:
-        raise FileNotFoundError("kindlegen executable not found. Provide path via --kindlegen.")
+        raise FileNotFoundError(
+            "kindlegen executable not found. Provide path via --kindlegen."
+        )
 
     should_sort = args.sort
 
@@ -47,14 +76,15 @@ def main():
     if should_sort:
         print("Sorting JSONL file...")
         kd.sort_jsonl()
-        
+
     print(f"Building dictionary for language: {args.lang}")
     kd.build_dictionary(
         descendant_langs=args.descendants,
         link_examples=False,
         recursive_senses=True,
-        include_etymology=True
+        include_etymology=True,
     )
+
 
 if __name__ == "__main__":
     main()

@@ -23,18 +23,24 @@ def download_kaikki_dump(lang: str, output_dir: Path) -> Path:
         req = urllib.request.Request(KAIKKI_RAW_DUMP_URL, headers=HEADERS)
         with urllib.request.urlopen(req) as response, open(gz_dump_path, "wb") as f:
             total_size = int(response.info().get("Content-Length", 0))
-            with tqdm(total=total_size, unit="B", unit_scale=True, desc="Downloading dump") as pbar:
+            with tqdm(
+                total=total_size, unit="B", unit_scale=True, desc="Downloading dump"
+            ) as pbar:
                 while chunk := response.read(2 * 1024 * 1024):
                     f.write(chunk)
                     pbar.update(len(chunk))
 
     # Step 2: Extract using CLI pipeline if available
     print(f"Filtering entries for '{lang}'...")
-    
+
     decompressor = (
-        "pigz" if shutil.which("pigz") 
-        else ("zcat" if shutil.which("zcat") 
-        else ("gzip" if shutil.which("gzip") else None))
+        "pigz"
+        if shutil.which("pigz")
+        else (
+            "zcat"
+            if shutil.which("zcat")
+            else ("gzip" if shutil.which("gzip") else None)
+        )
     )
     has_rg = shutil.which("rg") is not None
 
@@ -46,12 +52,15 @@ def download_kaikki_dump(lang: str, output_dir: Path) -> Path:
         subprocess.run(cmd, shell=True, check=True)
         return filtered_output_path
 
-    print("Notice: Fast CLI tools (pigz/zcat and ripgrep) not detected. Falling back to standard Python extraction.")
-    
+    print(
+        "Notice: Fast CLI tools (pigz/zcat and ripgrep) not detected. Falling back to standard Python extraction."
+    )
+
     # Step 3: Pure Python Fallback
-    with gzip.open(gz_dump_path, "rt", encoding="utf-8") as gz_in, open(
-        filtered_output_path, "w", encoding="utf-8"
-    ) as jsonl_out:
+    with (
+        gzip.open(gz_dump_path, "rt", encoding="utf-8") as gz_in,
+        open(filtered_output_path, "w", encoding="utf-8") as jsonl_out,
+    ):
         target_token = f'"lang_code": "{lang}"'
         for line in gz_in:
             if target_token in line:
