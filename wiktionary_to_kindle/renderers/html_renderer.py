@@ -1,10 +1,7 @@
 import html
 import re
-from pathlib import Path
 
-from jinja2 import Environment, FileSystemLoader
-
-TEMPLATES_DIR = Path(__file__).resolve().parent.parent.parent / "templates"
+from jinja2 import Environment, PackageLoader
 
 
 def format_etymology(etymology):
@@ -86,7 +83,7 @@ def format_gloss(sense):
 
 
 class HTMLRenderer:
-    env = Environment(loader=FileSystemLoader(str(TEMPLATES_DIR)))
+    env = Environment(loader=PackageLoader("wiktionary_to_kindle", "templates"))
     env.globals.update(
         {
             "format_gloss": format_gloss,

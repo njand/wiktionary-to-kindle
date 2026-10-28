@@ -15,7 +15,7 @@ from tqdm import tqdm
 from ..models.entry import Entry
 from ..models.header import Header
 from ..renderers.html_renderer import HTMLRenderer
-from ..utils import form_of_root, normalize, remove_breves
+from ..utils import TEMPLATES, form_of_root, normalize, remove_breves
 from .html_page import HTMLPage
 
 USING_ORJSON = False
@@ -37,8 +37,6 @@ except ImportError:
     def json_dumps(obj):
         return json.dumps(obj)
 
-
-TEMPLATES_DIR = Path(__file__).resolve().parent.parent.parent / "templates"
 
 # Bump when sort_jsonl's output changes, so cached sorted files are rebuilt
 SORT_VERSION = 2
@@ -70,8 +68,9 @@ class KindleDict:
 
     def init_dict_dir(self):
         os.makedirs(self.output_sub_dir, exist_ok=True)
-        shutil.copy(TEMPLATES_DIR / "style.css", self.output_sub_dir)
-        shutil.copy(TEMPLATES_DIR / "cover.png", self.output_sub_dir)
+        for name in ("style.css", "cover.png"):
+            data = TEMPLATES.joinpath(name).read_bytes()
+            Path(self.output_sub_dir, name).write_bytes(data)
 
     @staticmethod
     def root_form(senses):
@@ -367,8 +366,7 @@ class KindleDict:
         inflection_page_len = html_pages["inflections"].index
         example_page_len = html_pages["examples"].index
 
-        with open(TEMPLATES_DIR / "opf_header.txt", "r", encoding="utf-8") as f:
-            html_lines = f.read().split("\n")
+        html_lines = TEMPLATES.joinpath("opf_header.txt").read_text("utf-8").split("\n")
 
         for prefix, page_len in [
             ("", entry_page_len),

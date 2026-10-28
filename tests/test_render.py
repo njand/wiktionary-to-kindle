@@ -1,9 +1,20 @@
 """Rendering of entries to Kindle XHTML."""
 
+import pytest
+
 from wiktionary_to_kindle.models.entry import Entry
 from wiktionary_to_kindle.renderers.html_renderer import HTMLRenderer
+from wiktionary_to_kindle.utils import TEMPLATES
 
 from .test_sort_merge import lemma
+
+
+@pytest.mark.parametrize(
+    "name",
+    ["style.css", "cover.png", "html_header.txt", "html_footer.txt", "opf_header.txt"],
+)
+def test_templates_ship_inside_the_package(name):
+    assert TEMPLATES.joinpath(name).is_file()
 
 
 def render(json_entry, descendant_langs=None):

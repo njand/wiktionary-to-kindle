@@ -3,8 +3,12 @@ import re
 import shutil
 import sys
 import unicodedata
+from importlib.resources import files
 from itertools import product
 from pathlib import Path
+
+# Shipped inside the package so an installed wheel finds them
+TEMPLATES = files("wiktionary_to_kindle") / "templates"
 
 MACRON = "̄"
 BREVE = "̆"
