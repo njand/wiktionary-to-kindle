@@ -3,6 +3,8 @@
 import pytest
 
 from wiktionary_to_kindle.models.header import Header
+from wiktionary_to_kindle.models.inflection import Inflection
+from wiktionary_to_kindle.models.morph_tag import MorphTag
 
 
 @pytest.mark.parametrize(
@@ -26,3 +28,31 @@ def test_header_split(plain, expansion, prefix, head_word, remainder):
         head_word,
         remainder,
     )
+
+
+def test_superlative_and_supine_abbreviate_differently():
+    superlative = MorphTag({"nominative", "superlative"})
+    supine = MorphTag({"supine"})
+    assert str(superlative) == "nom.superl."
+    assert str(supine) == "sup."
+    # Tags differing in one class merge; superlative (degree) and supine (verbal form) do not
+    assert len(superlative.combine(MorphTag({"nominative", "comparative"}))) == 1
+    assert len(supine.combine(MorphTag({"infinitive"}))) == 1
+    assert len(MorphTag({"superlative"}).combine(supine)) == 2
+
+
+def test_morph_tag_ordering_is_boolean():
+    nom = MorphTag({"nominative", "singular"})
+    gen = MorphTag({"genitive", "singular"})
+    assert nom < gen
+    assert not gen < nom
+    assert (nom < MorphTag({"nominative", "singular"})) is False
+
+
+def test_inflections_sort_with_and_without_tags():
+    untagged = Inflection("b", None)
+    genitive = Inflection("a", None)
+    genitive.add_tags({"genitive", "singular"})
+    nominative = Inflection("c", None)
+    nominative.add_tags({"nominative", "singular"})
+    assert sorted([nominative, genitive, untagged]) == [untagged, nominative, genitive]

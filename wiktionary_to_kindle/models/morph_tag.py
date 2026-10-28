@@ -78,7 +78,7 @@ class MorphTag:
         "supine": "sup",
         "gerund": "ger",
         "comparative": "comp",
-        "superlative": "sup",
+        "superlative": "superl",
         "adverb": "adv",
         "possessive": "poss",
         "diminutive": "dim",
@@ -122,7 +122,7 @@ class MorphTag:
         "sup",
         "ger",
         "comp",
-        "sup",
+        "superl",
         "adv",
         "poss",
         "dim",
@@ -138,7 +138,7 @@ class MorphTag:
         "GENDER": frozenset({"m", "f", "n"}),
         "CASE": frozenset({"nom", "gen", "dat", "acc", "abl", "voc", "loc", "obl"}),
         "NUMBER": frozenset({"sg", "pl"}),
-        "DEGREE": frozenset({"comp", "sup"}),
+        "DEGREE": frozenset({"comp", "superl"}),
         "MOOD": frozenset({"ind", "subj", "imp", "cond"}),
         "VOICE": frozenset({"act", "pass"}),
         "TENSE": frozenset({"pres", "impf", "fut", "perf", "plup", "aor", "pret"}),
@@ -154,7 +154,7 @@ class MorphTag:
     def __init__(self, tags):
         self.tags = tags
         self.abbreviated_tags = self.abbreviate()
-        
+
     def is_subset(self, other):
         return len(self.tags & other.tags) == len(self)
 
@@ -226,9 +226,10 @@ class MorphTag:
     def __len__(self):
         return len(self.tags)
 
+    def sort_key(self):
+        """Order by the first abbreviation in ABBREVIATED_ORDER that only one tag has; the
+        tag that has it comes first."""
+        return tuple(abb not in self.abbreviated_tags for abb in self.ABBREVIATED_ORDER)
+
     def __lt__(self, other):
-        for abb in self.__class__.ABBREVIATED_ORDER:
-            if abb in self.abbreviated_tags and abb not in other.abbreviated_tags:
-                return True
-            if abb in other.abbreviated_tags and abb not in self.abbreviated_tags:
-                return False
+        return self.sort_key() < other.sort_key()
