@@ -1,0 +1,27 @@
+name: PR Checks
+
+# Lint and tests only: the full dictionary build downloads the multi-GB dump and
+# publishes a release, so it stays in dictionary-build.yml.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup environment
+        uses: astral-sh/setup-uv@v5
+
+      - name: Sync dependencies
+        run: uv sync --all-extras
+
+      - name: Audit codebase
+        run: uvx ruff check .
+
+      - name: Run tests
+        run: uv run pytest
