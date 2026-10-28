@@ -167,17 +167,16 @@ class Entry:
                 continue
 
             tags = set(form_obj.get("tags", []))
+            # Alternative spellings are kept; sort_jsonl drops those with a page of their own
             filtered_tags = {
                 "table-tags",
                 "inflection-template",
                 "error-unrecognized-form",
                 "short-form",
-                "conjugation-3",
                 "uppercase",
                 "class",
-                "Medieval-Latin",
-                "alternative",
                 "stem",
+                "reconstruction",
             }
             if len(filtered_tags & tags) > 0:
                 continue

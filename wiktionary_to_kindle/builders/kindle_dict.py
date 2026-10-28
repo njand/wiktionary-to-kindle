@@ -22,6 +22,7 @@ from ..utils import (
     normalize,
     remove_breves,
 )
+from .forms import enrich_forms
 from .html_page import HTMLPage
 from .label_resolver import LabelResolver
 
@@ -46,7 +47,7 @@ except ImportError:
 
 
 # Bump when sort_jsonl's output changes, so cached sorted files are rebuilt
-SORT_VERSION = 2
+SORT_VERSION = 3
 
 
 @dataclass
@@ -227,6 +228,9 @@ class KindleDict:
             # Keyed by macronized headword: Wiktionary's form_of/alt_of targets keep macrons
             alt_forms_dict = defaultdict(list)
             lemma_pos = defaultdict(set)
+            known = (
+                set()
+            )  # every headword, without breves, so forms with a page are known
 
             def write_chunk(chunk_data, chunk_index):
                 chunk_data.sort(
@@ -274,6 +278,7 @@ class KindleDict:
                         ):
                             header = self.get_header(obj)
                             root = self.root_form(obj.get("senses", []))
+                            known.add(remove_breves(header))
 
                             if root is None:
                                 lemma_pos[remove_breves(header)].add(part_of_speech)
@@ -333,14 +338,17 @@ class KindleDict:
                     desc="Merging Chunks",
                 ) as pbar:
                     for _lower_word, _raw_word, header, pos, obj in merged_iter:
-                        if addl_forms := self.get_addl_forms(
+                        addl_forms = self.get_addl_forms(
                             alt_forms_dict,
                             remove_breves(header),
                             pos,
                             lemma_pos,
                             promoted,
-                        ):
-                            obj.setdefault("forms", []).extend(addl_forms)
+                        )
+                        if "forms" in obj or addl_forms:
+                            obj["forms"] = enrich_forms(
+                                obj.get("forms", []), known, addl_forms
+                            )
 
                         out_f.write(json_dumps(obj) + "\n")
                         pbar.update(1)
