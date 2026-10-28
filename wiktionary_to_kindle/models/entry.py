@@ -1,7 +1,7 @@
 import copy
 import re
 
-from ..utils import generate_vowel_variants, normalize, remove_breves
+from ..utils import form_of_root, generate_vowel_variants, normalize, remove_breves
 from .etymology import Etymology
 from .header import Header
 from .inflection import Inflection
@@ -95,8 +95,14 @@ class Entry:
     def get_senses_blocks(self):
         blocks = []
         senses = self.json_entry.get("senses", [])
+        # Hide "X of lemma" senses, unless that is all the entry has (its lemma is missing)
+        pointer_senses = [
+            "form_of" in sense and form_of_root(sense) for sense in senses
+        ]
+        if all(pointer_senses):
+            pointer_senses = [False] * len(senses)
         for i, sense in enumerate(senses):
-            if "form_of" in sense:
+            if pointer_senses[i]:
                 continue
 
             glosses = sense.get("glosses", None)

@@ -26,3 +26,8 @@ Homepage = "https://github.com/njand/wiktionary-to-kindle"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+]

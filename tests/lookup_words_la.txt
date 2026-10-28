@@ -1,0 +1,53 @@
+# Words that must open an entry in the built Latin dictionary.
+# Checked by scripts/check_lookups.py with `kindling-cli lookup`.
+# Prefix with `xfail:` for a known gap that should not fail the build yet.
+
+# Lemmas, with and without macrons
+amo
+amō
+puella
+magnus
+causa
+
+# Homographs that differ only by macrons (latus "side", lātus "wide", lātus "carried")
+latus
+lātus
+
+# Inflected forms from the lemma's own table
+amabo
+amare
+puellae
+
+# Comparatives and superlatives (merged from "comparative degree of" entries)
+maior
+maiorem
+fortior
+latior
+latiorem
+maximus
+
+# Participles with their own meaning, and their declined forms
+amatus
+amatam
+
+# Diminutives and alternative spellings
+puellula
+caussa
+caussarum
+
+# Capitalization
+Roma
+Romae
+ROMA
+Amor
+amor
+
+# Spellings Wiktionary does not use as headwords
+iam
+xfail: jam
+xfail: uir
+xfail: uideo
+
+# Enclitics (-que, -ne, -ve): Kindle does no prefix matching
+xfail: virumque
+xfail: estne

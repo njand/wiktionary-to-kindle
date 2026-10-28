@@ -38,8 +38,19 @@ jobs:
       - name: Audit codebase
         run: uvx ruff check .
 
+      - name: Run tests
+        run: uv run pytest
+
       - name: Build ${{ matrix.language }} Dictionary
         run: uv run wiktionary-to-kindle --lang "${{ matrix.language }}" --sort
+
+      - name: Check ${{ matrix.language }} lookups
+        if: hashFiles(format('tests/lookup_words_{0}.txt', matrix.language)) != ''
+        # kindling was installed as `kindlegen`; its `lookup` subcommand simulates a Paperwhite 5
+        run: >
+          uv run python scripts/check_lookups.py --kindling kindlegen
+          outputs/KindleDictionary-${{ matrix.language }}/${{ matrix.language }}-wiktionary.mobi
+          tests/lookup_words_${{ matrix.language }}.txt
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4

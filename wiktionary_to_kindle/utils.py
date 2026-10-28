@@ -92,6 +92,29 @@ def generate_vowel_variants(word: str) -> list[str]:
     return ["".join(comb) for comb in product(*options_per_group)]
 
 
+def form_of_root(sense: dict) -> str | None:
+    """Return the lemma a sense merely points to, or None if the sense defines the word itself.
+
+    "genitive singular of fors" or "alternative form of causa" only point at a lemma, while a
+    participle sense like "loved; having been loved" (form_of amō) carries its own meaning.
+    """
+    targets = sense.get("alt_of") or sense.get("form_of")
+    if targets:
+        root = targets[0].get("word")
+        glosses = normalize(" ".join(sense.get("glosses", [])), lowercase=True)
+        if root and normalize(root, lowercase=True) in glosses:
+            return root
+        return None
+
+    links = sense.get("links", [])
+    if len(links) == 1 and len(links[0]) == 2 and links[0][1].endswith("#Latin"):
+        root_word = links[0][0]
+        for gloss in sense.get("glosses", []):
+            if gloss.endswith(f" of {root_word}"):
+                return root_word
+    return None
+
+
 def sanitize_xhtml(text: str) -> str:
     """Escapes stray `<` characters that break KindleGen XML parsing."""
     if not text:
