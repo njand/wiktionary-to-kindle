@@ -5,6 +5,11 @@ on:
     # Runs at 2:14 AM UTC every Sunday to bypass top-of-the-hour queue bottlenecks
     - cron: '14 2 * * 0'
   workflow_dispatch: # Allows you to trigger the build manually from the GitHub UI
+    inputs:
+      allow_coverage_drop:
+        description: Allow a coverage drop (publish a build whose coverage fell since the latest release)
+        type: boolean
+        default: false
 
 env:
   KINDLING_VERSION: v0.45.6
@@ -53,7 +58,7 @@ jobs:
         run: uv run pytest
 
       - name: Build ${{ matrix.language }} Dictionary
-        run: uv run wiktionary-to-kindle --lang "${{ matrix.language }}" --kindling kindling-cli
+        run: uv run wiktionary-to-kindle --lang "${{ matrix.language }}" --kindling kindling-cli --stardict
 
       - name: Measure ${{ matrix.language }} index
         run: >
@@ -77,6 +82,7 @@ jobs:
           name: dictionary-${{ matrix.language }}
           path: |
             outputs/KindleDictionary-${{ matrix.language }}/*.mobi
+            outputs/KindleDictionary-${{ matrix.language }}/stardict/*.zip
             outputs/stats-${{ matrix.language }}.json
             outputs/coverage-${{ matrix.language }}.json
             outputs/coverage-${{ matrix.language }}.md
@@ -88,6 +94,22 @@ jobs:
           uv run python scripts/check_lookups.py --kindling kindling-cli
           outputs/KindleDictionary-${{ matrix.language }}/${{ matrix.language }}-wiktionary.mobi
           tests/lookup_words_${{ matrix.language }}.txt
+
+      # The latest release is the last one checked on a device (builds are published as
+      # pre-releases, which `gh release download` skips), so coverage is compared with that
+      - name: Compare ${{ matrix.language }} coverage with the latest release
+        if: hashFiles(format('corpus/{0}.tsv', matrix.language)) != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LANG_CODE: ${{ matrix.language }}
+          FAIL_ON_DROP: ${{ !inputs.allow_coverage_drop && '--fail-on-drop' || '' }}
+        run: |
+          if gh release download --repo "$GITHUB_REPOSITORY" --pattern "coverage-$LANG_CODE.json" --dir previous; then
+            uv run python -m wiktionary_to_kindle.quality coverage-diff $FAIL_ON_DROP \
+              "previous/coverage-$LANG_CODE.json" "outputs/coverage-$LANG_CODE.json"
+          else
+            echo "No coverage in the latest release to compare with"
+          fi
 
   create-release:
     needs: build-dictionaries
@@ -105,26 +127,34 @@ jobs:
           path: dictionaries
           merge-multiple: true
 
-      - name: Download previous release statistics
+      - name: Download the latest release's statistics
         env:
           GH_TOKEN: ${{ github.token }}
         run: >
-          gh release download --repo "$GITHUB_REPOSITORY" --pattern 'stats-*.json' --dir previous
-          || echo "No previous release statistics"
+          gh release download --repo "$GITHUB_REPOSITORY" --pattern 'stats-*.json' --pattern 'coverage-*.json' --dir previous
+          || echo "No statistics in the latest release"
 
       - name: Write release notes
         run: |
           for stats in dictionaries/stats-*.json; do
             lang=$(basename "$stats" .json | sed 's/^stats-//')
-            printf '## %s\n\n### Index compared with the previous release\n\n' "$lang" >> notes.md
+            printf '## %s\n\n### Index compared with the latest release\n\n' "$lang" >> notes.md
             if [ -f "previous/stats-$lang.json" ]; then
               python3 -m wiktionary_to_kindle.quality diff "previous/stats-$lang.json" "$stats" >> notes.md
             else
-              echo "No statistics in the previous release to compare with." >> notes.md
+              echo "No statistics in the latest release to compare with." >> notes.md
             fi
             if [ -f "dictionaries/coverage-$lang.md" ]; then
               printf '\n### Corpus lookup coverage\n\n' >> notes.md
               cat "dictionaries/coverage-$lang.md" >> notes.md
+            fi
+            if [ -f "previous/coverage-$lang.json" ] && [ -f "dictionaries/coverage-$lang.json" ]; then
+              printf '\n### Coverage compared with the latest release\n\n' >> notes.md
+              python3 -m wiktionary_to_kindle.quality coverage-diff "previous/coverage-$lang.json" "dictionaries/coverage-$lang.json" >> notes.md
+            fi
+            if [ -f "docs/device-check-$lang.md" ]; then
+              printf '\n### Device check\n\n' >> notes.md
+              cat "docs/device-check-$lang.md" >> notes.md
             fi
           done
 
@@ -138,8 +168,11 @@ jobs:
           tag_name: v${{ steps.date.outputs.date }}
           name: "Dictionary Builds - ${{ steps.date.outputs.date }}"
           body_path: notes.md
+          # Marked as the latest by hand after the device check (see the notes)
+          prerelease: true
           # Artifacts keep their paths below outputs/, so the .mobi sits one folder down
           files: |
             dictionaries/**/*.mobi
+            dictionaries/**/*-stardict.zip
             dictionaries/stats-*.json
             dictionaries/coverage-*.json

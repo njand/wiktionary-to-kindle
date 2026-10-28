@@ -33,6 +33,9 @@ A Python parser and rendering engine that converts large-scale [Kaikki](https://
 * Press and hold any word to trigger the dictionary lookup card.
 * If a different dictionary opens by default, tap the dictionary title at the bottom right of the pop-up card to switch to your Wiktionary dictionary.
 
+### KOReader and GoldenDict
+Each release also has `la-wiktionary-stardict.zip`, the same dictionary in StarDict format. Unzip it and copy the `la-wiktionary` folder into KOReader's `koreader/data/dict/` folder, or add the folder to GoldenDict's dictionary sources.
+
 ---
 
 ## Overview & Key Features
@@ -91,6 +94,7 @@ uv run wiktionary-to-kindle --lang "la"
 | `--input <path>` | Path to a local `.jsonl` dump file, skipping automatic downloads. |
 | `--no-download` | Uses the dump already in `downloads/` instead of downloading one. |
 | `--kindling <path>` | Path to `kindling-cli` if it is not on your `PATH` (`--kindlegen` is the old name). |
+| `--stardict` | Also writes `<lang>-wiktionary-stardict.zip`, a StarDict bundle for GoldenDict and KOReader (see below). |
 | `--descendants <list>` | Space-separated list of descendant languages to retain in dictionary entries (default: English, Portuguese, Spanish, French, Italian). |
 
 ---
@@ -105,6 +109,7 @@ uv run wiktionary-to-kindle --lang "la"
 4. **Label resolution** (`label_resolver.py`): Gives each lookup spelling one owner, an entry or a disambiguation card.
 5. **Render** (`render/`): Writes entries, cards and the front page as XHTML with Jinja2 templates following Kindle's markup (`idx:entry`, `idx:orth`, `idx:infl`).
 6. **Compile** (`compiler.py`): Writes the `.opf` package and runs kindling to produce the `.mobi`.
+7. **StarDict** (`stardict.py`, with `--stardict`): Runs `kindling stardict` on the same package, then points each card's links at `bword://` labels and adds every label's spelling without macrons (StarDict readers do not ignore them the way a Kindle does).
 
 ### Measuring lookup quality
 
@@ -122,6 +127,17 @@ uv run wiktionary-to-kindle --lang la --no-download --input downloads/sample-la.
 ```
 
 Coverage resolves each word with the Kindle's own matching rules: case and macrons are ignored, and when several entries share a label the index order picks one ("ambiguous"). Pass `--kindling <binary> --mobi <file>` to also check the most frequent words with kindling's on-device lookup simulator. CI publishes the statistics, their change since the last release, and the coverage report in each release's notes.
+
+```bash
+# Coverage compared with an earlier build; --fail-on-drop exits 1 on a regression
+uv run python -m wiktionary_to_kindle.quality coverage-diff old-coverage.json coverage.json --fail-on-drop
+```
+
+A source regresses when the share of its tokens that open something falls, or the share left to index order rises, by more than half a percentage point (`--threshold`), or when more words have labels kindling says the index order hides. The weekly build compares its coverage with the latest release's and fails on a regression; to publish an intentional drop, run the workflow by hand with **Allow a coverage drop** checked.
+
+### Releases
+
+Each build is published as a pre-release with the `.mobi`, the StarDict bundle, the statistics and the coverage report, and its notes end with a device checklist ([docs/device-check-la.md](docs/device-check-la.md)). After going through the checklist on a Kindle, edit the release and mark it as the latest; the next build compares its coverage with that release.
 
 ---
 

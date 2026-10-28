@@ -3,7 +3,8 @@
 ingest (ingest.py: download and filter the dump) → merge (merge/: sort it and fold pointer
 pages into their lemmas) → lexicon model (models/: Entry objects) → label resolution
 (label_resolver.py: one owner per spelling, disambiguation cards) → render (render/: XHTML
-pages) → compile (compiler.py: OPF package and kindling).
+pages) → compile (compiler.py: OPF package and kindling) → optionally a StarDict bundle
+(stardict.py).
 
 Entries are read from the merged dump twice, once to collect every label and once to
 render, so the whole lexicon is never held in memory.
@@ -20,6 +21,15 @@ from .label_resolver import LabelResolver
 from .merge.sort import is_sorted, merge_dump
 from .models.lexicon import count_lines, read_entries
 from .render.book import BookWriter
+from .stardict import export_stardict
+
+# The .ifo has no license field; by convention it goes in the description
+STARDICT_DESCRIPTION = (
+    "Latin-English dictionary from Wiktionary data of {dump_date}, built with "
+    "wiktionary-to-kindle {version}.<br>Text by Wiktionary contributors "
+    "(https://en.wiktionary.org/), extracted by Kaikki.org and wiktextract; licensed "
+    "under CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/)."
+)
 
 
 @dataclass
@@ -29,6 +39,7 @@ class Build:
     dump_date: str
     build_date: str
     entry_pages: dict[int, str] = field(default_factory=dict)  # entry id -> page
+    stardict_zip: str | None = None
 
 
 def unique_directory(path):
@@ -56,9 +67,11 @@ def build_dictionary(
     resort=False,
     limit=None,
     max_page_len=5000,
+    stardict=False,
 ):
     """Build outputs/KindleDictionary-<lang_code> (or a free name beside it) from dump, a
-    filtered dump or one merge_dump already sorted. limit caps the number of entries."""
+    filtered dump or one merge_dump already sorted. limit caps the number of entries;
+    stardict also writes <lang_code>-wiktionary-stardict.zip."""
     build = Build(
         output_dir=unique_directory(f"outputs/KindleDictionary-{lang_code}"),
         files_dir="",
@@ -94,4 +107,15 @@ def build_dictionary(
     compile_mobi(
         kindling, build.files_dir, build.output_dir, f"{lang_code}-wiktionary.mobi"
     )
+    if stardict:
+        build.stardict_zip = str(
+            export_stardict(
+                kindling,
+                build.files_dir,
+                os.path.join(build.output_dir, "stardict", f"{lang_code}-wiktionary"),
+                STARDICT_DESCRIPTION.format(
+                    dump_date=build.dump_date, version=__version__
+                ),
+            )
+        )
     return build

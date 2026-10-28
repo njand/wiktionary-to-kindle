@@ -148,3 +148,48 @@ def test_extract_sample_follows_pointer_chains(tmp_path):
         words = {(e["word"], e["pos"]) for e in map(json.loads, f)}
     # caussis -> caussa -> causa: the lemma and every pointer to it come along
     assert words == {("caussis", "noun"), ("caussa", "noun"), ("causa", "noun")}
+
+
+def coverage_report(**sources):
+    """A coverage report with sources given as name=(tokens, opens, ambiguous)."""
+
+    def summary(tokens, opens, ambiguous):
+        share = {"unique": opens - ambiguous, "spelling": 0.0, "ambiguous": ambiguous}
+        return {"tokens": tokens, "token_share": dict(share, miss=1 - opens)}
+
+    report = {"sources": {k: summary(*v) for k, v in sources.items()}}
+    report["overall"] = report["sources"]["all"]
+    return report
+
+
+def test_coverage_diff():
+    old = coverage_report(
+        caesar=(100, 0.9, 0.0), vergil=(50, 0.8, 0.0), all=(150, 0.87, 0.0)
+    )
+    same = coverage_report(
+        caesar=(100, 0.898, 0.0), vergil=(50, 0.8, 0.004), all=(150, 0.87, 0.001)
+    )
+    markdown, regressions = coverage.diff(old, same)
+    assert regressions == []
+    assert "| caesar | 90.0% | 89.8% | -0.2 pp | 0.0% | 0.0% |" in markdown
+
+    worse = coverage_report(
+        caesar=(100, 0.85, 0.0), vergil=(60, 0.8, 0.02), all=(160, 0.84, 0.0)
+    )
+    _, regressions = coverage.diff(old, worse)
+    assert regressions == [
+        "caesar: tokens that open something -5.0 pp",
+        "vergil (50 → 60 tokens): tokens left to index order +2.0 pp",
+        "all (150 → 160 tokens): tokens that open something -3.0 pp",
+    ]
+
+
+def test_coverage_diff_new_source_is_not_compared():
+    old = coverage_report(caesar=(100, 0.9, 0.0), all=(100, 0.9, 0.0))
+    new = coverage_report(
+        caesar=(100, 0.9, 0.0), gate=(100, 0.5, 0.0), all=(200, 0.7, 0.0)
+    )
+    markdown, regressions = coverage.diff(old, new)
+    assert regressions == []
+    assert "| gate | | | new | | |" in markdown
+    assert "| all | | | sources differ | | |" in markdown
