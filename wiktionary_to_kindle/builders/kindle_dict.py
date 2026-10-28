@@ -47,7 +47,7 @@ except ImportError:
 
 
 # Bump when sort_jsonl's output changes, so cached sorted files are rebuilt
-SORT_VERSION = 3
+SORT_VERSION = 5
 
 
 @dataclass
@@ -115,6 +115,10 @@ class KindleDict:
             if form.get("tags") == ["canonical"]:
                 form["tags"] = tags
             processed_forms.append(form)
+        # Many pointer pages (innocentum, CON) list no forms: their headword is the only one
+        header = KindleDict.get_header(json_entry)
+        if all(form.get("form") != header for form in processed_forms):
+            processed_forms.insert(0, {"form": header, "tags": tags})
         return processed_forms
 
     def get_addl_forms(
@@ -146,6 +150,34 @@ class KindleDict:
                     stack.append(sub_key)
         return addl_forms
 
+    @staticmethod
+    def rekey_plain_roots(alt_forms_dict, known):
+        """File pointers whose target is no headword under the headword with its letters, so
+        they merge like any other pointer: the target is often a page title without macrons
+        ("alternative form of iuro" for iūrō), sometimes macronized otherwise (acontīzō for
+        acontizō). known maps every headword to its parts of speech. When several headwords
+        have those letters (latus, lātus), the one with the pointer's part of speech is taken,
+        if one is."""
+        by_letters = defaultdict(list)
+        for header in known:
+            by_letters[normalize(header)].append(header)
+
+        for key in [k for k in alt_forms_dict if k not in known]:
+            candidates = by_letters.get(normalize(key), [])
+            if not candidates:
+                continue
+            stay = []
+            for pointer in alt_forms_dict.pop(key):
+                matches = candidates
+                if len(matches) > 1:
+                    matches = [h for h in candidates if pointer[0] in known[h]]
+                if len(matches) == 1:
+                    alt_forms_dict[matches[0]].append(pointer)
+                else:
+                    stay.append(pointer)
+            if stay:
+                alt_forms_dict[key] = stay
+
     def promote_orphans(self, alt_forms_dict, lemma_pos):
         """Return pointer entries whose chain never reaches a lemma, so they become entries
         themselves instead of being dropped. Promoted entries can in turn act as roots."""
@@ -162,15 +194,25 @@ class KindleDict:
         for key in list(lemma_pos):
             reach(key)
 
+        # Promote the top of each chain first, so the forms that point at an orphan
+        # (acontizante at acontizāns) merge into it instead of becoming orphans too
+        pointer_keys = {
+            remove_breves(alt_header)
+            for pointers in alt_forms_dict.values()
+            for _pos, alt_header, _obj in pointers
+        }
         orphans = []
-        for key in sorted(alt_forms_dict):
-            for alt_pos, alt_header, obj in alt_forms_dict[key]:
-                if id(obj) in reached:
+        for tops_only in (True, False):  # the second pass catches cycles
+            for key in sorted(alt_forms_dict):
+                if tops_only and key in pointer_keys:
                     continue
-                lemma_pos[remove_breves(alt_header)].add(alt_pos)
-                orphans.append((alt_header, alt_pos, obj))
-                reached.add(id(obj))
-                reach(remove_breves(alt_header))
+                for alt_pos, alt_header, obj in alt_forms_dict[key]:
+                    if id(obj) in reached:
+                        continue
+                    lemma_pos[remove_breves(alt_header)].add(alt_pos)
+                    orphans.append((alt_header, alt_pos, obj))
+                    reached.add(id(obj))
+                    reach(remove_breves(alt_header))
         return orphans
 
     def make_sorted_path(self):
@@ -228,9 +270,8 @@ class KindleDict:
             # Keyed by macronized headword: Wiktionary's form_of/alt_of targets keep macrons
             alt_forms_dict = defaultdict(list)
             lemma_pos = defaultdict(set)
-            known = (
-                set()
-            )  # every headword, without breves, so forms with a page are known
+            # Every headword, without breves -> its parts of speech
+            known = defaultdict(set)
 
             def write_chunk(chunk_data, chunk_index):
                 chunk_data.sort(
@@ -278,7 +319,7 @@ class KindleDict:
                         ):
                             header = self.get_header(obj)
                             root = self.root_form(obj.get("senses", []))
-                            known.add(remove_breves(header))
+                            known[remove_breves(header)].add(part_of_speech)
 
                             if root is None:
                                 lemma_pos[remove_breves(header)].add(part_of_speech)
@@ -295,6 +336,7 @@ class KindleDict:
                                     (part_of_speech, header, obj)
                                 )
 
+            self.rekey_plain_roots(alt_forms_dict, known)
             orphans = self.promote_orphans(alt_forms_dict, lemma_pos)
             promoted = {id(obj) for _, _, obj in orphans}
             if orphans:

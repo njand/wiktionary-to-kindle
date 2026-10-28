@@ -191,7 +191,11 @@ def form_of_root(sense: dict) -> str | None:
     if targets:
         root = targets[0].get("word")
         glosses = normalize(" ".join(sense.get("glosses", [])), lowercase=True)
-        if root and normalize(root, lowercase=True) in glosses:
+        # A form of root with no gloss at all (Kaikki tags it no-gloss) only points too
+        if root and (
+            normalize(root, lowercase=True) in glosses
+            or (not glosses and "no-gloss" in sense.get("tags", []))
+        ):
             return root
         return None
 
