@@ -5,39 +5,20 @@ from jinja2 import Environment, PackageLoader
 
 
 def format_etymology(etymology):
-    """Helper passed to Jinja to wrap etymology templates."""
-    text = html.escape(etymology.etymology_text)
-    elements = etymology.etymology_templates
-    if not elements:
-        return text
+    """Helper passed to Jinja to italicize each template expansion where it occurs in the text.
 
-    wrapped, cur_elem_idx, elem_matches, last_char_idx = [], 0, 0, 0
-    cur_elem = elements[cur_elem_idx]
-    for char_idx, char in enumerate(text):
-        if char == cur_elem[elem_matches]:
-            elem_matches += 1
-            if elem_matches == len(cur_elem):
-                wrapped.extend(
-                    [
-                        text[last_char_idx : char_idx - elem_matches + 1],
-                        "<i>",
-                        cur_elem,
-                        "</i>",
-                    ]
-                )
-                cur_elem_idx += 1
-                if cur_elem_idx < len(elements):
-                    cur_elem = elements[cur_elem_idx]
-                else:
-                    wrapped.append(text[char_idx + 1 :])
-                    last_char_idx = len(text) - 1
-                    break
-                last_char_idx = char_idx + 1
-                elem_matches = 0
-        else:
-            elem_matches = 0
-    if last_char_idx + 1 < len(text):
-        wrapped.append(text[last_char_idx:])
+    Expansions are matched in order; one that does not occur after the previous match is skipped.
+    """
+    text = html.escape(etymology.etymology_text)
+    wrapped, pos = [], 0
+    for elem in etymology.etymology_templates:
+        elem = html.escape(elem)
+        start = text.find(elem, pos)
+        if start == -1:
+            continue
+        wrapped.extend([text[pos:start], "<i>", elem, "</i>"])
+        pos = start + len(elem)
+    wrapped.append(text[pos:])
     return "".join(wrapped)
 
 
