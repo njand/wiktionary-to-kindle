@@ -442,7 +442,9 @@ class KindleDict:
             self.line_count = sum(1 for _ in f)
 
     def read_entries(self, limit, desc):
-        """Yield the dump's entries that render, numbered 1, 2, ... in file order."""
+        """Yield (entry, size) for the dump's entries that render, numbered 1, 2, ... in
+        file order. size is the JSON length without the inflection table, a rough measure
+        of how much Wiktionary says about the word (a verb's table would dwarf it)."""
         entry_id = 0
         with open(self.wiktionary_fp, "r", encoding="utf-8") as f:
             for line in tqdm(f, unit="lines", unit_scale=True, total=limit, desc=desc):
@@ -454,29 +456,39 @@ class KindleDict:
                 if not entry.valid_pairs():
                     continue
                 entry_id += 1
-                yield entry
+                yield entry, len(line) - len(json_dumps(json_entry.get("forms", [])))
                 if entry_id >= limit:
                     break
 
     @staticmethod
-    def card_row(entry, reached):
-        """List entry on a card: its headword, and the parses of the forms that were tapped."""
-        reached = set(reached)
-        parses = []
-        for form, inflection in sorted(
-            entry.inflected_forms.items(), key=lambda kv: kv[1]
-        ):
-            if reached.intersection(generate_vowel_variants(form)):
-                parses += [str(tag) for tag in sorted(inflection.morph_tags)]
+    def card_rows(entry, cards):
+        """List entry on each of its cards: its headword, and the parses of the forms that
+        were tapped. A verb can be on hundreds of cards, so its forms are indexed once."""
+        inflections = sorted(entry.inflected_forms.items(), key=lambda kv: kv[1])
+        forms_of = defaultdict(list)  # label -> indexes into inflections
+        for i, (form, _inflection) in enumerate(inflections):
+            for label in generate_vowel_variants(form):
+                forms_of[label].append(i)
+        parses_of = [
+            [str(tag) for tag in sorted(inflection.morph_tags)]
+            for _form, inflection in inflections
+        ]
         block, header = entry.valid_pairs()[0]
-        sense = next(iter(block.senses.values()))
-        return CardRow(
-            head=header.head_word,
-            pos=entry.pos,
-            parses=list(dict.fromkeys(p for p in parses if p)),
-            gloss=format_gloss(sense),
-            id=entry.id_number,
-        )
+        gloss = format_gloss(next(iter(block.senses.values())))
+
+        rows = {}
+        for card in cards:
+            reached = card.reached[entry.id_number]
+            indexes = sorted({i for label in reached for i in forms_of.get(label, [])})
+            parses = [p for i in indexes for p in parses_of[i] if p]
+            rows[card.id_number] = CardRow(
+                head=header.head_word,
+                pos=entry.pos,
+                parses=list(dict.fromkeys(parses)),
+                gloss=gloss,
+                id=entry.id_number,
+            )
+        return rows
 
     def build_dictionary(
         self,
@@ -495,8 +507,10 @@ class KindleDict:
             limit = self.line_count
 
         resolver = LabelResolver()
-        for entry in self.read_entries(limit, "Indexing labels"):
-            resolver.add(entry.id_number, entry.head_word, entry.all_forms)
+        for entry, size in self.read_entries(limit, "Indexing labels"):
+            resolver.add(
+                entry.id_number, entry.head_word, entry.all_forms, size, entry.pos
+            )
         cards = resolver.resolve()
 
         cards_of = defaultdict(list)
@@ -514,7 +528,7 @@ class KindleDict:
             ),
         }
 
-        for entry in self.read_entries(limit, "Building"):
+        for entry, _size in self.read_entries(limit, "Building"):
             orth, iforms = resolver.entry_labels(
                 entry.id_number, entry.head_word, sorted(entry.all_forms)
             )
@@ -527,9 +541,9 @@ class KindleDict:
                 orth,
                 iforms,
             )
-            for card in cards_of.pop(entry.id_number, []):
-                row = self.card_row(entry, card.reached[entry.id_number])
-                rows[card.id_number][entry.id_number] = row
+            if entry_cards := cards_of.pop(entry.id_number, []):
+                for card_id, row in self.card_rows(entry, entry_cards).items():
+                    rows[card_id][entry.id_number] = row
 
         for card in cards:
             card_rows = []

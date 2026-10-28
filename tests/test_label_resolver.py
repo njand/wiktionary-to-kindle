@@ -1,6 +1,7 @@
 """Each spelling gets one owner: an entry, or a disambiguation card for ambiguous ones."""
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -14,11 +15,17 @@ from .test_sort_merge import ENTRIES, lemma
 
 
 def resolve(*entries):
+    """entries: (headword, labels) or (headword, labels, size, pos)."""
     resolver = LabelResolver()
-    for entry_id, (head, labels) in enumerate(entries, 1):
-        resolver.add(entry_id, head, labels)
+    for entry_id, entry in enumerate(entries, 1):
+        resolver.add(entry_id, *entry)
     resolver.resolve()
     return resolver
+
+
+def card_for(resolver, label):
+    (card,) = [card for card in resolver.cards if label in card.labels]
+    return card
 
 
 def test_unique_spellings_stay_on_their_entries():
@@ -33,11 +40,10 @@ def test_unique_spellings_stay_on_their_entries():
 def test_ambiguous_key_gets_card_for_unmacronized_spelling():
     # latus "side", lātus "wide", lātus "carried"
     resolver = resolve(("latus", ["lateris"]), ("lātus", ["lāta"]), ("lātus", []))
-    by_label = {label: card for card in resolver.cards for label in card.labels}
 
-    assert by_label["latus"].owners == [1, 2, 3]
+    assert card_for(resolver, "latus").owners == [1, 2, 3]
     # Two entries share the macronized spelling, so it gets a card of its own
-    assert by_label["lātus"].owners == [2, 3]
+    assert card_for(resolver, "lātus").owners == [2, 3]
     assert resolver.entry_labels(1, "latus", ["latus", "lateris"]) == (
         "latus¹",
         ["lateris"],
@@ -50,8 +56,17 @@ def test_macronized_spelling_with_one_owner_stays():
     resolver = resolve(("lātus", ["lātum"]), ("latum", []))
     (card,) = resolver.cards
     assert card.labels == ["latum"]
-    assert card.owners == [2, 1]  # the entry whose headword is "latum" first
     assert resolver.entry_labels(1, "lātus", ["lātus", "lātum"]) == ("lātus", ["lātum"])
+
+
+def test_card_lists_larger_entries_first_and_names_last():
+    # est: edō "eat" and sum "be"; Wiktionary's sum entry is much longer
+    resolver = resolve(
+        ("edō", ["est", "ēst"], 9_000, "verb"),
+        ("Est", [], 90_000, "name"),
+        ("sum", ["est"], 60_000, "verb"),
+    )
+    assert card_for(resolver, "est").owners == [3, 1, 2]
 
 
 def test_card_takes_every_case_spelling():
@@ -62,9 +77,39 @@ def test_card_takes_every_case_spelling():
 
 
 def test_ligature_spellings_share_a_card():
-    resolver = resolve(("caelum", []), ("cælum", []))
-    (card,) = resolver.cards
-    assert set(card.labels) == {"caelum", "cælum"}
+    resolver = resolve(("Aegyptus", ["Aegyptī"]), ("aegyptus", ["aegyptī"]))
+    card = card_for(resolver, "aegypti")
+    # A text writing Ægypti matches a card label ignoring case, not by index order
+    assert {"Aegypti", "Ægypti", "ægypti"} <= set(card.labels)
+    assert card.labels[0] == "aegypti"
+
+
+def test_punctuation_alone_makes_no_card():
+    # The device ignores the dots, but a tap on "ad" matches ad's label exactly
+    resolver = resolve(("ad", []), ("a.d.", ["A.D."]))
+    assert resolver.cards == []
+
+
+def test_sole_owner_of_a_spelling_gets_it_unmacronized():
+    # A tap on "non" reaches nōn and Non.; only nōn is spelled n-o-n
+    resolver = resolve(("nōn", []), ("Non.", []))
+    assert resolver.cards == []
+    assert resolver.entry_labels(1, "nōn", ["nōn"]) == ("nōn", ["non"])
+    assert resolver.entry_labels(2, "Non.", ["Non."]) == ("Non.", [])
+
+
+def test_bare_spelling_card_when_every_label_has_punctuation():
+    resolver = resolve(("M.", []), ("M'", []))
+    card = card_for(resolver, "M")
+    assert sorted(card.owners) == [1, 2]
+    assert card.reached == {1: ["M."], 2: ["M'"]}
+
+
+def test_card_reaches_owners_by_their_own_spellings():
+    # The card's label "latum" is no entry's label; each row shows its own form's parse
+    resolver = resolve(("lātus", ["lātum"]), ("ferō", ["lātum", "lătum"]))
+    card = card_for(resolver, "latum")
+    assert card.reached == {1: ["lātum"], 2: ["lātum", "lătum"]}
 
 
 @pytest.fixture
@@ -116,5 +161,8 @@ def test_built_cards_link_and_parse(built):
     assert 'href="0000.xhtml#' in cards
 
     pages = "".join(p.read_text("utf-8") for p in built.glob("0*.xhtml"))
-    assert '<idx:orth value="latus¹">' in pages
+    # The three homographs are numbered by their place on the latus card
+    orths = re.findall(r'<idx:orth value="(l[aā]tus[¹²³]?)">', pages)
+    assert len(set(orths)) == 3
+    assert all(orth[-1] in "¹²³" for orth in orths)
     assert '<idx:iform value="lātum" exact="yes" />' in pages  # only ferō has it
