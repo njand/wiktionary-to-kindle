@@ -2,7 +2,8 @@ import re
 
 from ..utils import (
     form_of_root,
-    generate_vowel_variants,
+    kindle_fold,
+    lookup_spellings,
     remove_breves,
     sanitize_xhtml,
 )
@@ -167,17 +168,16 @@ class Entry:
                 continue
 
             tags = set(form_obj.get("tags", []))
+            # Alternative spellings are kept; sort_jsonl drops those with a page of their own
             filtered_tags = {
                 "table-tags",
                 "inflection-template",
                 "error-unrecognized-form",
                 "short-form",
-                "conjugation-3",
                 "uppercase",
                 "class",
-                "Medieval-Latin",
-                "alternative",
                 "stem",
+                "reconstruction",
             }
             if len(filtered_tags & tags) > 0:
                 continue
@@ -191,14 +191,15 @@ class Entry:
         """Every spelling a tap should find this entry by, before label resolution.
 
         The device folds macrons and case itself, so no unmacronized or lowercase variants
-        are added; a disputed vowel (ā̆) gives both its short and long spellings.
+        are added; see utils.lookup_spellings for the spellings that are.
         """
         all_forms = set()
         for form in [header.head_word for header in self.headers] + list(
             self.inflected_forms.keys()
         ):
-            all_forms.update(generate_vowel_variants(form))
-        return {form for form in all_forms if form and " " not in form}
+            all_forms.update(lookup_spellings(form))
+        # A label of punctuation only (the Tironian et, ⁊) weighs nothing: no tap reaches it
+        return {form for form in all_forms if " " not in form and kindle_fold(form)}
 
     def valid_pairs(self):
         """(senses block, header) pairs that render; an entry with none is left out."""

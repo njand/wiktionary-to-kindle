@@ -125,6 +125,7 @@ def test_clean_latin_library():
     )
     words = tokenize(clean(raw, "latinlibrary"))
     assert "Gallia" in words and "Library" not in words and "Caesar" not in words
+    assert "diuisa" in tokenize(clean(raw, "latinlibrary-u"))
 
 
 def test_clean_macron_lines_and_tokenize():

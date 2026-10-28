@@ -75,7 +75,29 @@ class LabelResolver:
                 self._resolve_spelling(by_spelling[key])
             if not any(key == _bare(key) for key in by_spelling):
                 self._add_card({_bare(lb) for lb in _plain_spellings(labels)}, labels)
+        self._merge_variant_cards()
         return self.cards
+
+    def _merge_variant_cards(self):
+        """Merge cards that list the same entries and differ only by u for v or j for i
+        (conservandi, conseruandi): one card takes all their labels, headed by the spelling
+        Wiktionary uses."""
+        merged = {}
+        for card in self.cards:
+            key = (tuple(card.owners), _variant_key(card.labels[0]))
+            first = merged.setdefault(key, card)
+            if first is card:
+                continue
+            first.labels = sorted({*first.labels, *card.labels}, key=_wiktionary_first)
+            for owner, labels in card.reached.items():
+                first.reached[owner] = list(
+                    dict.fromkeys(first.reached[owner] + labels)
+                )
+        self.cards = list(merged.values())
+        for number, card in enumerate(self.cards, 1):
+            card.id_number = number
+            for label in card.labels:
+                self.card_of[label] = card
 
     def _resolve_spelling(self, labels):
         """Give one owner to labels that differ only by accents, case or æ/œ."""
@@ -134,6 +156,10 @@ def _plain_spellings(labels):
     plain = set()
     for label in labels:
         spelling = normalize(label)
+        if kindle_fold(spelling) != kindle_fold(label):
+            # normalize() also dropped a mark the device weighs (aͣ): that is another word
+            plain.add(label)
+            continue
         ligated = spelling
         for pair, ligature in LIGATE:
             ligated = ligated.replace(pair, ligature)
@@ -148,3 +174,13 @@ def _bare(spelling):
 
 def _lowercase_first(label):
     return label != label.lower(), label
+
+
+def _wiktionary_first(label):
+    """Lowercase first, then the spelling with the fewest u and j (Wiktionary writes v for
+    consonantal u and never j)."""
+    return label != label.lower(), sum(char in "uUjJ" for char in label), label
+
+
+def _variant_key(label):
+    return kindle_fold(label).replace("j", "i").replace("v", "u")

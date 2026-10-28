@@ -119,6 +119,68 @@ def generate_vowel_variants(word: str) -> list[str]:
     return ["".join(comb) for comb in product(*options_per_group)]
 
 
+U_FOR_V = str.maketrans("vV", "uU")
+J_FOR_I = str.maketrans("iI", "jJ")
+VOWELS = set("aeiouyāēīōūȳAEIOUYĀĒĪŌŪȲ")
+# Prefixes after which a root's initial i is consonantal: adiuvō, coniūnx, iniūria, obiectus
+J_PREFIXES = ("ab", "ad", "con", "dis", "in", "inter", "ob", "per", "sub", "super")
+
+
+def lookup_spellings(form: str) -> list[str]:
+    """Every spelling of form a tap should find, the device folding only macrons and case.
+
+    Disputed vowel lengths (ā̆) give both spellings. A combining mark that does not compose
+    with its letter (the tie bar in Orphe͡us) weighs as itself, so the spelling without it is
+    added. Wiktionary writes v for consonantal u and never j; texts that write u (uir) or j
+    (jam, cujus) get a spelling each.
+    """
+    spellings = []
+    for variant in generate_vowel_variants(form):
+        for spelling in dict.fromkeys([variant, strip_marks(variant)]):
+            spellings += [spelling, spelling.translate(U_FOR_V), j_for_i(spelling)]
+    return list(dict.fromkeys(spellings))
+
+
+# Separate combining marks that are abbreviation signs, not accents: a combining macron or
+# overline on a consonant (n̄ for nōn) and the superscript letters scribes write (aͣ)
+ABBREVIATION_MARKS = {"̄", "̅", *map(chr, range(0x0363, 0x0370))}
+
+
+def strip_marks(text: str) -> str:
+    """text without the accents that stay separate after NFC (the tie bar in Orphe͡us, the
+    diaeresis in Boō̈tēs). Abbreviation signs are kept: without them it is another word."""
+    composed = unicodedata.normalize("NFC", text)
+    return "".join(
+        c for c in composed if not unicodedata.combining(c) or c in ABBREVIATION_MARKS
+    )
+
+
+def j_for_i(word: str) -> str:
+    """word with consonantal i written j: before a vowel at the start (iam), between vowels
+    (cuius, maior), or at the start of a root after a prefix (adiuvō). An approximation;
+    a wrong guess only adds a spelling no text uses."""
+    word = unicodedata.normalize("NFC", word)
+    # One base letter per character, so indexes match word's (a combining mark becomes "")
+    lower = [normalize(char, lowercase=True) for char in word]
+    chars = list(word)
+    for i, char in enumerate(word):
+        if char not in "iI" or i + 1 >= len(word):
+            continue
+        after = word[i + 1]
+        if after not in VOWELS or lower[i + 1] == "i":
+            continue
+        if (
+            i == 0
+            or (
+                word[i - 1] in VOWELS
+                and "".join(lower[max(i - 2, 0) : i]) not in ("qu", "gu")
+            )
+            or "".join(lower[:i]) in J_PREFIXES
+        ):
+            chars[i] = char.translate(J_FOR_I)
+    return "".join(chars)
+
+
 def form_of_root(sense: dict) -> str | None:
     """Return the lemma a sense merely points to, or None if the sense defines the word itself.
 
@@ -129,7 +191,11 @@ def form_of_root(sense: dict) -> str | None:
     if targets:
         root = targets[0].get("word")
         glosses = normalize(" ".join(sense.get("glosses", [])), lowercase=True)
-        if root and normalize(root, lowercase=True) in glosses:
+        # A form of root with no gloss at all (Kaikki tags it no-gloss) only points too
+        if root and (
+            normalize(root, lowercase=True) in glosses
+            or (not glosses and "no-gloss" in sense.get("tags", []))
+        ):
             return root
         return None
 

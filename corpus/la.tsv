@@ -2,6 +2,7 @@
 # Downloads are cached in corpus/cache/. Mix unmacronized editions (what most e-books use)
 # with a macronized one, and classical with later Latin.
 caesar-bg1	latinlibrary	https://www.thelatinlibrary.com/caesar/gall1.shtml
+caesar-bg1-u	latinlibrary-u	https://www.thelatinlibrary.com/caesar/gall1.shtml
 vergil-aen1	latinlibrary	https://www.thelatinlibrary.com/vergil/aen1.shtml
 cicero-cat1	latinlibrary	https://www.thelatinlibrary.com/cicero/cat1.shtml
 vulgate-genesis	latinlibrary	https://www.thelatinlibrary.com/bible/genesis.shtml

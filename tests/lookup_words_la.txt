@@ -42,11 +42,22 @@ ROMA
 Amor
 amor
 
-# Spellings Wiktionary does not use as headwords
+# Spellings Wiktionary does not use as headwords: u for v, j for i, no tie bar
 iam
-xfail: jam
-xfail: uir
-xfail: uideo
+jam
+cujus
+uir
+uideo
+Orpheus
+
+# Alternative spellings without a page of their own
+inlabor
+quatuor
+
+# Declensions Wiktionary does not list (generated): participles, comparatives
+contrementis
+detruncatorum
+ignotiorem
 
 # Enclitics (-que, -ne, -ve): Kindle does no prefix matching
 xfail: virumque

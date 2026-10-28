@@ -185,3 +185,107 @@ def test_sorted_file_is_cached_until_input_changes(tmp_path, monkeypatch):
 )
 def test_form_of_root(sense, expected):
     assert form_of_root(sense) == expected
+
+
+def sort_entries(tmp_path, monkeypatch, entries):
+    monkeypatch.chdir(tmp_path)
+    src = tmp_path / "kaikki-la.jsonl"
+    src.write_text(
+        "".join(json.dumps(e, ensure_ascii=False) + "\n" for e in entries),
+        encoding="utf-8",
+    )
+    kd = KindleDict(str(src), "la", "kindlegen")
+    kd.sort_jsonl()
+    with open(kd.wiktionary_fp, encoding="utf-8") as f:
+        return [json.loads(line) for line in f]
+
+
+def test_pointer_to_unmacronized_title_merges(tmp_path, monkeypatch):
+    # Kaikki's jūrō points at the page title "iuro", not the headword iūrō
+    entries = [
+        lemma("iuro", "verb", "iūrō (present infinitive iūrāre)", ["to swear"]),
+        pointer(
+            "juro",
+            "verb",
+            "jūrō (present infinitive jūrāre)",
+            "alternative form of iuro",
+            "iuro",
+            kind="alt_of",
+            forms=[("jūrāvistī", ["second-person", "singular", "perfect"])],
+        ),
+        # Two headwords with these letters: the pointer's part of speech decides
+        lemma("levis", "adj", "lēvis (neuter lēve)", ["smooth"]),
+        lemma("levis", "noun", "lēvīs f", ["a made-up noun"]),
+        pointer(
+            "laevis",
+            "noun",
+            "laevīs f",
+            "alternative form of levis",
+            "levis",
+            kind="alt_of",
+            forms=[("laevīs", ["canonical"])],
+        ),
+    ]
+    sorted_entries = sort_entries(tmp_path, monkeypatch, entries)
+    assert "jūrāvistī" in forms_of(find(sorted_entries, "iuro", "verb"))
+    assert all(e["word"] != "juro" for e in sorted_entries)
+    assert "laevīs" in forms_of(find(sorted_entries, "levis", "noun"))
+    assert "laevīs" not in forms_of(find(sorted_entries, "levis", "adj"))
+
+
+def test_form_of_without_gloss_points():
+    sense = {"tags": ["form-of", "no-gloss", "participle"], "form_of": [{"word": "x"}]}
+    assert form_of_root(sense) == "x"
+
+
+def test_pointer_without_forms_gives_its_headword(tmp_path, monkeypatch):
+    entries = [
+        lemma("innocens", "adj", "innocēns (genitive innocentis)", ["harmless"]),
+        pointer(
+            "innocentum",
+            "adj",
+            "innocentum",
+            "genitive plural of innocens",
+            "innocens",
+        ),
+    ]
+    sorted_entries = sort_entries(tmp_path, monkeypatch, entries)
+    assert [e["word"] for e in sorted_entries] == ["innocens"]
+    assert "innocentum" in forms_of(sorted_entries[0])
+
+
+def test_target_with_other_macrons_merges(tmp_path, monkeypatch):
+    # Kaikki's acontizāns points at acontīzō; the headword is acontizō
+    entries = [
+        lemma("acontizo", "verb", "acontizō (present infinitive acontizāre)", ["dart"]),
+        pointer("acontizans", "verb", "acontizāns", "", "acontīzō"),
+        pointer(
+            "acontizante",
+            "verb",
+            "acontizante",
+            "ablative singular of acontizāns",
+            "acontizāns",
+        ),
+    ]
+    entries[1]["senses"][0]["tags"] = ["no-gloss"]
+    entries[1]["senses"][0]["glosses"] = []
+    sorted_entries = sort_entries(tmp_path, monkeypatch, entries)
+    assert [e["word"] for e in sorted_entries] == ["acontizo"]
+    assert {"acontizāns", "acontizante"} <= forms_of(sorted_entries[0])
+
+
+def test_forms_of_an_orphan_merge_into_it(tmp_path, monkeypatch):
+    # bellātrīx's lemma is missing: it becomes an entry, and its plural merges into it
+    entries = [
+        pointer(
+            "bellatrices",
+            "adj",
+            "bellātrīcēs",
+            "nominative plural of bellātrīx",
+            "bellātrīx",
+        ),
+        pointer("bellatrix", "adj", "bellātrīx", "feminine of bellāx", "bellāx"),
+    ]
+    sorted_entries = sort_entries(tmp_path, monkeypatch, entries)
+    assert [e["word"] for e in sorted_entries] == ["bellatrix"]
+    assert "bellātrīcēs" in forms_of(sorted_entries[0])

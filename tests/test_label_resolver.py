@@ -166,3 +166,24 @@ def test_built_cards_link_and_parse(built):
     assert len(set(orths)) == 3
     assert all(orth[-1] in "¹²³" for orth in orths)
     assert '<idx:iform value="lātum" exact="yes" />' in pages  # only ferō has it
+
+
+def test_cards_differing_by_u_or_j_spelling_merge():
+    # Both entries have cōnservandī, and so its u spelling from lookup_spellings
+    forms = ["cōnservandī", "cōnseruandī"]
+    resolver = resolve(("cōnservō", forms), ("cōnservandus", forms))
+    (card,) = resolver.cards
+    # Headed by Wiktionary's spelling
+    assert card.labels == ["conservandi", "cōnservandī", "conseruandi", "cōnseruandī"]
+    assert card.id_number == 1
+    assert resolver.entry_labels(1, "cōnservō", ["cōnservō", *forms]) == (
+        "cōnservō",
+        [],
+    )
+
+
+def test_card_takes_no_spelling_of_another_fold():
+    # aͣ weighs as a plus a mark: its card must not take "a", which ab and ā share
+    resolver = resolve(("anima", ["aͣ"]), ("aliquis", ["aͣ"]), ("ab", ["a"]), ("ā", []))
+    assert card_for(resolver, "aͣ").owners == [1, 2]
+    assert sorted(card_for(resolver, "a").owners) == [3, 4]
