@@ -6,7 +6,12 @@ from wiktionary_to_kindle.models.entry import Entry
 from wiktionary_to_kindle.models.header import Header
 from wiktionary_to_kindle.models.inflection import Inflection
 from wiktionary_to_kindle.models.morph_tag import MorphTag
-from wiktionary_to_kindle.utils import generate_vowel_variants, sanitize_xhtml
+from wiktionary_to_kindle.utils import (
+    generate_vowel_variants,
+    kindle_fold,
+    lookup_spellings,
+    sanitize_xhtml,
+)
 
 
 @pytest.mark.parametrize(
@@ -91,3 +96,47 @@ def test_vowel_variants_resolve_disputed_length():
     variants = generate_vowel_variants("Ā̆mā̆tus")
     assert sorted(variants) == sorted(["Amatus", "Āmatus", "Amātus", "Āmātus"])
     assert all(len(v) == len("amatus") for v in variants)  # precomposed ā
+
+
+@pytest.mark.parametrize(
+    "form, spellings",
+    [
+        ("puella", ["puella"]),
+        # u for consonantal v
+        ("vir", ["vir", "uir"]),
+        ("Vīvō", ["Vīvō", "Uīuō"]),
+        # j for consonantal i: at the start, between vowels, after a prefix
+        ("iam", ["iam", "jam"]),
+        ("Iūlius", ["Iūlius", "Jūlius"]),
+        ("cuius", ["cuius", "cujus"]),
+        ("maior", ["maior", "major"]),
+        ("adiuvō", ["adiuvō", "adiuuō", "adjuvō"]),
+        ("iniūria", ["iniūria", "injūria"]),
+        # Vowels, not consonants
+        ("quia", ["quia"]),
+        ("iī", ["iī"]),
+        ("fīlius", ["fīlius"]),
+        # A tie bar weighs as itself, so the plain spelling is added
+        ("Orphe͡us", ["Orphe͡us", "Orpheus"]),
+    ],
+)
+def test_lookup_spellings(form, spellings):
+    assert lookup_spellings(form) == spellings
+
+
+def test_lookup_spellings_reach_plain_taps():
+    assert kindle_fold("Orpheus") in map(kindle_fold, lookup_spellings("Orphe͡us"))
+    assert "uir" in map(kindle_fold, lookup_spellings("vir"))
+
+
+def test_entry_is_found_by_u_and_j_spellings():
+    entry = Entry(
+        {
+            "word": "iuvenis",
+            "pos": "noun",
+            "head_templates": [{"name": "la-noun", "expansion": "iuvenis m"}],
+            "forms": [{"form": "iuvenem", "tags": ["accusative", "singular"]}],
+            "senses": [{"glosses": ["young man"]}],
+        }
+    )
+    assert {"iuuenis", "juvenis", "iuuenem", "juvenem"} <= entry.all_forms

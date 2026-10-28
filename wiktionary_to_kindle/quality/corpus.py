@@ -2,6 +2,7 @@
 
 A manifest is a TSV of `name<TAB>format<TAB>url` lines (`#` comments). Formats:
   latinlibrary  an HTML page from thelatinlibrary.com (navigation and footer removed)
+  latinlibrary-u  the same, with lowercase v written u, as editions such as the OCT print it
   macron-lines  plain text mixing Latin and English; keeps only lines with a macron
   text          plain text, used as is
 """
@@ -48,6 +49,8 @@ def load_source(name, fmt, url, cache_dir):
 
 
 def clean(raw, fmt):
+    if fmt == "latinlibrary-u":
+        return clean(raw, "latinlibrary").replace("v", "u")
     if fmt == "latinlibrary":
         for pattern in (
             r"<head>.*?</head>",

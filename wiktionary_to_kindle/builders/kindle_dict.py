@@ -18,7 +18,7 @@ from ..renderers.html_renderer import HTMLRenderer, format_gloss
 from ..utils import (
     TEMPLATES,
     form_of_root,
-    generate_vowel_variants,
+    lookup_spellings,
     normalize,
     remove_breves,
 )
@@ -467,7 +467,7 @@ class KindleDict:
         inflections = sorted(entry.inflected_forms.items(), key=lambda kv: kv[1])
         forms_of = defaultdict(list)  # label -> indexes into inflections
         for i, (form, _inflection) in enumerate(inflections):
-            for label in generate_vowel_variants(form):
+            for label in lookup_spellings(form):
                 forms_of[label].append(i)
         parses_of = [
             [str(tag) for tag in sorted(inflection.morph_tags)]

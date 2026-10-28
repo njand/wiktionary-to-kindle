@@ -2,7 +2,7 @@ import re
 
 from ..utils import (
     form_of_root,
-    generate_vowel_variants,
+    lookup_spellings,
     remove_breves,
     sanitize_xhtml,
 )
@@ -191,13 +191,13 @@ class Entry:
         """Every spelling a tap should find this entry by, before label resolution.
 
         The device folds macrons and case itself, so no unmacronized or lowercase variants
-        are added; a disputed vowel (ā̆) gives both its short and long spellings.
+        are added; see utils.lookup_spellings for the spellings that are.
         """
         all_forms = set()
         for form in [header.head_word for header in self.headers] + list(
             self.inflected_forms.keys()
         ):
-            all_forms.update(generate_vowel_variants(form))
+            all_forms.update(lookup_spellings(form))
         return {form for form in all_forms if form and " " not in form}
 
     def valid_pairs(self):

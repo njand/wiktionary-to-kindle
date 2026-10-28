@@ -119,6 +119,55 @@ def generate_vowel_variants(word: str) -> list[str]:
     return ["".join(comb) for comb in product(*options_per_group)]
 
 
+U_FOR_V = str.maketrans("vV", "uU")
+J_FOR_I = str.maketrans("iI", "jJ")
+VOWELS = set("aeiouyāēīōūȳAEIOUYĀĒĪŌŪȲ")
+# Prefixes after which a root's initial i is consonantal: adiuvō, coniūnx, iniūria, obiectus
+J_PREFIXES = ("ab", "ad", "con", "dis", "in", "inter", "ob", "per", "sub", "super")
+
+
+def lookup_spellings(form: str) -> list[str]:
+    """Every spelling of form a tap should find, the device folding only macrons and case.
+
+    Disputed vowel lengths (ā̆) give both spellings. A combining mark that does not compose
+    with its letter (the tie bar in Orphe͡us) weighs as itself, so the spelling without it is
+    added. Wiktionary writes v for consonantal u and never j; texts that write u (uir) or j
+    (jam, cujus) get a spelling each.
+    """
+    spellings = []
+    for variant in generate_vowel_variants(form):
+        for spelling in dict.fromkeys([variant, strip_marks(variant)]):
+            spellings += [spelling, spelling.translate(U_FOR_V), j_for_i(spelling)]
+    return list(dict.fromkeys(spellings))
+
+
+def strip_marks(text: str) -> str:
+    """text without the combining marks that stay separate after NFC."""
+    composed = unicodedata.normalize("NFC", text)
+    return "".join(c for c in composed if not unicodedata.combining(c))
+
+
+def j_for_i(word: str) -> str:
+    """word with consonantal i written j: before a vowel at the start (iam), between vowels
+    (cuius, maior), or at the start of a root after a prefix (adiuvō). An approximation;
+    a wrong guess only adds a spelling no text uses."""
+    lower = normalize(word, lowercase=True)
+    chars = list(word)
+    for i, char in enumerate(word):
+        if char not in "iI" or i + 1 >= len(word):
+            continue
+        after = word[i + 1]
+        if after not in VOWELS or lower[i + 1] == "i":
+            continue
+        if (
+            i == 0
+            or (word[i - 1] in VOWELS and lower[i - 2 : i] not in ("qu", "gu"))
+            or any(lower[:i] == prefix for prefix in J_PREFIXES)
+        ):
+            chars[i] = char.translate(J_FOR_I)
+    return "".join(chars)
+
+
 def form_of_root(sense: dict) -> str | None:
     """Return the lemma a sense merely points to, or None if the sense defines the word itself.
 
