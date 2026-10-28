@@ -4,7 +4,11 @@ import pytest
 
 from wiktionary_to_kindle.models.entry import Entry
 from wiktionary_to_kindle.models.etymology import Etymology
-from wiktionary_to_kindle.render.html_renderer import HTMLRenderer, format_etymology
+from wiktionary_to_kindle.render.html_renderer import (
+    HTMLRenderer,
+    format_etymology,
+    keep_spaces,
+)
 from wiktionary_to_kindle.utils import TEMPLATES
 
 from .test_sort_merge import lemma
@@ -35,8 +39,16 @@ def test_descendants_filtered_and_shown_by_language_name():
         },
         {"lang": "Italian", "lang_code": "it", "word": "amare"},
     ]
+    amo["descendants"].append(
+        {
+            "lang": "Old French",
+            "lang_code": "fro",
+            "word": "amour",
+            "descendants": [{"lang": "French", "lang_code": "fr", "word": "aimer"}],
+        }
+    )
     html = render(amo, ["French", "Italian"])
-    assert "<b>French:</b> aimer" in html
+    assert html.count("<b>French:</b> aimer") == 1
     assert "<b>Italian:</b> amare" in html
     assert "amer" not in html
 
@@ -69,3 +81,43 @@ def test_entries_say_their_style_in_markup():
     html = render(lemma("amo", "verb", "amō", ["to love"]))
     assert "<p><i>verb</i></p>" in html
     assert "class=" not in html
+
+
+def test_qualifier_only_parent_senses_keep_their_children():
+    # Kaikki leaves "(as adjective)" out of glosses but not raw_glosses (omnis)
+    omnis = lemma("omnis", "adj", "omnis", [])
+    omnis["senses"] = [
+        {
+            "glosses": ["every"],
+            "raw_glosses": ["(as adjective)", "(in the singular) every"],
+        },
+        {"glosses": ["all"], "raw_glosses": ["(as adjective)", "(in the plural) all"]},
+    ]
+    html = render(omnis)
+    assert "<li><i>(as adjective)</i><ol>" in html
+    assert "<i>(in the singular) </i>every" in html
+    assert "<i>(in the plural) </i>all" in html
+
+
+def test_spaces_between_tags_survive_kindling():
+    # kindling compiles "</i> <b>" to "</i><b>"
+    entry = lemma("amo", "verb", "amō", ["to love"])
+    html = render(entry)
+    assert "</i> <b>" not in html
+    assert keep_spaces("<a href='x'><b>amō</b></a> <i>verb</i> x") == (
+        "<a href='x'><b>amō</b></a>&#160;<i>verb</i> x"
+    )
+
+
+def test_descendants_of_one_language_share_a_line():
+    clavis = lemma("clavis", "noun", "clāvis", ["key"])
+    clavis["descendants"] = [
+        {"lang": "Spanish", "lang_code": "es", "word": "llave"},
+        {"lang": "Italian", "lang_code": "it", "word": "chiave"},
+        {"lang": "Spanish", "lang_code": "es", "word": "clave"},
+        {"lang": "Spanish", "lang_code": "es", "word": "llave"},
+    ]
+    html = render(clavis)
+    assert (
+        "<li><b>Spanish:</b> llave, clave</li><li><b>Italian:</b> chiave</li>" in html
+    )

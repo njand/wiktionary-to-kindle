@@ -1,13 +1,14 @@
 """Build a Kindle dictionary from a filtered Kaikki dump, one stage after another:
 
 ingest (ingest.py: download and filter the dump) → merge (merge/: sort it and fold pointer
-pages into their lemmas) → lexicon model (models/: Entry objects) → label resolution
-(label_resolver.py: one owner per spelling, disambiguation cards) → render (render/: XHTML
+pages into their lemmas) → lexicon model (models/: Entry objects) → render (render/: XHTML
 pages) → compile (compiler.py: OPF package and kindling) → optionally a StarDict bundle
 (stardict.py).
 
-Entries are read from the merged dump twice, once to collect every label and once to
-render, so the whole lexicon is never held in memory.
+Each entry is indexed by all of its own spellings, and entries share labels freely: a tap
+that reaches several entries (latus, lātus) shows each of them in the popup, the one
+spelled like the tap first. Entries are streamed from the merged dump, so the whole
+lexicon is never held in memory.
 """
 
 import datetime
@@ -17,7 +18,6 @@ from dataclasses import dataclass, field
 from . import __version__
 from .compiler import compile_mobi, write_opf
 from .ingest import dump_date
-from .label_resolver import LabelResolver
 from .merge.sort import is_sorted, merge_dump
 from .models.lexicon import count_lines, read_entries
 from .render.book import BookWriter
@@ -51,14 +51,6 @@ def unique_directory(path):
     return f"{base} ({counter})"
 
 
-def resolve_labels(entries):
-    """Give each spelling one owner, an entry or a card (see label_resolver)."""
-    resolver = LabelResolver()
-    for entry, size in entries:
-        resolver.add(entry.id_number, entry.head_word, entry.all_forms, size, entry.pos)
-    return resolver, resolver.resolve()
-
-
 def build_dictionary(
     dump,
     lang_code,
@@ -84,22 +76,15 @@ def build_dictionary(
         dump = merge_dump(dump, lang_code, force=resort).path
     total = count_lines(dump)
 
-    resolver, cards = resolve_labels(
-        read_entries(dump, limit, "Indexing labels", total)
-    )
-
-    writer = BookWriter(build.files_dir, cards, max_page_len, descendant_langs)
-    for entry, _size in read_entries(dump, limit, "Building", total):
-        orth, iforms = resolver.entry_labels(
-            entry.id_number, entry.head_word, sorted(entry.all_forms)
-        )
-        writer.add_entry(entry, orth, iforms)
+    writer = BookWriter(build.files_dir, max_page_len, descendant_langs)
+    for entry in read_entries(dump, limit, "Building", total):
+        writer.add_entry(entry)
     writer.finish(build.dump_date, build.build_date, __version__)
     build.entry_pages = writer.entry_pages
 
     write_opf(
         build.files_dir,
-        writer.page_counts,
+        writer.page_count,
         build.dump_date,
         build.build_date,
         __version__,

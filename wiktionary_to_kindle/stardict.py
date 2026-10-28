@@ -1,15 +1,16 @@
 """StarDict export for GoldenDict, KOReader and other readers that are not Kindles.
 
 kindling writes the bundle from the same OPF the .mobi is built from (`kindling stardict`):
-each entry and card under its idx:orth label, its idx:iform labels as .syn redirects. Two
-things then need fixing, because these readers are not Kindles:
+each entry under its idx:orth label, its idx:iform labels as .syn redirects. Two things
+then need fixing, because these readers are not Kindles:
 
-- A card links to its entries by page and id (`0048.xhtml#29169`), which a StarDict reader
-  cannot follow; the links become `bword://<label>`, the label the entry is stored under.
-- A Kindle ignores macrons when matching a tapped word, so the build only indexes the
-  unmacronized spelling where a card needs it. StarDict readers match more literally, so
-  every label also gets its spelling without accents (`amavisti` for `amāvistī`), unless
-  that spelling is already a label of its own.
+- A link between entries points at a page and id (`0048.xhtml#29169`), which a StarDict
+  reader cannot follow; such links become `bword://<label>`, the label the entry is stored
+  under.
+- A Kindle ignores macrons when matching a tapped word, so the build indexes only the
+  spellings Wiktionary gives. StarDict readers match more literally, so every label also
+  gets its spelling without accents (`amavisti` for `amāvistī`), even where another entry
+  has that spelling (`latus` reaches the noun and lātus).
 
 StarDict format: https://github.com/huzheng001/stardict-3/blob/master/dict/doc/StarDictFileFormat
 """
@@ -121,13 +122,14 @@ class Bundle:
         return self
 
     def add_unaccented(self):
-        """Add the spelling without accents of every word and synonym as a synonym."""
-        taken = set(self.words) | {word for word, _ in self.synonyms}
-        added = {}
+        """Add the spelling without accents of every word and synonym as a synonym of the
+        same word, unless that word already has the spelling."""
         pairs = [(word, i) for i, word in enumerate(self.words)] + self.synonyms
+        taken = set(pairs)
+        added = {}
         for word, index in pairs:
             plain = unaccented(word)
-            if plain not in taken:
+            if (plain, index) not in taken:
                 added.setdefault((plain, index), None)
         self.synonyms += list(added)
         return self

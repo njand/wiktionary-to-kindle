@@ -46,7 +46,7 @@ This project addresses the strict formatting constraints, character diacritics, 
 > **Language Support:** This repository is currently optimized and tested exclusively for **Latin** (handling macron stripping, vowel length variants, morphological tags, etc.) Only Latin `.mobi` files are currently published in Releases. However, the core parsing and rendering architecture is intended to be language-agnostic and can be extended to support other Wiktionary target languages.
 
 - **Kindle Constraint Resolution:**
-  - **Deterministic Lookups:** A Kindle opens only one of the labels a tapped word reaches, and when none is spelled exactly like the word, the index order decides. Every spelling therefore gets one owner: a macronized spelling only one entry has (*lātum*) opens that entry, while a spelling that reaches several entries (*latum* in an unmacronized text, or *lātus* shared by two lemmas) opens a short disambiguation card listing each candidate with its part of speech, parse, first gloss and a link. An entry whose headword a card takes keeps a numbered headword label (*latus¹*).
+  - **Several entries per tap:** The Kindle popup lists every entry a tapped word reaches, the one spelled exactly like the word first, and the reader swipes between them. Each entry is therefore indexed by all of its own spellings, and homographs (*latus*, *lātus*) stay separate entries that share them.
 - **Orthography & Variant Handling:** Handles both macronized and unmacronized text (e.g., *amō* vs. *amo*): the Kindle ignores macrons and case when matching, so entries carry macronized labels only, and disputed vowel lengths (ā̆) get both spellings. Texts that write u for consonantal v (*uir*) or j for consonantal i (*jam*, *cujus*) get those spellings too, since the device does not fold them.
 - **Forms Wiktionary implies:** Participles, comparatives and superlatives that have no page of their own get their regular declension, and alternative and Medieval Latin spellings without a page are indexed. Pages that only point to a lemma (an inflected form, an alternative spelling) merge into it, even when they name the lemma by its page title (*iuro* for *iūrō*).
 - **What merged pages say:** A merged page that is a word of its own keeps a line in its lemma's entry, with its meaning when Wiktionary gives one: *dim.* **frīgidulus**: somewhat cold; *alt.* **voltus**. Inflected forms get no line. A comparative or superlative the headword line already names gets none either.
@@ -106,10 +106,9 @@ uv run wiktionary-to-kindle --lang "la"
 1. **Ingest** (`ingest.py`): Downloads raw Wiktionary JSONL data from Kaikki.org and extracts language-specific entries using `pigz` and `ripgrep` (or standard Python `gzip`/`json` fallbacks), keeping the dump's date.
 2. **Merge** (`merge/`): A disk-backed merge sort (`heapq.merge`) puts the lemmas in order without holding the dump in memory, and folds every page that only points to a lemma into it (`pointers.py`), with generated forms (`forms.py`) and a line for merged pages that are words of their own (`related.py`). The result is cached beside the input.
 3. **Lexicon model** (`models/`): Parses merged entries into `Entry`, `Header`, `Sense` and `Inflection` objects, normalizing tags.
-4. **Label resolution** (`label_resolver.py`): Gives each lookup spelling one owner, an entry or a disambiguation card.
-5. **Render** (`render/`): Writes entries, cards and the front page as XHTML with Jinja2 templates following Kindle's markup (`idx:entry`, `idx:orth`, `idx:infl`).
-6. **Compile** (`compiler.py`): Writes the `.opf` package and runs kindling to produce the `.mobi`.
-7. **StarDict** (`stardict.py`, with `--stardict`): Runs `kindling stardict` on the same package, then points each card's links at `bword://` labels and adds every label's spelling without macrons (StarDict readers do not ignore them the way a Kindle does).
+4. **Render** (`render/`): Writes entries and the front page as XHTML with Jinja2 templates following Kindle's markup (`idx:entry`, `idx:orth`, `idx:infl`).
+5. **Compile** (`compiler.py`): Writes the `.opf` package and runs kindling to produce the `.mobi`.
+6. **StarDict** (`stardict.py`, with `--stardict`): Runs `kindling stardict` on the same package, then points links between entries at `bword://` labels and adds every label's spelling without macrons (StarDict readers do not ignore them the way a Kindle does).
 
 ### Measuring lookup quality
 
@@ -126,14 +125,14 @@ uv run python -m wiktionary_to_kindle.quality sample downloads/kaikki-la.jsonl d
 uv run wiktionary-to-kindle --lang la --no-download --input downloads/sample-la.jsonl
 ```
 
-Coverage resolves each word with the Kindle's own matching rules: case and macrons are ignored, and when several entries share a label the index order picks one ("ambiguous"). Pass `--kindling <binary> --mobi <file>` to also check the most frequent words with kindling's on-device lookup simulator. CI publishes the statistics, their change since the last release, and the coverage report in each release's notes.
+Coverage resolves each word with the Kindle's own matching rules: case and macrons are ignored, and when several entries share a label and none is spelled like the word, the index order picks the one the popup shows first ("ambiguous"). Pass `--kindling <binary> --mobi <file>` to also check the most frequent words with kindling's on-device lookup simulator. CI publishes the statistics, their change since the last release, and the coverage report in each release's notes.
 
 ```bash
 # Coverage compared with an earlier build; --fail-on-drop exits 1 on a regression
 uv run python -m wiktionary_to_kindle.quality coverage-diff old-coverage.json coverage.json --fail-on-drop
 ```
 
-A source regresses when the share of its tokens that open something falls, or the share left to index order rises, by more than half a percentage point (`--threshold`), or when more words have labels kindling says the index order hides. The weekly build compares its coverage with the latest release's and fails on a regression; to publish an intentional drop, run the workflow by hand with **Allow a coverage drop** checked.
+A source regresses when the share of its tokens that open something falls by more than half a percentage point (`--threshold`). The share left to index order and the labels kindling says the index order hides are shown but not judged: the popup lists every entry a tap reaches, so they only decide which comes first. The weekly build compares its coverage with the latest release's and fails on a regression; to publish an intentional drop, run the workflow by hand with **Allow a coverage drop** checked.
 
 ### Releases
 

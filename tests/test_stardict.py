@@ -45,38 +45,37 @@ def write_bundle(path, articles, synonyms):
     )
 
 
-def test_bundle_relinks_cards_and_adds_unaccented_spellings(tmp_path):
+def test_bundle_relinks_entries_and_adds_unaccented_spellings(tmp_path):
     path = tmp_path / "la-wiktionary"
     write_bundle(
         path,
         [
-            ("amō", "<h3>amō</h3>"),
-            ("latus", '<a href="0000.xhtml#2">lātus</a> <a href="0000.xhtml#3">x</a>'),
-            ("lātus²", "<h3>lātus</h3>"),
+            ("amō", '<a href="0000.xhtml#3">lātus</a> <a href="0000.xhtml#9">x</a>'),
+            ("latus", "<h3>latus</h3>"),
+            ("lātus", "<h3>lātus</h3>"),
         ],
-        [("amāvistī", 0), ("lāta", 2), ("lātus", 2)],
+        [("amāvistī", 0), ("lāta", 2)],
     )
-    Bundle.read(path).relink({"0000.xhtml#2": "lātus²"}).add_unaccented().write()
+    Bundle.read(path).relink({"0000.xhtml#3": "lātus"}).add_unaccented().write()
 
     stem = path / path.name
     words = [w for w, *_ in _records(stem.with_suffix(".idx"), ">II")]
-    assert words == ["amō", "latus", "lātus²"]
+    assert words == ["amō", "latus", "lātus"]
     synonyms = {(w, words[i]) for w, i in _records(stem.with_suffix(".syn"), ">I")}
     assert synonyms == {
         ("amāvistī", "amō"),
         ("amavisti", "amō"),
         ("amo", "amō"),
-        ("lāta", "lātus²"),
-        ("lata", "lātus²"),
-        ("lātus", "lātus²"),
-        # latus is a word of its own (the card), so lātus does not add it again
-        ("latus²", "lātus²"),
+        ("lāta", "lātus"),
+        ("lata", "lātus"),
+        # latus is also the noun's word: lātus gets it as well, so both are found
+        ("latus", "lātus"),
     }
 
-    card = Bundle.read(path).articles[1]
+    article = Bundle.read(path).articles[0]
     # A link to an entry not in the map is left alone
-    assert card == '<a href="bword://lātus²">lātus</a> <a href="0000.xhtml#3">x</a>'
+    assert article == '<a href="bword://lātus">lātus</a> <a href="0000.xhtml#9">x</a>'
     ifo = stem.with_suffix(".ifo").read_text(encoding="utf-8")
-    assert "synwordcount=7\n" in ifo and ifo.startswith(
+    assert "synwordcount=6\n" in ifo and ifo.startswith(
         "StarDict's dict ifo file\nversion=2.4.2\n"
     )

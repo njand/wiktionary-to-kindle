@@ -159,3 +159,21 @@ def test_labels_that_weigh_nothing_are_not_indexed():
         }
     )
     assert entry.all_forms == {"et"}
+
+
+def test_forms_written_with_a_symbol_are_not_indexed():
+    # A symbol weighs nothing on the Kindle, so "♃vis" would be reached by "vis"
+    entry = Entry(
+        {
+            "word": "Iuppiter",
+            "pos": "name",
+            "head_templates": [{"name": "la-proper noun", "expansion": "Iuppiter"}],
+            "forms": [
+                {"form": "Iovis", "tags": ["genitive"]},
+                {"form": "♃vis", "tags": ["genitive"]},
+            ],
+            "senses": [{"glosses": ["Jupiter"]}],
+        }
+    )
+    assert not any("2643" in form for form in entry.all_forms)
+    assert "Iovis" in entry.all_forms

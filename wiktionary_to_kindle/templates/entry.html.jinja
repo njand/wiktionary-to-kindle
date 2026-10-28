@@ -46,8 +46,8 @@
     {%- if descendants -%}
         <h4>Descendants</h4>
         <ul>
-        {%- for lang, word in descendants -%}
-            <li><b>{{ lang | e }}:</b> {{ word | e }}</li>
+        {%- for lang, words in descendants -%}
+            <li><b>{{ lang | e }}:</b> {{ words | join(", ") | e }}</li>
         {%- endfor -%}
         </ul>
     {%- endif -%}

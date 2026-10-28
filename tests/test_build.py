@@ -23,12 +23,12 @@ def run_build(tmp_path, monkeypatch, entries):
 
 def test_entry_without_senses_is_not_indexed(tmp_path, monkeypatch):
     amo = lemma("amo", "verb", "amō", ["to love"])
-    # No senses, and a form that is another entry's headword (would get a card)
+    # No senses, and a form that is another entry's headword
     empty = lemma("xyzzy", "noun", "xyzzy", [], [("amō", ["nominative", "plural"])])
     build, files = run_build(tmp_path, monkeypatch, [amo, empty])
 
     entries = read_entries(files)
-    assert [e.headword for e in entries] == ["amō"]  # no card for xyzzy's form amō
+    assert [e.headword for e in entries] == ["amō"]
     assert len(build.entry_pages) == 1
     assert "xyzzy" not in "".join(p.read_text("utf-8") for p in files.glob("*.xhtml"))
 
@@ -49,3 +49,17 @@ def test_front_page_credits_wiktionary(tmp_path, monkeypatch):
         '<itemref idref="page-0"/>'
     )
     assert "$" not in opf
+
+
+def test_homographs_each_keep_their_spellings(tmp_path, monkeypatch):
+    # The popup lists every entry a tap reaches, so no spelling is taken from either
+    noun = lemma("latus", "noun", "latus n", ["side"], [("lateris", ["genitive"])])
+    adj = lemma("latus", "adj", "lātus", ["wide"], [("lāta", ["feminine"])])
+    _build, files = run_build(tmp_path, monkeypatch, [noun, adj])
+
+    entries = read_entries(files)
+    assert [(e.headword, e.labels) for e in entries] == [
+        ("latus", ["latus", "lateris"]),
+        ("lātus", ["lātus", "lāta"]),
+    ]
+    assert not list(files.glob("card-*.xhtml"))

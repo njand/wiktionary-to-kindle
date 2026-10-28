@@ -48,9 +48,26 @@ class SensesBlock:
 
         return list1, aligned_list2
 
+    @staticmethod
+    def align_to_raw(glosses, raw_glosses):
+        """Kaikki leaves out a parent sense that is only a qualifier ("(as adjective)") from
+        glosses but not from raw_glosses; give each such raw gloss an empty gloss. None if
+        the glosses do not occur in the raw glosses in order."""
+        aligned, rest = [], list(glosses)
+        for raw in raw_glosses:
+            if rest and rest[0] in raw:
+                aligned.append(rest.pop(0))
+            else:
+                aligned.append("")
+        return None if rest else aligned
+
     def add_glosses(self, glosses, raw_glosses=None):
         if raw_glosses is None or len(raw_glosses) == 0:
             raw_glosses = glosses
+        if len(glosses) < len(raw_glosses):
+            aligned = self.align_to_raw(glosses, raw_glosses)
+            if aligned is not None:
+                glosses = aligned
         if len(glosses) != len(raw_glosses):
             glosses, raw_glosses = self.align_lists(glosses, raw_glosses)
 
