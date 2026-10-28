@@ -115,4 +115,4 @@ def test_sort_records_merged_pages_on_the_lemma(tmp_path, monkeypatch):
     ]
 
     html = "\n".join(HTMLRenderer.render_entry(Entry(frigidus)))
-    assert "<p><i>dim.</i> <b>frīgidulus</b>: somewhat cold</p>" in html
+    assert "<p><i>dim.</i>&#160;<b>frīgidulus</b>: somewhat cold</p>" in html

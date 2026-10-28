@@ -63,7 +63,15 @@ def kindle_fold(text: str) -> str:
 def _kindle_weighs_nothing(char, code):
     # Latin-1 punctuation and symbols, spacing modifiers, and general punctuation
     latin1_symbol = 0x00A1 <= code <= 0x00BF and char not in "µ¹²³"
-    return latin1_symbol or 0x02B0 <= code <= 0x02FF or 0x2000 <= code <= 0x206F
+    # Other symbols: kindling reaches "☿ōs" and "♃vis" (forms of ☿ and Iuppiter) from
+    # "os" and "vis"; assumed for every symbol, not measured
+    other_symbol = unicodedata.category(char) == "So"
+    return (
+        latin1_symbol
+        or other_symbol
+        or 0x02B0 <= code <= 0x02FF
+        or 0x2000 <= code <= 0x206F
+    )
 
 
 def remove_breves(text: str) -> str:

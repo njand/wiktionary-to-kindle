@@ -22,7 +22,7 @@ class IndexedEntry:
     key: str  # "<file>#<id>", unique across the dictionary
     headword: str
     pos: str | None
-    is_card: bool  # a disambiguation card, not an entry
+    is_card: bool  # a disambiguation card (older builds), not an entry
     labels: list[str] = field(default_factory=list)
 
 
@@ -71,5 +71,5 @@ def build_index(entries):
 
 
 def _spine_order(page):
-    # make_opf lists main pages, then card- pages
+    # Older builds listed main pages, then card- pages
     return page.name.startswith("card-"), page.name

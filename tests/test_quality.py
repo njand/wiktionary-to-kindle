@@ -177,9 +177,9 @@ def test_coverage_diff():
         caesar=(100, 0.85, 0.0), vergil=(60, 0.8, 0.02), all=(160, 0.84, 0.0)
     )
     _, regressions = coverage.diff(old, worse)
+    # vergil's share left to index order rises, which only reorders the popup
     assert regressions == [
         "caesar: tokens that open something -5.0 pp",
-        "vergil (50 → 60 tokens): tokens left to index order +2.0 pp",
         "all (150 → 160 tokens): tokens that open something -3.0 pp",
     ]
 

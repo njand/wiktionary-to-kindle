@@ -11,14 +11,15 @@ Update this file as stages finish. Scope is Latin only; other languages come lat
 | Homographs (latus / lātus) | **Keep entries separate.** A tap on a macronized word ("lātum") should open only the matching entry. Where a choice is unavoidable, prefer something the reader can swipe or jump between over one long merged entry where the boundary between entries is easy to miss. See Stage 2. |
 | Enclitics (-que, -ne, -ve) | **Not indexed.** Enclitics will be pre-segmented in the e-books with an invisible space instead. Verify on a device first (Stage 0). |
 | Examples pipeline | **Remove it.** The CLI never enables `link_examples`. |
+| Disambiguation cards (2026-10-28) | **Drop them.** The device popup lists every entry a tap reaches (see Stage 6, found on the device), and links do not work in the popup, so a card only added a step. Each entry keeps all its own spellings. |
 
 ## How Kindle lookup works (what the design must respect)
 
 Amazon documents almost none of this. Sources: the [kindling README](https://github.com/ciscoriordan/kindling) (measured on Kindle 4, Paperwhite 4 and Paperwhite 5), [KDP: Creating Dictionaries](https://kdp.amazon.com/en_US/help/topic/G2HXJS944GL88DNV).
 
 - A tapped word reaches every label with the same weights. For Latin letters, case and accents (macrons included) do not count; ß/æ/œ count as ss/ae/oe; punctuation weighs nothing; a separate combining mark (the breve in ā̆) counts as itself. `kindle_fold()` in `utils.py` approximates this.
-- Of the labels reached, one opens: the one spelled exactly like the tapped word; else the first equal to it ignoring case (accents still count); else, apart from some prefix rules, the first in stored index order. Nothing matches by prefix.
-- So ties are decided by index order, which explains the "unpredictable" capital-letter and macron behavior. The current standalone inflection cards compete with the lemma's identical labels instead of replacing them.
+- Of the labels reached, kindling predicts one opens: the one spelled exactly like the tapped word; else the first equal to it ignoring case (accents still count); else, apart from some prefix rules, the first in stored index order. Nothing matches by prefix.
+- On a device (2026-10-28) the popup lists **every** entry reached, that one first, and the reader swipes to the rest. Index order only decides which comes first. Links do not work in the popup.
 - The device folds macrons and case itself, so generating unmacronized/lowercase variants adds nothing for matching. Their only effect is to create exact-spelling ties.
 - `kindling-cli lookup <dict.mobi> <word>` predicts what a Paperwhite 5 opens, exits 1 on a miss, and reports ties and labels the index order hides.
 - KDP lists a copyright page as required content; Wiktionary text is CC BY-SA, so an attribution and license page is needed.
@@ -33,7 +34,7 @@ Amazon documents almost none of this. Sources: the [kindling README](https://git
 Still to do:
 - [x] **Local baseline** (2026-10-28, dump of 2026-10-25, kindling v0.45.6). Stage 0 (`2123d0a`): 80,230 entries, 2,988,049 labels, 310,573 tied folded keys, 98.0 MB `.mobi`, built in 388 s. Corpus: 83.6% of tokens open something, 42.0% by index order. Every word in the lookup list opens. Measurements are kept outside the repo, in `outputs/measure/` (gitignored).
 - [ ] **Check enclitic pre-segmentation on a device.** Insert U+200B between a word and its enclitic in a test book and confirm the Kindle selects only the word when tapped. If the reader does not treat it as a word break, the invisible character weighs nothing and the tap becomes `virumque` again (a miss).
-- [ ] **Check whether the Kindle popup can show several entries** (the swipe between results). Find what triggers it; it changes the Stage 2 design.
+- [x] **Check whether the Kindle popup can show several entries** (the swipe between results). It always does: every entry a tap reaches is listed (Stage 6 device test). Cards were dropped for it.
 
 ## Stage 1: Quick correctness fixes (each with a test) — done
 
@@ -51,7 +52,9 @@ Found while doing Stage 1, not yet fixed:
 - [ ] Alternative-form links never render: Kaikki puts `alt_of` on senses, but the build only looked up a top-level `alt_of` (removed in Stage 5), so `alt_id`/`alt_page` are always `None`.
 - [ ] `Entry.get_senses_blocks` adds each sense to the most recently created block instead of block `head_nr`, so a first-headword sense listed after a second-headword one lands under the second.
 
-## Stage 2: Deterministic lookups, entries kept separate — done, device check pending
+## Stage 2: Deterministic lookups, entries kept separate — done, then superseded
+
+Superseded on 2026-10-28: the device lists every entry a tap reaches, so the cards were dropped (see Stage 6, "Found on the device"). What follows describes the card design as it was.
 
 Goal: every tap opens one predictable thing, and a macronized tap opens the matching entry.
 
@@ -139,6 +142,14 @@ Still to check:
 - [ ] The test book (`scripts/make_device_test.py`, words in `tests/device_words_la.tsv`) is checked on a device. Building it found that no entry has a label with a breve (`ā̆`), so a text that prints one misses; check how often texts do.
 - [ ] StarDict in KOReader and GoldenDict: card links (`bword://`) open their entries, and an unmacronized tap finds its entry.
 - [ ] The workflow changes have not run on GitHub yet (Actions quota).
+
+Found on the device with the test book (2026-10-28):
+- [x] **The popup shows every entry a tap reaches**, not one: a result for each entry or card with a label of the same weights, the one spelled like the tap first, the rest swiped through. kindling's `lookup` predicts only the first. So `fēmina` showed three cards (`fēmina`, `femina`, `fēminā`), and `est` the card and `edō` (which kept `ēst`). **Links do not work in the popup**, so a card was only an overview. The cards are dropped: `label_resolver.py`, the card pages and the numbered headwords (`latus¹`) are gone, every entry is indexed by all its own spellings, and the build reads the dump once. The coverage gate no longer fails on index order or on kindling's hidden labels, which now only decide which entry the popup shows first. StarDict adds an unaccented synonym even where another word has that spelling, so `latus` finds lātus too. The device test book lists every entry each tap should show.
+- [x] Descendants of one language share a line (**Spanish:** llave, clave), without exact repeats.
+- [x] kindling drops a space that stands alone between two inline elements (`</a> <i>` compiles to `</a><i>`), so card rows read `ferōverb` and sub-lines `dim.frīgidulus`. The renderer writes a no-break space there.
+- [x] A symbol weighs nothing: forms like `☿ōs` and `♃vis` (written with a planet's sign) were reached by `os` and `vis`. Forms with a symbol are no longer indexed, and `kindle_fold` drops symbols.
+- [x] A parent sense that is only a qualifier (omnis: "(as adjective)") lost its sub-senses: Kaikki leaves it out of `glosses` but not `raw_glosses`, and the alignment paired the wrong ones.
+- [x] A descendant reached through several branches was listed once per branch (French `à l'onni` three times under omnis).
 
 ## Later
 

@@ -4,10 +4,14 @@ Each token is resolved against the dictionary's own labels with the Kindle's mat
 (see utils.kindle_fold and the kindling README):
 
   unique     every label it reaches belongs to one entry
-  spelling   several entries, but an exact-spelling (or same-letters-ignoring-case) label
-             picks one, the way the device does
+  spelling   several entries, and an exact-spelling (or same-letters-ignoring-case) label
+             picks the one the popup shows first, the way the device does
   ambiguous  several entries and no rule picks one: the index's stored order decides
+             which the popup shows first
   miss       no label has the same weights, so nothing opens
+
+The popup lists every entry a tap reaches, so "spelling" and "ambiguous" differ only in
+which entry comes first.
 
 Misses are retried with variants a reader's text often has but Wiktionary's headwords do not
 (enclitics, u for consonantal v, j for consonantal i) to name the likely cause.
@@ -145,9 +149,11 @@ def opens(summary):
 
 def diff(old, new, threshold=0.005):
     """Return (markdown, regressions) comparing two coverage reports. A source regresses when
-    the share of its tokens that open something falls, or the share left to index order
-    rises, by more than threshold (0.005 = half a percentage point). A source in only one
-    report is listed but not compared, and so is "all" when the sources differ."""
+    the share of its tokens that open something falls by more than threshold (0.005 = half
+    a percentage point). The share left to index order and kindling's hidden labels are
+    shown but not judged: the popup lists every entry a tap reaches, so they only decide
+    which comes first. A source in only one report is listed but not compared, and so is
+    "all" when the sources differ."""
     lines = [
         "| Source | Opens before | Opens now | Change | Ambiguous before | Ambiguous now |",
         "| --- | ---: | ---: | ---: | ---: | ---: |",
@@ -174,10 +180,6 @@ def diff(old, new, threshold=0.005):
             regressions.append(
                 f"{name}: tokens that open something {change * 100:+.1f} pp"
             )
-        if ambiguous[1] - ambiguous[0] > threshold:
-            regressions.append(
-                f"{name}: tokens left to index order {(ambiguous[1] - ambiguous[0]) * 100:+.1f} pp"
-            )
 
     if "kindling" in old and "kindling" in new:
         hidden = [r["kindling"]["hidden_labels"] for r in (old, new)]
@@ -185,10 +187,6 @@ def diff(old, new, threshold=0.005):
             "",
             f"Words with labels the index order hides: {hidden[0]} → {hidden[1]}",
         ]
-        if hidden[1] > hidden[0]:
-            regressions.append(
-                f"words with hidden labels rose from {hidden[0]} to {hidden[1]}"
-            )
     return "\n".join(lines), regressions
 
 
@@ -219,7 +217,7 @@ def to_markdown(report):
     if overall["ambiguous_top"]:
         lines += [
             "",
-            "**Most frequent ambiguous words** (index order picks the entry)",
+            "**Most frequent ambiguous words** (index order picks the entry shown first)",
             "",
         ]
         lines += [

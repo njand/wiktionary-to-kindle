@@ -3,6 +3,14 @@ import re
 
 from jinja2 import Environment, PackageLoader
 
+# kindling drops a space that stands alone between two inline elements ("</a> <i>" compiles
+# to "</a><i>"), so the words run together; a no-break space survives
+SPACE_BETWEEN_TAGS = re.compile(r"(</(?:a|b|i|span)>) +(?=<(?:a|b|i|span)\b)")
+
+
+def keep_spaces(html_str):
+    return SPACE_BETWEEN_TAGS.sub(r"\1&#160;", html_str)
+
 
 def format_etymology(etymology):
     """Helper passed to Jinja to italicize each template expansion where it occurs in the text.
@@ -62,7 +70,6 @@ class HTMLRenderer:
     )
 
     entry_tmpl = env.get_template("entry.html.jinja")
-    card_tmpl = env.get_template("card.html.jinja")
     front_tmpl = env.get_template("front.html.jinja")
 
     @classmethod
@@ -72,37 +79,24 @@ class HTMLRenderer:
         filter_descendants_langs=None,
         recursive_senses=True,
         include_etymology=True,
-        orth=None,
-        iforms=None,
     ):
-        """Render an entry indexed by orth (default: its headword) and iforms (default:
-        all its forms)."""
+        """Render an entry indexed by its headword and all its forms."""
         valid_pairs = entry.valid_pairs()
         if not valid_pairs:
             return []
-        if orth is None:
-            orth = entry.head_word
-        if iforms is None:
-            iforms = sorted(entry.all_forms - {entry.head_word})
 
         descendants = entry.filter_descendants(filter_descendants_langs)
 
         html_str = cls.entry_tmpl.render(
             entry=entry,
-            orth=orth,
-            iforms=iforms,
+            orth=entry.head_word,
+            iforms=sorted(entry.all_forms - {entry.head_word}),
             valid_pairs=valid_pairs,
             descendants=descendants,
             recursive_senses=recursive_senses,
             include_etymology=include_etymology,
         )
-        return html_str.strip().split("\n")
-
-    @classmethod
-    def render_card(cls, card, rows):
-        """Render a disambiguation card: one row (a CardRow) per entry its labels reach."""
-        html_str = cls.card_tmpl.render(card=card, rows=rows)
-        return html_str.strip().split("\n")
+        return keep_spaces(html_str).strip().split("\n")
 
     @classmethod
     def render_front(cls, dump_date, build_date, version):

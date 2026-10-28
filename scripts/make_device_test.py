@@ -1,8 +1,9 @@
 """Build a small Kindle book for checking dictionary lookups on a real device.
 
-Each word in the list becomes a numbered line of the book with what it tests and what
-kindling's simulator predicts the tap opens (an entry, a card listing several entries, or
-nothing). Tap each word on the Kindle and report the numbers whose popup differs.
+Each word in the list becomes a numbered line of the book with what it tests and the
+entries the popup should list: every entry with a label of the same weights, the one
+spelled like the tap first (the rest in index order, which is not predicted). Tap each word
+on the Kindle and report the numbers whose popup differs.
 
 Usage:
     python scripts/make_device_test.py outputs/KindleDictionary-la \
@@ -15,24 +16,17 @@ predictions and corpus frequencies without building the book.
 
 import argparse
 import html
-import re
 import subprocess
 import sys
-from collections import Counter, defaultdict
+from collections import Counter
 from pathlib import Path
 
 from wiktionary_to_kindle.quality.corpus import tokenize
-from wiktionary_to_kindle.quality.kindling import default_binary, lookup
-from wiktionary_to_kindle.quality.labels import (
-    ENTRY_PATTERN,
-    ORTH_PATTERN,
-    read_entries,
-)
+from wiktionary_to_kindle.quality.kindling import default_binary
+from wiktionary_to_kindle.quality.labels import build_index, read_entries
 from wiktionary_to_kindle.utils import TEMPLATES
 
 ZWSP = "\u200b"
-SUPERSCRIPTS = str.maketrans("", "", "⁰¹²³⁴⁵⁶⁷⁸⁹")
-CARD_ROW = re.compile(r"<li><a [^>]*><b>([^<]*)</b></a> <i>([^<]*)</i>")
 SECTIONS = {
     "frequent": "Short, frequent words",
     "rare": "Long and rare words",
@@ -55,32 +49,15 @@ def read_words(path):
     return sorted(words, key=lambda w: list(SECTIONS).index(w[0]))
 
 
-def describe_owners(files_dir):
-    """Map each label to what it opens: 'card: ferō, lātus, ...' or 'lātus (adj)'."""
-    cards = {}
-    for page in Path(files_dir).glob("card-*.xhtml"):
-        for entry_id, body in ENTRY_PATTERN.findall(page.read_text(encoding="utf-8")):
-            rows = [f"{html.unescape(h)} ({pos})" for h, pos in CARD_ROW.findall(body)]
-            orth = html.unescape(ORTH_PATTERN.search(body).group(1))
-            cards[orth] = "card: " + ", ".join(rows)
-
-    owners = defaultdict(list)
-    for entry in read_entries(files_dir):
-        if entry.is_card:
-            description = cards[entry.headword]
-        else:
-            description = f"{entry.headword.translate(SUPERSCRIPTS)} ({entry.pos})"
-        for label in dict.fromkeys(entry.labels):
-            owners[label].append(description)
-    return owners
-
-
-def predict(kindling, mobi, owners, word):
+def predict(index, word):
+    """The entries the popup lists for a tapped word: 'fēmina (noun) / femur (noun)'."""
     tapped = word.split(ZWSP)[0]  # what a zero-width space should leave selected
-    result = lookup(kindling, mobi, tapped)
-    if not result["opens"]:
+    run = index.run(tapped)
+    if not run:
         return "nothing opens"
-    return " / ".join(owners.get(result["label"], [f"label {result['label']}"]))
+    exact = [entry for label, entry in run if label == tapped]
+    entries = {entry.key: entry for entry in exact + [entry for _, entry in run]}
+    return " / ".join(f"{entry.headword} ({entry.pos})" for entry in entries.values())
 
 
 def corpus_counts(cache_dir):
@@ -98,14 +75,14 @@ def write_book(out_dir, rows):
         "<h1>Latin dictionary: device test</h1>",
         (
             "<p>Set the Wiktionary Latin dictionary as the Latin dictionary, then press and "
-            "hold each word in bold. Under it is what kindling predicts the popup shows: one "
-            "entry (headword and part of speech), or a card listing several entries. "
-            "Write down the number of every word whose popup differs, and what it showed.</p>"
+            "hold each word in bold. Under it are the entries the popup should list "
+            "(headword and part of speech), the first one first; the order of the rest is "
+            "not predicted. Write down the number of every word whose popup differs, and "
+            "what it showed.</p>"
         ),
         (
             "<p>Report: the Kindle model and firmware (Settings, Device Info), then each "
-            "number that differs, for example “12: opened lātus (adj), not the card”. Also "
-            "say whether the card links open their entries (try a few).</p>"
+            "number that differs, for example “12: also listed latus (noun)”.</p>"
         ),
     ]
     section = None
@@ -167,17 +144,13 @@ def main():
         "-o", "--output", type=Path, default=Path("outputs/device-test")
     )
     parser.add_argument("--kindling", default=default_binary())
-    parser.add_argument(
-        "--mobi", type=Path, help="default: DICT_DIR/la-wiktionary.mobi"
-    )
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
     sys.stdout.reconfigure(encoding="utf-8")
 
-    mobi = args.mobi or args.dict_dir / "la-wiktionary.mobi"
-    owners = describe_owners(args.dict_dir / "files")
+    index = build_index(read_entries(args.dict_dir / "files"))
     rows = [
-        (section, word, note, predict(args.kindling, mobi, owners, word))
+        (section, word, note, predict(index, word))
         for section, word, note in read_words(args.words)
     ]
 

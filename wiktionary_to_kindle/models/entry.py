@@ -1,4 +1,5 @@
 import re
+import unicodedata
 
 from ..merge.related import MERGED_KEY, related_lines
 from ..utils import (
@@ -203,8 +204,16 @@ class Entry:
             self.inflected_forms.keys()
         ):
             all_forms.update(lookup_spellings(form))
-        # A label of punctuation only (the Tironian et, ⁊) weighs nothing: no tap reaches it
-        return {form for form in all_forms if " " not in form and kindle_fold(form)}
+        # A label of punctuation only (the Tironian et, ⁊) weighs nothing: no tap reaches it.
+        # A symbol weighs nothing either, so "♃vis" (Iovis written with Jupiter's sign)
+        # would be reached by "vis"; such forms are left out.
+        return {
+            form
+            for form in all_forms
+            if " " not in form
+            and kindle_fold(form)
+            and not any(unicodedata.category(char) == "So" for char in form)
+        }
 
     def valid_pairs(self):
         """(senses block, header) pairs that render; an entry with none is left out."""
@@ -215,7 +224,11 @@ class Entry:
         ]
 
     def filter_descendants(self, filter_langs):
-        if not filter_langs:
-            return self.descendants
-        # d[0] is the language name ("French"), d[1] is the word
-        return [d for d in self.descendants if d[0] in filter_langs]
+        """(language name, words) for each language in filter_langs (all if empty), in
+        the order the tree first names them. A word reached through several branches
+        (French "à l'onni" under three Old French words of omnis) is listed once."""
+        by_lang = {}
+        for lang, word in self.descendants:
+            if not filter_langs or lang in filter_langs:
+                by_lang.setdefault(lang, {})[word] = None
+        return [(lang, list(words)) for lang, words in by_lang.items()]

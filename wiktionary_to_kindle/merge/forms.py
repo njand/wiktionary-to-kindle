@@ -4,7 +4,7 @@ Wiktionary lists a verb's participles and an adjective's comparative and superla
 the nominative; their declension is on the participle's or comparative's own page, which many
 lack. For those, the regular declension is generated and added to the entry, each form tagged
 "generated". A form whose page exists is left alone: that page is merged in (or is an entry
-of its own), and a second copy of its labels would only put both on a disambiguation card.
+of its own), and a second copy of its labels would only list both in the popup.
 
 Alternative spellings (inlābor beside illābor) are kept as labels, except those with a page
 of their own, for the same reason, and reconstructions (*luttra), which no text spells.

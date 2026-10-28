@@ -9,31 +9,21 @@ from subprocess import CalledProcessError
 from .utils import TEMPLATES
 
 
-def write_opf(files_dir, page_counts, dump_date, build_date, version):
-    """Write dictionary.opf: the front page, then page_counts = (entry pages, card pages)."""
-    entry_page_len, card_page_len = page_counts
-
+def write_opf(files_dir, page_count, dump_date, build_date, version):
+    """Write dictionary.opf: the front page, then page_count entry pages."""
     opf_header = Template(TEMPLATES.joinpath("opf_header.txt").read_text("utf-8"))
     html_lines = opf_header.substitute(
         dump_date=dump_date, build_date=build_date, version=version
     ).split("\n")
 
-    for prefix, page_len in [
-        ("", entry_page_len),
-        ("card-", card_page_len),
-    ]:
-        for page_num in range(page_len):
-            html_lines.append(
-                f'<item id="{prefix}page-{page_num}" href="{prefix}{page_num:04}.xhtml" media-type="application/xhtml+xml"/>'
-            )
+    for page_num in range(page_count):
+        html_lines.append(
+            f'<item id="page-{page_num}" href="{page_num:04}.xhtml" media-type="application/xhtml+xml"/>'
+        )
 
     html_lines.extend(["</manifest>", "<spine>", '<itemref idref="front"/>'])
-    for prefix, page_len in [
-        ("", entry_page_len),
-        ("card-", card_page_len),
-    ]:
-        for page_num in range(page_len):
-            html_lines.append(f'<itemref idref="{prefix}page-{page_num}"/>')
+    for page_num in range(page_count):
+        html_lines.append(f'<itemref idref="page-{page_num}"/>')
 
     html_lines.extend(
         [
