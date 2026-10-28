@@ -3,6 +3,7 @@
 stats DICT_DIR -o stats.json        index statistics of a built dictionary
 diff OLD.json NEW.json              markdown comparison of two builds' statistics
 coverage DICT_DIR MANIFEST -o OUT   lookup coverage of a Latin corpus (OUT.json, OUT.md)
+coverage-diff OLD.json NEW.json     markdown comparison of two builds' coverage
 sample DUMP.jsonl OUT.jsonl         small, self-consistent sample of a filtered dump
 """
 
@@ -47,6 +48,21 @@ def main(argv=None):
     p.add_argument("--mobi", type=Path, help="built .mobi for --kindling")
     p.add_argument(
         "--verify", type=int, default=300, help="words to check with kindling"
+    )
+
+    p = sub.add_parser("coverage-diff", help="compare two coverage .json reports")
+    p.add_argument("old", type=Path)
+    p.add_argument("new", type=Path)
+    p.add_argument(
+        "--threshold",
+        type=float,
+        default=0.005,
+        help="largest allowed change in a token share (default: %(default)s = 0.5 pp)",
+    )
+    p.add_argument(
+        "--fail-on-drop",
+        action="store_true",
+        help="exit 1 if any source's coverage drops by more than the threshold",
     )
 
     p = sub.add_parser("sample", help="cut a small sample from a filtered dump")
@@ -110,6 +126,16 @@ def run_coverage(args):
     return 0
 
 
+def run_coverage_diff(args):
+    markdown, regressions = coverage.diff(
+        stats.load(args.old), stats.load(args.new), args.threshold
+    )
+    print(markdown)
+    for regression in regressions:
+        print(f"\n**Coverage regression:** {regression}")
+    return 1 if regressions and args.fail_on_drop else 0
+
+
 def run_sample(args):
     include = []
     if args.include and args.include.exists():
@@ -126,6 +152,7 @@ COMMANDS = {
     "stats": run_stats,
     "diff": run_diff,
     "coverage": run_coverage,
+    "coverage-diff": run_coverage_diff,
     "sample": run_sample,
 }
 

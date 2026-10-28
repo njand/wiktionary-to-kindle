@@ -50,6 +50,11 @@ def parse_args(argv=None):
         help="Sort the JSONL again even if a cached sorted file is up to date",
     )
     parser.add_argument(
+        "--stardict",
+        action="store_true",
+        help="Also write a StarDict bundle (.zip) for GoldenDict and KOReader",
+    )
+    parser.add_argument(
         "--descendants",
         nargs="+",
         default=["English", "Portuguese", "Spanish", "French", "Italian"],
@@ -99,6 +104,7 @@ def main(argv=None):
         str(kindling),
         descendant_langs=args.descendants,
         resort=args.resort,
+        stardict=args.stardict,
     )
 
 

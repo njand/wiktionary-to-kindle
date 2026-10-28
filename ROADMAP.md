@@ -126,11 +126,18 @@ Found while doing Stage 5:
 
 Measured (2026-10-28, same dump and kindling): the restructure changes no output. A full build before and after, both sorting the dump again, gives an identical sorted dump, identical XHTML pages and OPF, and a `.mobi` that differs only in the PalmDB header's timestamps (64.5 MB, 54,048 entries). The build passes with `KINDLING_STRICT_ENTRIES=1`, and every word in the lookup list opens. kindling still warns that the book has no NCX table of contents and that `cover.png` is over 127 KB.
 
-## Stage 6: Releases
+## Stage 6: Releases — done, first device check pending
 
-- [ ] Coverage numbers in release notes; fail the build on a coverage drop.
-- [ ] Spot-check each release on a real device (kindling's simulator is a prediction).
-- [ ] Optional StarDict export (`kindling stardict`) for KOReader and GoldenDict users.
+- [x] Coverage numbers in release notes; fail the build on a coverage drop. `quality coverage-diff OLD.json NEW.json --fail-on-drop` compares two coverage reports per source: a source regresses when its share of tokens that open something falls, or its share left to index order rises, by more than 0.5 percentage points, or when kindling reports more words with hidden labels. A source in only one report is listed but not compared (nor is `all` then); a source whose text changed shows its token counts. The weekly build compares its coverage with the latest release's and fails on a regression; a manual run with **Allow a coverage drop** publishes anyway. The release notes add the comparison.
+- [x] Spot-check each release on a real device (kindling's simulator is a prediction). Builds are now published as pre-releases, with the checklist in `docs/device-check-la.md` at the end of the notes; after the check, the release is marked as the latest by hand. `gh release download` skips pre-releases, so the next build's index and coverage are compared with the last checked release.
+- [x] Optional StarDict export (`--stardict`, `stardict.py`) for KOReader and GoldenDict users. `kindling stardict` writes the bundle from the same OPF; the build then points card links (`0048.xhtml#29169`, dead outside the book) at `bword://lātus²`, the label the entry is stored under, and adds every label's spelling without accents as a synonym unless it is a label of its own (`amavisti` → amō; `latus` stays the card). Released as `la-wiktionary-stardict.zip`.
+
+Measured (2026-10-28, same dump and kindling): a full build with `--stardict` writes XHTML pages and an OPF identical to Stage 5's and a `.mobi` of the same size. The StarDict bundle holds 141,611 words (54,048 entries and 87,563 cards) and 2,388,675 synonyms (1,358,462 from kindling, 1,030,213 unaccented spellings); no page link is left, and the zip is 13.9 MB. The export adds about 15 s. `coverage-diff` against Stage 4 shows no change in any source and passes with `--fail-on-drop`; against the Stage 0 baseline it fails, as it should. Every word in the lookup list opens.
+
+Still to check:
+- [ ] The first release goes through the device checklist, which also covers the Stage 0, 2 and 4 device checks.
+- [ ] StarDict in KOReader and GoldenDict: card links (`bword://`) open their entries, and an unmacronized tap finds its entry.
+- [ ] The workflow changes have not run on GitHub yet (Actions quota).
 
 ## Later
 

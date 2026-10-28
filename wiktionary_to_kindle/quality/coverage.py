@@ -137,6 +137,61 @@ def verify_with_kindling(index, counts, kindling, mobi, limit, jobs=None):
     }
 
 
+def opens(summary):
+    """Share of tokens that open something."""
+    share = summary["token_share"]
+    return share["unique"] + share["spelling"] + share["ambiguous"]
+
+
+def diff(old, new, threshold=0.005):
+    """Return (markdown, regressions) comparing two coverage reports. A source regresses when
+    the share of its tokens that open something falls, or the share left to index order
+    rises, by more than threshold (0.005 = half a percentage point). A source in only one
+    report is listed but not compared, and so is "all" when the sources differ."""
+    lines = [
+        "| Source | Opens before | Opens now | Change | Ambiguous before | Ambiguous now |",
+        "| --- | ---: | ---: | ---: | ---: | ---: |",
+    ]
+    regressions = []
+    same_sources = set(old["sources"]) == set(new["sources"])
+    for name in dict.fromkeys([*new["sources"], *old["sources"]]):
+        before, after = old["sources"].get(name), new["sources"].get(name)
+        if name == "all" and not same_sources:
+            lines.append(f"| {name} | | | sources differ | | |")
+            continue
+        if not before or not after:
+            lines.append(f"| {name} | | | {'new' if after else 'removed'} | | |")
+            continue
+        if before["tokens"] != after["tokens"]:  # the text itself changed
+            name = f"{name} ({before['tokens']:,} → {after['tokens']:,} tokens)"
+        change = opens(after) - opens(before)
+        ambiguous = [s["token_share"]["ambiguous"] for s in (before, after)]
+        lines.append(
+            f"| {name} | {opens(before):.1%} | {opens(after):.1%} | {change * 100:+.1f} pp "
+            f"| {ambiguous[0]:.1%} | {ambiguous[1]:.1%} |"
+        )
+        if change < -threshold:
+            regressions.append(
+                f"{name}: tokens that open something {change * 100:+.1f} pp"
+            )
+        if ambiguous[1] - ambiguous[0] > threshold:
+            regressions.append(
+                f"{name}: tokens left to index order {(ambiguous[1] - ambiguous[0]) * 100:+.1f} pp"
+            )
+
+    if "kindling" in old and "kindling" in new:
+        hidden = [r["kindling"]["hidden_labels"] for r in (old, new)]
+        lines += [
+            "",
+            f"Words with labels the index order hides: {hidden[0]} → {hidden[1]}",
+        ]
+        if hidden[1] > hidden[0]:
+            regressions.append(
+                f"words with hidden labels rose from {hidden[0]} to {hidden[1]}"
+            )
+    return "\n".join(lines), regressions
+
+
 def to_markdown(report):
     lines = [
         "| Source | Tokens | Opens | Picked by spelling | Ambiguous | Miss |",
@@ -144,9 +199,8 @@ def to_markdown(report):
     ]
     for name, summary in report["sources"].items():
         share = summary["token_share"]
-        opens = share["unique"] + share["spelling"] + share["ambiguous"]
         lines.append(
-            f"| {name} | {summary['tokens']:,} | {opens:.1%} | {share['spelling']:.1%} "
+            f"| {name} | {summary['tokens']:,} | {opens(summary):.1%} | {share['spelling']:.1%} "
             f"| {share['ambiguous']:.1%} | {share['miss']:.1%} |"
         )
 
