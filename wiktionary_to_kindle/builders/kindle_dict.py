@@ -47,7 +47,7 @@ except ImportError:
 
 
 # Bump when sort_jsonl's output changes, so cached sorted files are rebuilt
-SORT_VERSION = 5
+SORT_VERSION = 6
 
 
 @dataclass
@@ -145,7 +145,13 @@ class KindleDict:
                 addl_forms.extend(self.preprocess_addl_forms(json_entry))
 
                 sub_key = remove_breves(alt_header)
-                if sub_key in alt_forms_dict and sub_key not in seen_keys:
+                # A form spelled like another lemma (ferō, dative of ferus) leads to that
+                # lemma's own pointers (lātum, supine of the verb ferō): not this entry's
+                if (
+                    sub_key in alt_forms_dict
+                    and sub_key not in seen_keys
+                    and not lemma_pos.get(sub_key)
+                ):
                     seen_keys.add(sub_key)
                     stack.append(sub_key)
         return addl_forms
