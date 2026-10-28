@@ -83,7 +83,7 @@ def filter_dump(gz_dump_path: Path, lang: str, output_path: Path):
         if decompressor != "zcat":
             decomp_cmd.insert(1, "-dc")
         # A prefilter: it also keeps lines where lang only appears nested (translations,
-        # descendants); KindleDict.sort_jsonl checks the top-level lang_code
+        # descendants); merge_dump checks the top-level lang_code
         rg_cmd = ["rg", f'"lang_code":\\s*"{lang}"']
         pipe_commands(decomp_cmd, rg_cmd, part)
     else:

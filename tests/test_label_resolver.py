@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from wiktionary_to_kindle.builders.kindle_dict import KindleDict
-from wiktionary_to_kindle.builders.label_resolver import LabelResolver
+from wiktionary_to_kindle import pipeline
+from wiktionary_to_kindle.label_resolver import LabelResolver
 from wiktionary_to_kindle.quality import coverage
 from wiktionary_to_kindle.quality.labels import build_index, read_entries
 
@@ -115,7 +115,7 @@ def test_card_reaches_owners_by_their_own_spellings():
 @pytest.fixture
 def built(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr(KindleDict, "make_mobi", lambda self: None)
+    monkeypatch.setattr(pipeline, "compile_mobi", lambda *args: None)
     entries = ENTRIES + [
         lemma(
             "fero",
@@ -132,10 +132,8 @@ def built(tmp_path, monkeypatch):
         "".join(json.dumps(e, ensure_ascii=False) + "\n" for e in entries),
         encoding="utf-8",
     )
-    kd = KindleDict(str(src), "la", "kindling")
-    kd.sort_jsonl()
-    kd.build_dictionary(descendant_langs=["English"])
-    return Path(kd.output_sub_dir)
+    build = pipeline.build_dictionary(str(src), "la", "kindling", ["English"])
+    return Path(build.files_dir)
 
 
 @pytest.mark.parametrize(

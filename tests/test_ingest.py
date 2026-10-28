@@ -1,4 +1,4 @@
-"""Downloading and filtering the Kaikki dump, and choosing the CLI's input file."""
+"""Ingest: downloading and filtering the Kaikki dump, and the CLI's choice of input file."""
 
 import gzip
 import io
@@ -8,7 +8,7 @@ import sys
 
 import pytest
 
-from wiktionary_to_kindle import cli, downloader
+from wiktionary_to_kindle import cli, ingest
 
 LINES = [
     {"word": "amo", "lang_code": "la"},
@@ -30,11 +30,11 @@ def read_words(path):
 
 
 def test_python_filter_keeps_top_level_language(tmp_path, gz_dump, monkeypatch):
-    monkeypatch.setattr(downloader.shutil, "which", lambda tool: None)
+    monkeypatch.setattr(ingest.shutil, "which", lambda tool: None)
     out = tmp_path / "kaikki-la.jsonl"
-    downloader.filter_dump(gz_dump, "la", out)
+    ingest.filter_dump(gz_dump, "la", out)
     assert read_words(out) == ["amo", "puella"]
-    assert not downloader.partial_path(out).exists()
+    assert not ingest.partial_path(out).exists()
 
 
 @pytest.mark.skipif(
@@ -42,7 +42,7 @@ def test_python_filter_keeps_top_level_language(tmp_path, gz_dump, monkeypatch):
 )
 def test_cli_filter_runs_without_a_shell(tmp_path, gz_dump):
     out = tmp_path / "kaikki-la.jsonl"
-    downloader.filter_dump(gz_dump, "la", out)
+    ingest.filter_dump(gz_dump, "la", out)
     # The ripgrep prefilter also keeps the nested match; sort_jsonl drops it later
     assert {"amo", "puella"} <= set(read_words(out))
 
@@ -53,23 +53,23 @@ CAT = [sys.executable, "-c", "import sys; sys.stdout.write(sys.stdin.read())"]
 def test_pipeline_writes_second_commands_output(tmp_path):
     echo = [sys.executable, "-c", "print('a b')"]
     out = tmp_path / "out"
-    downloader.pipe_commands(echo, CAT, out)
+    ingest.pipe_commands(echo, CAT, out)
     assert out.read_text().strip() == "a b"
 
 
 def test_failed_pipeline_raises(tmp_path):
     fail = [sys.executable, "-c", "import sys; sys.exit(3)"]
-    with pytest.raises(downloader.subprocess.CalledProcessError):
-        downloader.pipe_commands(fail, CAT, tmp_path / "out")
+    with pytest.raises(ingest.subprocess.CalledProcessError):
+        ingest.pipe_commands(fail, CAT, tmp_path / "out")
 
 
 def test_interrupted_filter_leaves_no_output(tmp_path, monkeypatch):
-    monkeypatch.setattr(downloader.shutil, "which", lambda tool: None)
+    monkeypatch.setattr(ingest.shutil, "which", lambda tool: None)
     truncated = tmp_path / "raw.jsonl.gz"
     truncated.write_bytes(gzip.compress(b'{"lang_code": "la"}\n' * 1000)[:-30])
     out = tmp_path / "kaikki-la.jsonl"
     with pytest.raises(EOFError):
-        downloader.filter_dump(truncated, "la", out)
+        ingest.filter_dump(truncated, "la", out)
     assert not out.exists()
 
 
@@ -90,49 +90,73 @@ class BrokenResponse(io.BytesIO):
 
 def test_interrupted_download_leaves_no_dump(tmp_path, monkeypatch):
     monkeypatch.setattr(
-        downloader.urllib.request, "urlopen", lambda req: BrokenResponse(b"x" * 100)
+        ingest.urllib.request, "urlopen", lambda req: BrokenResponse(b"x" * 100)
     )
     dump = tmp_path / "raw.jsonl.gz"
     with pytest.raises(ConnectionResetError):
-        downloader.download("https://example.invalid/dump.gz", dump)
+        ingest.download("https://example.invalid/dump.gz", dump)
     assert not dump.exists()
 
 
 @pytest.fixture
 def run_cli(tmp_path, monkeypatch):
-    """Run the CLI up to the build, recording which input file it chose."""
+    """Run the CLI up to the build, returning the input file, language and kindling it
+    chose."""
     chosen = []
 
-    class FakeKindleDict:
-        def __init__(self, input_file, lang, kindlegen):
-            chosen.append(input_file)
-
-        def sort_jsonl(self, force=False):
-            pass
-
-        def build_dictionary(self, **kwargs):
-            pass
+    def fake_build(input_file, lang, kindling, **kwargs):
+        chosen.append((input_file, lang, kindling))
 
     def no_download(*args, **kwargs):
         raise AssertionError("downloaded although --input was given")
 
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr(cli, "KindleDict", FakeKindleDict)
+    monkeypatch.setattr(cli, "build_dictionary", fake_build)
     monkeypatch.setattr(cli, "download_kaikki_dump", no_download)
-    monkeypatch.setattr(cli, "find_kindlegen", lambda: "kindling")
+    monkeypatch.setattr(cli, "find_kindling", lambda: "kindling")
 
     def run(*argv):
-        monkeypatch.setattr(sys, "argv", ["wiktionary-to-kindle", *argv])
-        cli.main()
+        cli.main(list(argv))
         return chosen[-1]
 
     return run
 
 
-def test_input_is_used_without_no_download(tmp_path, run_cli):
-    dump = tmp_path / "my-dump.jsonl"
-    dump.write_text("", encoding="utf-8")
-    assert run_cli("--lang", "la", "--input", str(dump)) == str(dump)
+@pytest.fixture
+def dump(tmp_path):
+    path = tmp_path / "my-dump.jsonl"
+    path.write_text("", encoding="utf-8")
+    return path
+
+
+def test_input_is_used_without_no_download(dump, run_cli):
+    assert run_cli("--lang", "la", "--input", str(dump))[0] == str(dump)
+
+
+def test_lang_defaults_to_latin(dump, run_cli):
+    assert run_cli("--input", str(dump))[1] == "la"
+
+
+def test_kindling_path_is_made_absolute(tmp_path, dump, run_cli):
+    (tmp_path / "kindling-cli").write_text("", encoding="utf-8")
+    for flag in ("--kindling", "--kindlegen"):  # --kindlegen is the old name
+        kindling = run_cli("--input", str(dump), flag, "kindling-cli")[2]
+        assert kindling == str(tmp_path / "kindling-cli")
+
+
+@pytest.mark.parametrize("kindling", [None, "missing/kindling-cli"])
+def test_missing_kindling_is_a_usage_error(dump, run_cli, monkeypatch, kindling):
+    monkeypatch.setattr(cli, "find_kindling", lambda: None)
+    argv = ["--input", str(dump)] + (["--kindling", kindling] if kindling else [])
+    with pytest.raises(SystemExit) as exc:
+        run_cli(*argv)
+    assert exc.value.code == 2  # argparse's exit code for a usage error
+
+
+def test_no_download_without_a_dump_is_a_usage_error(run_cli):
+    with pytest.raises(SystemExit) as exc:
+        run_cli("--no-download")
+    assert exc.value.code == 2
 
 
 def test_missing_input_is_an_error(run_cli):
@@ -141,18 +165,18 @@ def test_missing_input_is_an_error(run_cli):
 
 
 def test_dump_date_follows_the_dump_to_its_sorted_file(tmp_path, gz_dump, monkeypatch):
-    monkeypatch.setattr(downloader.shutil, "which", lambda tool: None)
-    downloader.date_path(gz_dump).write_text("2026-10-25", encoding="utf-8")
+    monkeypatch.setattr(ingest.shutil, "which", lambda tool: None)
+    ingest.date_path(gz_dump).write_text("2026-10-25", encoding="utf-8")
     out = tmp_path / "kaikki-la.jsonl"
-    downloader.filter_dump(gz_dump, "la", out)
-    assert downloader.dump_date(out) == "2026-10-25"
+    ingest.filter_dump(gz_dump, "la", out)
+    assert ingest.dump_date(out) == "2026-10-25"
 
     sorted_file = tmp_path / "kaikki-la(sorted).jsonl"
     sorted_file.write_text("", encoding="utf-8")
-    assert downloader.dump_date(sorted_file) == "2026-10-25"
+    assert ingest.dump_date(sorted_file) == "2026-10-25"
 
 
 def test_dump_date_without_a_record_is_the_files_date(tmp_path):
     dump = tmp_path / "my-dump.jsonl"
     dump.write_text("", encoding="utf-8")
-    assert len(downloader.dump_date(dump)) == len("2026-10-25")
+    assert len(ingest.dump_date(dump)) == len("2026-10-25")

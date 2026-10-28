@@ -1,7 +1,5 @@
-import os
 import re
 import shutil
-import sys
 import unicodedata
 from importlib.resources import files
 from itertools import product
@@ -225,51 +223,9 @@ def sanitize_xhtml(text: str) -> str:
     )
 
 
-def find_kindlegen() -> Path | None:
-    """Locates the kindlegen binary via PATH or common installation directories."""
-    # 1. Check system PATH first
-    binary_name = "kindlegen.exe" if sys.platform == "win32" else "kindlegen"
-    found_in_path = shutil.which(binary_name)
-    if found_in_path:
-        return Path(found_in_path)
-
-    # 2. Check explicit installation directories if not in PATH
-    possible_paths = []
-
-    if sys.platform == "win32":
-        local_app = os.environ.get("LOCALAPPDATA", "")
-        prog_files = os.environ.get("PROGRAMFILES", "")
-        prog_files_x86 = os.environ.get("PROGRAMFILES(X86)", "")
-
-        for base in (local_app, prog_files, prog_files_x86):
-            if base:
-                possible_paths.append(
-                    Path(base)
-                    / "Amazon"
-                    / "Kindle Previewer 3"
-                    / "lib"
-                    / "fc"
-                    / "bin"
-                    / "kindlegen.exe"
-                )
-    elif sys.platform == "darwin":
-        possible_paths.append(
-            Path(
-                "/Applications/Kindle Previewer 3.app/Contents/MacOS/lib/fc/bin/kindlegen"
-            )
-        )
-    else:  # Linux / Unix
-        possible_paths.extend(
-            [
-                Path("/usr/local/bin/kindlegen"),
-                Path("/usr/bin/kindlegen"),
-                Path("/opt/kindlegen/kindlegen"),
-                Path.home() / ".local" / "bin" / "kindlegen",
-            ]
-        )
-
-    for path in possible_paths:
-        if path.is_file() and os.access(path, os.X_OK):
-            return path
-
+def find_kindling() -> Path | None:
+    """Locate kindling on PATH, under the name its releases or a package manager give it."""
+    for name in ("kindling-cli", "kindling"):
+        if found := shutil.which(name):
+            return Path(found)
     return None
