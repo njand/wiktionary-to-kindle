@@ -12,3 +12,5 @@ old_code/
 downloads/
 codefetch.config.mjs
 .codefetchignore
+# Coverage corpus downloads
+corpus/cache/

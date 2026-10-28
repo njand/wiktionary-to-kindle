@@ -34,6 +34,50 @@ def normalize(text: str, lowercase: bool = False) -> str:
     return normalized
 
 
+KINDLE_LIGATURES = {
+    "ß": "ss",
+    "æ": "ae",
+    "Æ": "ae",
+    "œ": "oe",
+    "Œ": "oe",
+    "ĳ": "ij",
+    "Ĳ": "ij",
+}
+
+
+def kindle_fold(text: str) -> str:
+    """Approximate the weights a Kindle compares a tapped word and an index label by.
+
+    Per kindling's measurements: Latin letters weigh as their lowercase base letter (case and
+    accents, macrons included, do not count), ß/æ/œ as ss/ae/oe, ASCII and general punctuation
+    weigh nothing, and anything else, including a separate combining mark (the breve in ā̆),
+    weighs as itself. Two strings with the same fold reach the same index labels.
+    Approximation: Kindles fold only about half of Latin Extended-B; this folds all of it.
+    """
+    out = []
+    for char in unicodedata.normalize("NFC", text):
+        code = ord(char)
+        if char in KINDLE_LIGATURES:
+            out.append(KINDLE_LIGATURES[char])
+        elif char.isascii():
+            if char.isalnum() or char == " ":
+                out.append(char.lower())
+        elif _kindle_weighs_nothing(char, code):
+            continue
+        elif 0x00C0 <= code <= 0x024F and char.isalpha():
+            base = unicodedata.normalize("NFKD", char)[0]
+            out.append(base.lower() if base.isascii() else char)
+        else:
+            out.append(char)
+    return "".join(out)
+
+
+def _kindle_weighs_nothing(char, code):
+    # Latin-1 punctuation and symbols, spacing modifiers, and general punctuation
+    latin1_symbol = 0x00A1 <= code <= 0x00BF and char not in "µ¹²³"
+    return latin1_symbol or 0x02B0 <= code <= 0x02FF or 0x2000 <= code <= 0x206F
+
+
 def remove_breves(text: str) -> str:
     """Remove breve diacritics from characters in a given string."""
     normalized = unicodedata.normalize("NFD", text)

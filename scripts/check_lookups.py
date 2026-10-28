@@ -13,15 +13,10 @@ it is reported but does not fail the run. Exits 1 if any other word opens nothin
 """
 
 import argparse
-import re
-import shutil
-import subprocess
 import sys
 from pathlib import Path
 
-RESOLVED = re.compile(r'resolves (?:via "(?P<label>.*)"|\(exact headword/alias\))')
-RUN = re.compile(r"index search returned (\d+) labels")
-HIDDEN = re.compile(r"so the search cannot reach")
+from wiktionary_to_kindle.quality.kindling import default_binary, lookup
 
 
 def read_words(path):
@@ -35,33 +30,13 @@ def read_words(path):
     return words
 
 
-def lookup(kindling, mobi, word):
-    proc = subprocess.run(
-        [kindling, "lookup", str(mobi), word],
-        check=False,  # exit 1 means the word opens nothing, which we report
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-    )
-    match = RESOLVED.search(proc.stdout)
-    run = RUN.search(proc.stderr)
-    return {
-        "opens": proc.returncode == 0 and match is not None,
-        "label": (match.group("label") or word) if match else None,
-        "tied": int(run.group(1)) if run else 1,
-        "hidden": bool(HIDDEN.search(proc.stderr)),
-        "detail": (proc.stdout + proc.stderr).strip(),
-    }
-
-
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("mobi", type=Path)
     parser.add_argument("words", type=Path)
     parser.add_argument(
         "--kindling",
-        default=shutil.which("kindling-cli") or "kindlegen",
+        default=default_binary(),
         help="kindling binary (CI installs it as `kindlegen`)",
     )
     parser.add_argument("-v", "--verbose", action="store_true")

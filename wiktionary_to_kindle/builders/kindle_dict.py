@@ -1,5 +1,6 @@
 import copy
 import heapq
+import json
 import os
 import shutil
 import subprocess
@@ -29,7 +30,6 @@ try:
 
     USING_ORJSON = True
 except ImportError:
-    import json
 
     def json_loads(line):
         return json.loads(line)
@@ -39,6 +39,9 @@ except ImportError:
 
 
 TEMPLATES_DIR = Path(__file__).resolve().parent.parent.parent / "templates"
+
+# Bump when sort_jsonl's output changes, so cached sorted files are rebuilt
+SORT_VERSION = 2
 
 
 class KindleDict:
@@ -156,8 +159,35 @@ class KindleDict:
         base, ext = os.path.splitext(self.wiktionary_fp)
         return f"{base}(sorted){ext}"
 
-    def sort_jsonl(self, chunk_size=200000):
-        """Sorts JSONL file using an external merge sort to prevent disk I/O thrashing."""
+    def sorted_cache_meta(self):
+        stat = os.stat(self.wiktionary_fp)
+        return {
+            "sort_version": SORT_VERSION,
+            "source_size": stat.st_size,
+            "source_mtime_ns": stat.st_mtime_ns,
+        }
+
+    def sort_jsonl(self, chunk_size=200000, force=False):
+        """Sorts JSONL file using an external merge sort to prevent disk I/O thrashing.
+
+        The result is cached beside the input; it is reused while the input file and
+        SORT_VERSION are unchanged, unless force is set.
+        """
+        output_path = self.make_sorted_path()
+        meta_path = Path(output_path + ".meta.json")
+        meta = self.sorted_cache_meta()
+        cached = (
+            not force
+            and os.path.exists(output_path)
+            and meta_path.exists()
+            and json.loads(meta_path.read_text(encoding="utf-8")) == meta
+        )
+        if cached:
+            print(f"Reusing sorted file {output_path} (pass --resort to rebuild it)")
+            self.wiktionary_fp = output_path
+            return
+
+        print("Sorting JSONL file...")
         if not USING_ORJSON:
             print(
                 "Info: `orjson` not detected. Running with standard `json` (install `wiktionary-to-kindle[fast]` for speedups)."
@@ -254,8 +284,6 @@ class KindleDict:
                 )
                 self.line_count += len(orphans)
 
-            output_path = self.make_sorted_path()
-
             def read_lines(file_obj):
                 for fl in file_obj:
                     obj = json_loads(fl)
@@ -300,6 +328,8 @@ class KindleDict:
                         out_f.write(json_dumps(obj) + "\n")
                         pbar.update(1)
 
+        # Written last, so an interrupted sort is never mistaken for a finished one
+        meta_path.write_text(json.dumps(meta), encoding="utf-8")
         self.wiktionary_fp = output_path
 
     def add_entry_to_dictionary(

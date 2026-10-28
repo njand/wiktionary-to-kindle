@@ -146,6 +146,27 @@ def test_orphan_is_kept_with_its_gloss(sorted_entries):
     assert "genitive singular of fors" in senses
 
 
+def test_sorted_file_is_cached_until_input_changes(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    src = tmp_path / "kaikki-la.jsonl"
+    src.write_text(json.dumps(ENTRIES[0], ensure_ascii=False) + "\n", encoding="utf-8")
+
+    def sort(**kwargs):
+        kd = KindleDict(str(src), "la", "kindlegen")
+        kd.sort_jsonl(**kwargs)
+        return kd.line_count  # only set when a sort actually ran
+
+    assert sort() == 1
+    assert sort() is None
+    assert sort(force=True) == 1
+
+    src.write_text(
+        "".join(json.dumps(e, ensure_ascii=False) + "\n" for e in ENTRIES[:2]),
+        encoding="utf-8",
+    )
+    assert sort() == 1  # input changed: sorted again (amābō merges into amō)
+
+
 @pytest.mark.parametrize(
     "sense, expected",
     [
