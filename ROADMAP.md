@@ -136,6 +136,7 @@ Measured (2026-10-28, same dump and kindling): a full build with `--stardict` wr
 
 Still to check:
 - [ ] The first release goes through the device checklist, which also covers the Stage 0, 2 and 4 device checks.
+- [ ] The test book (`scripts/make_device_test.py`, words in `tests/device_words_la.tsv`) is checked on a device. Building it found that no entry has a label with a breve (`ā̆`), so a text that prints one misses; check how often texts do.
 - [ ] StarDict in KOReader and GoldenDict: card links (`bword://`) open their entries, and an unmacronized tap finds its entry.
 - [ ] The workflow changes have not run on GitHub yet (Actions quota).
 

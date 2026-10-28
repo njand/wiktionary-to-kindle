@@ -1,0 +1,90 @@
+# Words for the on-device lookup test (scripts/make_device_test.py builds a book from them).
+# section<TAB>word<TAB>what it tests. Sections print in this order; words keep their order.
+# {zwsp} in a word stands for U+200B, the zero-width space that pre-segments an enclitic.
+frequent	et	short, the most frequent word
+frequent	in	short preposition
+frequent	est	short verb form
+frequent	sunt	short verb form
+frequent	non	short; nōn's punctuation-free spelling
+frequent	cum	short; preposition and conjunction
+frequent	quod	short; pronoun and conjunction
+frequent	ad	short preposition
+frequent	se	short pronoun
+frequent	atque	frequent conjunction
+frequent	omnis	frequent adjective
+frequent	Caesar	capitalized name
+rare	tergiversātiōnem	long, rare, macronized
+rare	superstitionibus	long, rare inflection, unmacronized
+rare	conglutinarentur	long, rare inflection, unmacronized
+rare	magnanimitās	long, rare headword
+rare	praestantissimōrum	long superlative, macronized
+rare	lychnūchus	rare Greek loan
+rare	ēnōdis	rare short adjective
+rare	sēmisomnus	rare compound
+macrons	fēmina	headword, macronized
+macrons	femina	same word, unmacronized
+macrons	FEMINA	same word, all capitals
+macrons	rēgīnae	inflection, macronized
+macrons	reginae	same inflection, unmacronized
+macrons	Rōmāni	partly macronized
+macrons	Rōmānī	fully macronized
+macrons	Romani	unmacronized
+macrons	Cæsar	æ ligature (the Kindle reads it as ae)
+macrons	prœlium	œ ligature, for proelium
+inflections	amāvistī	perfect, macronized
+inflections	amavisti	perfect, unmacronized
+inflections	tulerunt	suppletive perfect of ferō
+inflections	dedissem	pluperfect subjunctive of dō
+inflections	hominibus	third-declension plural
+inflections	corporum	neuter genitive plural
+inflections	iūrāvērunt	perfect of iūrō
+inflections	maiōrem	irregular comparative
+inflections	optimē	irregular superlative adverb
+inflections	ignōtiōrem	generated comparative
+inflections	fortissimīs	generated superlative
+inflections	amantium	participle with no page of its own
+spellings	uir	u for consonantal v
+spellings	uideo	u for consonantal v
+spellings	Iuppiter	i for consonantal i
+spellings	Jupiter	j for consonantal i
+spellings	jam	j for i
+spellings	iurauisti	u for v and i for j, inflected
+spellings	inlābor	assimilation not written (illābor)
+spellings	caussa	archaic spelling
+spellings	prelium	Medieval spelling of proelium
+spellings	voltus	old spelling of vultus
+spellings	adjuvo	j after a prefix
+spellings	Vt	capital V for vocalic u (known miss)
+homographs	iūs	law and broth, same macrons
+homographs	vīs	force and "you want", same macrons
+homographs	lātus	participle and adjective, same macrons
+homographs	pīla	ball and pillar, same macrons
+homographs	ius	law and broth, unmacronized
+homographs	Latus	capitalized
+unmacronized	malum	malum (evil) and mālum (apple)
+unmacronized	mālum	apple and apple tree only, not evil
+unmacronized	liber	liber (book) and līber (free)
+unmacronized	līber	free only, not book
+unmacronized	populus	populus (people) and pōpulus (poplar)
+unmacronized	pōpulus	poplar only
+unmacronized	os	os (bone) and ōs (mouth)
+unmacronized	ōs	mouth only
+unmacronized	levis	levis (light) and lēvis (smooth)
+unmacronized	latus	latus (side), lātus (wide), lātus (carried)
+unmacronized	venit	venit (comes) and vēnit (came)
+unmacronized	vēnit	came (veniō) or is sold (vēneō), not comes
+ambiguous	amor	noun amor and passive of amō
+ambiguous	lātum	supine of ferō and forms of lātus
+ambiguous	ferō	verb ferō and dative of ferus
+ambiguous	suis	suus, sūs (genitive) and suō (sew), unmacronized
+ambiguous	regi	rēgī (rēx) and regī (regō)
+ambiguous	regis	rēgis (rēx) and regis (regō)
+ambiguous	ducis	ducis (dux) and dūcis (dūcō)
+ambiguous	vires	vīrēs (vīs) and virēs (vireō)
+ambiguous	legere	infinitive and 2nd person passive of legō
+ambiguous	parēs	pār and pāreō
+ambiguous	mōre	mōs and mōrus
+ambiguous	eris	sum and erus
+enclitics	virum{zwsp}que	U+200B before -que: should select only virum
+enclitics	arma{zwsp}que	U+200B before -que: should select only arma
+enclitics	virumque	no break: the whole word (a miss)
