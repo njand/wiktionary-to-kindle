@@ -141,17 +141,27 @@ def lookup_spellings(form: str) -> list[str]:
     return list(dict.fromkeys(spellings))
 
 
+# Separate combining marks that are abbreviation signs, not accents: a combining macron or
+# overline on a consonant (n̄ for nōn) and the superscript letters scribes write (aͣ)
+ABBREVIATION_MARKS = {"̄", "̅", *map(chr, range(0x0363, 0x0370))}
+
+
 def strip_marks(text: str) -> str:
-    """text without the combining marks that stay separate after NFC."""
+    """text without the accents that stay separate after NFC (the tie bar in Orphe͡us, the
+    diaeresis in Boō̈tēs). Abbreviation signs are kept: without them it is another word."""
     composed = unicodedata.normalize("NFC", text)
-    return "".join(c for c in composed if not unicodedata.combining(c))
+    return "".join(
+        c for c in composed if not unicodedata.combining(c) or c in ABBREVIATION_MARKS
+    )
 
 
 def j_for_i(word: str) -> str:
     """word with consonantal i written j: before a vowel at the start (iam), between vowels
     (cuius, maior), or at the start of a root after a prefix (adiuvō). An approximation;
     a wrong guess only adds a spelling no text uses."""
-    lower = normalize(word, lowercase=True)
+    word = unicodedata.normalize("NFC", word)
+    # One base letter per character, so indexes match word's (a combining mark becomes "")
+    lower = [normalize(char, lowercase=True) for char in word]
     chars = list(word)
     for i, char in enumerate(word):
         if char not in "iI" or i + 1 >= len(word):
@@ -161,8 +171,11 @@ def j_for_i(word: str) -> str:
             continue
         if (
             i == 0
-            or (word[i - 1] in VOWELS and lower[i - 2 : i] not in ("qu", "gu"))
-            or any(lower[:i] == prefix for prefix in J_PREFIXES)
+            or (
+                word[i - 1] in VOWELS
+                and "".join(lower[max(i - 2, 0) : i]) not in ("qu", "gu")
+            )
+            or "".join(lower[:i]) in J_PREFIXES
         ):
             chars[i] = char.translate(J_FOR_I)
     return "".join(chars)

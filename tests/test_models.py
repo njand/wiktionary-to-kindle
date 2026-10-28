@@ -118,6 +118,12 @@ def test_vowel_variants_resolve_disputed_length():
         ("fīlius", ["fīlius"]),
         # A tie bar weighs as itself, so the plain spelling is added
         ("Orphe͡us", ["Orphe͡us", "Orpheus"]),
+        ("Boō̈tēs", ["Boō̈tēs", "Boōtēs"]),
+        # Abbreviation signs are kept: aͣ (anima, aliquis) and n̄ (nōn) are not a and n
+        ("aͣ", ["aͣ"]),
+        ("n̄", ["n̄"]),
+        # A mark that normalize() drops must not shift the letters j_for_i looks at
+        ("ce͜iia", ["ce͜iia", "ce͜ija", "ceiia", "ceija"]),
     ],
 )
 def test_lookup_spellings(form, spellings):
@@ -140,3 +146,16 @@ def test_entry_is_found_by_u_and_j_spellings():
         }
     )
     assert {"iuuenis", "juvenis", "iuuenem", "juvenem"} <= entry.all_forms
+
+
+def test_labels_that_weigh_nothing_are_not_indexed():
+    entry = Entry(
+        {
+            "word": "et",
+            "pos": "conj",
+            "head_templates": [{"name": "la-conj", "expansion": "et"}],
+            "forms": [{"form": "⁊", "tags": ["Medieval-Latin", "alternative"]}],
+            "senses": [{"glosses": ["and"]}],
+        }
+    )
+    assert entry.all_forms == {"et"}

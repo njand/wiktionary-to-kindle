@@ -2,6 +2,7 @@ import re
 
 from ..utils import (
     form_of_root,
+    kindle_fold,
     lookup_spellings,
     remove_breves,
     sanitize_xhtml,
@@ -197,7 +198,8 @@ class Entry:
             self.inflected_forms.keys()
         ):
             all_forms.update(lookup_spellings(form))
-        return {form for form in all_forms if form and " " not in form}
+        # A label of punctuation only (the Tironian et, ⁊) weighs nothing: no tap reaches it
+        return {form for form in all_forms if " " not in form and kindle_fold(form)}
 
     def valid_pairs(self):
         """(senses block, header) pairs that render; an entry with none is left out."""
