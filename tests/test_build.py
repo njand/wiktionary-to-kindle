@@ -34,7 +34,9 @@ def test_entry_without_senses_is_not_indexed(tmp_path, monkeypatch):
 
 
 def test_front_page_credits_wiktionary(tmp_path, monkeypatch):
-    build, files = run_build(tmp_path, monkeypatch, [lemma("amo", "verb", "amō", ["to love"])])
+    build, files = run_build(
+        tmp_path, monkeypatch, [lemma("amo", "verb", "amō", ["to love"])]
+    )
     front = (files / "front.xhtml").read_text("utf-8")
     assert "Wiktionary contributors" in front
     assert "CC BY-SA 4.0" in front
