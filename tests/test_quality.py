@@ -45,8 +45,8 @@ def dict_dir(tmp_path):
         + entry(4, "amārē", ["amare"], pos="adv"),
         encoding="utf-8",
     )
-    (files / "inf-0000.xhtml").write_text(
-        entry("inf_9_1", "lāta", ["lata"]), encoding="utf-8"
+    (files / "card-0000.xhtml").write_text(
+        entry("card_9", "lāta", ["lata"]), encoding="utf-8"
     )
     return tmp_path
 
@@ -107,7 +107,7 @@ def test_measure_shares(index):
 def test_stats_and_diff(dict_dir):
     current = stats.collect(dict_dir)
     assert current["entries"] == 4
-    assert current["inflection_cards"] == 1
+    assert current["cards"] == 1
     assert current["pos"] == {"noun": 1, "adj": 1, "verb": 1, "adv": 1}
 
     previous = dict(current, entries=10, labels=current["labels"])

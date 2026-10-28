@@ -62,7 +62,7 @@ class HTMLRenderer:
     )
 
     entry_tmpl = env.get_template("entry.html.jinja")
-    inflection_tmpl = env.get_template("inflection.html.jinja")
+    card_tmpl = env.get_template("card.html.jinja")
 
     @classmethod
     def render_entry(
@@ -71,19 +71,25 @@ class HTMLRenderer:
         filter_descendants_langs=None,
         recursive_senses=True,
         include_etymology=True,
+        orth=None,
+        iforms=None,
     ):
-        valid_pairs = [
-            (block, header)
-            for block, header in zip(entry.senses_blocks, entry.headers)
-            if len(block.senses) > 0
-        ]
+        """Render an entry indexed by orth (default: its headword) and iforms (default:
+        all its forms)."""
+        valid_pairs = entry.valid_pairs()
         if not valid_pairs:
             return []
+        if orth is None:
+            orth = entry.head_word
+        if iforms is None:
+            iforms = sorted(entry.all_forms - {entry.head_word})
 
         descendants = entry.filter_descendants(filter_descendants_langs)
 
         html_str = cls.entry_tmpl.render(
             entry=entry,
+            orth=orth,
+            iforms=iforms,
             valid_pairs=valid_pairs,
             descendants=descendants,
             recursive_senses=recursive_senses,
@@ -92,16 +98,7 @@ class HTMLRenderer:
         return html_str.strip().split("\n")
 
     @classmethod
-    def render_inflection(cls, inflection, card_id, entry_ids, max_senses=1):
-        """Render a standalone card for one inflected form, linking to its lemma's entry."""
-        root_id = inflection.parent.id_number
-        html_str = cls.inflection_tmpl.render(
-            inflection=inflection,
-            index=1,
-            entry_id=card_id,
-            max_senses=max_senses,
-            root_word=inflection.parent.head_word,
-            root_id=root_id,
-            root_page=entry_ids.get(root_id, ""),
-        )
+    def render_card(cls, card, rows):
+        """Render a disambiguation card: one row (a CardRow) per entry its labels reach."""
+        html_str = cls.card_tmpl.render(card=card, rows=rows)
         return html_str.strip().split("\n")
