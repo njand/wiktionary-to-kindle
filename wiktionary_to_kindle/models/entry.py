@@ -1,7 +1,13 @@
 import copy
 import re
 
-from ..utils import form_of_root, generate_vowel_variants, normalize, remove_breves
+from ..utils import (
+    form_of_root,
+    generate_vowel_variants,
+    normalize,
+    remove_breves,
+    sanitize_xhtml,
+)
 from .etymology import Etymology
 from .header import Header
 from .inflection import Inflection
@@ -86,7 +92,7 @@ class Entry:
                 headers.append(header)
             else:
                 num_headers -= 1
-                headers[-1].remainder += f"<br/>{header_text}"
+                headers[-1].remainder += f"<br/>{sanitize_xhtml(header_text)}"
                 for header in headers:
                     header.num_headers = num_headers
         return headers

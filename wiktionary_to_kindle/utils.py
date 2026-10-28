@@ -164,9 +164,13 @@ def form_of_root(sense: dict) -> str | None:
 
 
 def sanitize_xhtml(text: str) -> str:
-    """Escapes stray `<` characters that break KindleGen XML parsing."""
+    """Escapes stray `&` and `<` characters that break XML parsing."""
     if not text:
         return text
+    # Escapes `&` unless it starts a character reference or one of XML's five entities
+    text = re.sub(
+        r"&(?!(?:#[0-9]+|#x[0-9a-fA-F]+|amp|lt|gt|quot|apos);)", "&amp;", text
+    )
     # Escapes `<` if it does not start a valid standard XHTML tag
     return re.sub(
         r"<(?!(?:/?(?:br|b|i|span|a|p|sup|sub|small|strong|em|div|ul|ol|li|hr|idx:[a-z]+)\b))",

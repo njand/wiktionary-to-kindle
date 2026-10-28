@@ -52,7 +52,7 @@ class Header:
             self.remainder = self.full_header_text[end_idx:].strip()
             self.abbreviate_grammatical_forms()
 
-        self.prefix = sanitize_xhtml(self.prefix)
+        # The prefix is escaped by the templates; the remainder is inserted as markup
         self.remainder = sanitize_xhtml(self.remainder)
 
     def abbreviate_grammatical_forms(self):

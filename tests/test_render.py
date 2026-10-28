@@ -54,3 +54,11 @@ def test_descendants_filtered_and_shown_by_language_name():
 def test_format_etymology(text, expansions, expected):
     etymology = Etymology(text, [{"expansion": e} for e in expansions])
     assert format_etymology(etymology) == expected
+
+
+def test_header_prefix_is_escaped_once():
+    entry = lemma("amo", "verb", "<†> & amō (present infinitive amāre)", ["to love"])
+    html = render(entry)
+    assert "&lt;†&gt; &amp; amō" in html
+    assert "&amp;lt;" not in html
+    assert "&amp;amp;" not in html

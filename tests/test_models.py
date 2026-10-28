@@ -2,9 +2,11 @@
 
 import pytest
 
+from wiktionary_to_kindle.models.entry import Entry
 from wiktionary_to_kindle.models.header import Header
 from wiktionary_to_kindle.models.inflection import Inflection
 from wiktionary_to_kindle.models.morph_tag import MorphTag
+from wiktionary_to_kindle.utils import sanitize_xhtml
 
 
 @pytest.mark.parametrize(
@@ -56,3 +58,30 @@ def test_inflections_sort_with_and_without_tags():
     nominative = Inflection("c", None)
     nominative.add_tags({"nominative", "singular"})
     assert sorted([nominative, genitive, untagged]) == [untagged, nominative, genitive]
+
+
+def test_lookup_sense_leaves_glosses_alone():
+    raw_glosses = ["to love", "to be fond of"]
+    entry = Entry(
+        {
+            "word": "amo",
+            "pos": "verb",
+            "senses": [{"glosses": list(raw_glosses), "raw_glosses": raw_glosses}],
+        }
+    )
+    assert raw_glosses == ["to love", "to be fond of"]
+    sense = entry.senses_blocks[0].senses["to love"]
+    assert "to be fond of" in sense.sub_glosses.senses
+
+
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        ("a & b", "a &amp; b"),
+        ("&amp; &#257; &#x101; &lt;", "&amp; &#257; &#x101; &lt;"),
+        ("&nbsp; AT&T;", "&amp;nbsp; AT&amp;T;"),  # not defined in XML
+        ("x < y <br/> <i>z</i>", "x &lt; y <br/> <i>z</i>"),
+    ],
+)
+def test_sanitize_xhtml(text, expected):
+    assert sanitize_xhtml(text) == expected

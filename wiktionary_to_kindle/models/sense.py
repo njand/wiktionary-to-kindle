@@ -105,8 +105,7 @@ class SensesBlock:
 
         sense_block = self
         sense = None
-        while len(raw_glosses) > 0:
-            head_gloss = raw_glosses.pop(0)
+        for head_gloss in raw_glosses:
             if head_gloss not in sense_block.senses:
                 return None
             sense = sense_block.senses[head_gloss]
