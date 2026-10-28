@@ -18,18 +18,24 @@
     {%- endif -%}
 
     {%- if entry.pos -%}
-        <p class="pos">{{ entry.pos | e }}</p>
+        <p><i>{{ entry.pos | e }}</i></p>
     {%- endif -%}
 
     {%- for block, header in valid_pairs -%}
         {%- if loop.index0 > 0 -%}
             {{- macros.render_header(header) -}}
             {%- if entry.pos -%}
-                <p class="pos">{{ entry.pos | e }}</p>
+                <p><i>{{ entry.pos | e }}</i></p>
             {%- endif -%}
         {%- endif -%}
         
         {{- macros.render_senses(block, recursive_senses) -}}
+    {%- endfor -%}
+
+    {%- for kind, words in entry.related -%}
+        <p><i>{{ kind }}</i> {% for word, gloss in words -%}
+            <b>{{ word | e }}</b>{% if gloss %}: {{ gloss | e }}{% endif %}{% if not loop.last %}; {% endif %}
+        {%- endfor %}</p>
     {%- endfor -%}
 
     {%- if include_etymology and entry.etymology and entry.etymology.etymology_text -%}

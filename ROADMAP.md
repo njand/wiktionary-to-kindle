@@ -94,11 +94,22 @@ Still open, found while doing Stage 3:
 - [ ] u texts print V for capital vocalic u (`Vt`, `Vrbem`); those taps miss.
 - [ ] A generated form can be another word's form (`dispēnsō`, dative of the generated participle `dispēnsus` and a verb of its own), which puts both on a card. That is correct, but check how often it happens.
 
-## Stage 4: Entry content
+## Stage 4: Entry content — done, device check pending
 
-- [ ] Keep the meaning of merged pointer entries as a sub-line of the lemma ("dim. puellula — little girl", "comp. lātior").
-- [ ] Front matter: copyright, license and attribution page, dump date, version.
-- [ ] Check how entries render in the lookup popup (no stylesheet; kindling compiles some CSS into inline tags).
+- [x] Keep the meaning of merged pointer entries as a sub-line of the lemma. A merged page that is a word of its own gets a line by kind (`dim.`, `comp.`, `superl.`, `fem.`, `alt.`, `archaic`, `medieval`, `abbr.`, `syn.`), with the page's own meaning when it adds one: "dim. **puellula**: little girl, lass", "comp. **melior**: better", "alt. **voltus**; **voltum**". Inflections and participles get no line, nor does a comparative or superlative the headword line already names without adding a meaning (`lātior` on lātus).
+- [x] Front matter: a first page (`front.xhtml`, guide `copyright-page`) with what the dictionary is, how cards work, attribution to Wiktionary contributors, Kaikki.org and wiktextract, what was changed, the CC BY-SA 4.0 license, the date of the Wiktionary data, the build date and the version. The OPF gains `dc:creator`, `dc:source`, `dc:rights`, `dc:date` and `dc:description`. The downloader keeps the dump's date from Kaikki's `Last-Modified` header in `<file>.date` and carries it to the filtered file; without one, the file's own date is used.
+- [x] Popup rendering: kindling strips `class` attributes from entries and compiles only bare-element `font-size` rules, so `.pos` (italic) and `.tag` (small caps) never reached the popup. Parts of speech and labels are now `<i>`, card parses plain text, and the stylesheet keeps only rules for the book view (the `b { font-size: 1.2em }` rule, which kindling would have inlined into every bold word, is gone).
+
+How it works: `sort_jsonl` records each merged page that is a word of its own on the lemma's JSON (`merged_pages`, `builders/related.py`, `SORT_VERSION` 6); `Entry.related` groups them by kind for the template.
+
+Found and fixed while doing Stage 4: following a pointer chain through a form spelled like another lemma (`ferō`, dative of `ferus`) pulled in that lemma's pointers (`lātum`, supine of the verb `ferō`), so `ferus` carried the verb's forms and sat on its cards. Chains now stop at a lemma's headword.
+
+Measured (2026-10-28, same dump and kindling): 54,048 entries (unchanged) and 87,563 cards (−31%). Labels fell 3.2% while folded keys stayed the same (+1), so every spelling still reaches something; the dropped labels and cards were the misattached forms. Tied keys −3.2%, the `.mobi` is 64.5 MB (−12%), 4,881 entries have a sub-line (4,285 `alt.`, 206 `dim.`). Corpus coverage is unchanged (86.4% of tokens open something, 0.2% by index order). kindling: 0 hidden labels, every word in the lookup list opens, no self-check warnings.
+
+Still to check:
+- [ ] On a device: the front page, italics in the popup, and how long entries with many `alt.` spellings read.
+- [ ] Each card's `<a href>` opens its entry (also listed under Stage 2).
+- [ ] The full build's call to kindling failed once on Windows with 0xC0000142 (a DLL initialization failure) after the pages were written; compiling the same OPF by hand worked. A relative `--kindlegen` path also broke the call (kindling runs from the output folder); the CLI now makes an existing path absolute.
 
 ## Stage 5: Code health
 

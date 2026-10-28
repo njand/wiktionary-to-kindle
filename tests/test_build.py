@@ -32,3 +32,19 @@ def test_entry_without_senses_is_not_indexed(tmp_path, monkeypatch):
     assert [e.headword for e in entries] == ["amō"]  # no card for xyzzy's form amō
     assert "xyzzy" not in kd.entries
     assert "xyzzy" not in "".join(p.read_text("utf-8") for p in files.glob("*.xhtml"))
+
+
+def test_front_page_credits_wiktionary(tmp_path, monkeypatch):
+    kd, files = build(tmp_path, monkeypatch, [lemma("amo", "verb", "amō", ["to love"])])
+    front = (files / "front.xhtml").read_text("utf-8")
+    assert "Wiktionary contributors" in front
+    assert "CC BY-SA 4.0" in front
+    assert f"Wiktionary data of {kd.dump_date}" in front
+
+    opf = (files / "dictionary.opf").read_text("utf-8")
+    assert "<dc:rights>CC BY-SA 4.0" in opf
+    assert f"<dc:date>{kd.build_date}</dc:date>" in opf
+    assert opf.index('<itemref idref="front"/>') < opf.index(
+        '<itemref idref="page-0"/>'
+    )
+    assert "$" not in opf

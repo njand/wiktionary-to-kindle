@@ -154,10 +154,10 @@ def test_built_cards_link_and_parse(built):
     sublatum = cards[cards.index('value="sublātum"') :]
     # Both entries listed, each with the parse of its sublātum
     assert (
-        'ferō</b></a> <span class="pos">verb</span> <span class="tag">sup.</span>'
+        'ferō</b></a> <i>verb</i> sup.:'
         in sublatum
     )
-    assert '<span class="tag">n.</span>: lofty' in sublatum
+    assert '<i>adj</i> n.: lofty' in sublatum
     assert 'href="0000.xhtml#' in cards
 
     pages = "".join(p.read_text("utf-8") for p in built.glob("0*.xhtml"))

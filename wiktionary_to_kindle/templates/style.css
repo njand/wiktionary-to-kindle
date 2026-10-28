@@ -1,24 +1,12 @@
+/* The lookup popup applies no stylesheet, and kindling strips class attributes from
+   entries, so entries say their style in markup (i and b elements). These rules only
+   reach the dictionary opened as a book. No tags in this comment: kindling embeds it in
+   the text, and its self-check reads them as unclosed. */
 body {
     font-family: serif;
     margin: 1em;
 }
 
-b {
-    font-size: 1.2em;
-}
-
 p {
     margin-left: 1em;
-}
-
-.pagebreak {
-    page-break-before: always;
-}
-
-.tag {
-    font-variant: small-caps;
-}
-
-.pos {
-	font-style: italic;
 }

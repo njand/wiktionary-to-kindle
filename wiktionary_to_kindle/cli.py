@@ -78,6 +78,10 @@ def main():
                 f"--input is required when --no-download is specified and '{raw_file}' does not exist."
             )
 
+    # The compiler runs from the output folder, where a relative path breaks; a bare name
+    # (kindlegen) is left for the PATH search
+    if Path(kindlegen_path).is_file():
+        kindlegen_path = Path(kindlegen_path).resolve()
     kd = KindleDict(str(input_file), args.lang, str(kindlegen_path))
 
     # A sorted file is already merged; otherwise sort, reusing an up-to-date cached result
