@@ -21,7 +21,7 @@ class IndexedEntry:
     key: str  # "<file>#<id>", unique across the dictionary
     headword: str
     pos: str | None
-    is_inflection_card: bool
+    is_card: bool  # a disambiguation card, not an entry
     labels: list[str] = field(default_factory=list)
 
 
@@ -54,7 +54,7 @@ def read_entries(pages_dir):
                     key=f"{page.name}#{entry_id}",
                     headword=headword,
                     pos=html.unescape(pos.group(1)) if pos else None,
-                    is_inflection_card=entry_id.startswith("inf_"),
+                    is_card=entry_id.startswith("card_"),
                     labels=labels,
                 )
             )
@@ -70,5 +70,5 @@ def build_index(entries):
 
 
 def _spine_order(page):
-    # make_opf lists main pages, then inf- pages
-    return page.name.startswith("inf-"), page.name
+    # make_opf lists main pages, then card- pages
+    return page.name.startswith("card-"), page.name

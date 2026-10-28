@@ -6,6 +6,7 @@ import subprocess
 import tempfile
 from collections import defaultdict
 from contextlib import ExitStack
+from dataclasses import dataclass
 from pathlib import Path
 from subprocess import CalledProcessError
 
@@ -13,9 +14,16 @@ from tqdm import tqdm
 
 from ..models.entry import Entry
 from ..models.header import Header
-from ..renderers.html_renderer import HTMLRenderer
-from ..utils import TEMPLATES, form_of_root, normalize, remove_breves
+from ..renderers.html_renderer import HTMLRenderer, format_gloss
+from ..utils import (
+    TEMPLATES,
+    form_of_root,
+    generate_vowel_variants,
+    normalize,
+    remove_breves,
+)
 from .html_page import HTMLPage
+from .label_resolver import LabelResolver
 
 USING_ORJSON = False
 try:
@@ -41,6 +49,18 @@ except ImportError:
 SORT_VERSION = 2
 
 
+@dataclass
+class CardRow:
+    """One entry as a disambiguation card lists it."""
+
+    head: str
+    pos: str | None
+    parses: list[str]
+    gloss: str
+    id: int
+    page: str = ""
+
+
 class KindleDict:
     def __init__(self, wiktionary_fp, lang_code, kindlegen_path):
         self.wiktionary_fp = wiktionary_fp
@@ -52,7 +72,6 @@ class KindleDict:
         self.kindlegen_path = kindlegen_path
 
         self.entries = {}
-        self.normalized_lemmas = defaultdict(set)
         self.entry_ids = {}
         self.line_count = None
 
@@ -337,6 +356,8 @@ class KindleDict:
         descendant_langs,
         recursive_senses,
         include_etymology,
+        orth=None,
+        iforms=None,
     ):
         """Render entry and index it; return False, indexing nothing, if it has no senses."""
         lines = HTMLRenderer.render_entry(
@@ -344,15 +365,14 @@ class KindleDict:
             descendant_langs,
             recursive_senses,
             include_etymology,
+            orth,
+            iforms,
         )
         if not lines:
             return False
 
         entry_filename = html_pages["main"].get_filename()
         self.entries.setdefault(entry.head_word, (entry.id_number, entry_filename))
-        self.normalized_lemmas[normalize(entry.head_word, lowercase=True)].add(
-            entry.id_number
-        )
         self.entry_ids[entry.id_number] = entry_filename
 
         html_pages["main"].add_lines(lines)
@@ -360,13 +380,13 @@ class KindleDict:
 
     def make_opf(self, html_pages):
         entry_page_len = html_pages["main"].index
-        inflection_page_len = html_pages["inflections"].index
+        card_page_len = html_pages["cards"].index
 
         html_lines = TEMPLATES.joinpath("opf_header.txt").read_text("utf-8").split("\n")
 
         for prefix, page_len in [
             ("", entry_page_len),
-            ("inf-", inflection_page_len),
+            ("card-", card_page_len),
         ]:
             for page_num in range(page_len):
                 html_lines.append(
@@ -376,7 +396,7 @@ class KindleDict:
         html_lines.extend(["</manifest>", "<spine>"])
         for prefix, page_len in [
             ("", entry_page_len),
-            ("inf-", inflection_page_len),
+            ("card-", card_page_len),
         ]:
             for page_num in range(page_len):
                 html_lines.append(f'<itemref idref="{prefix}page-{page_num}"/>')
@@ -421,6 +441,43 @@ class KindleDict:
         with open(self.wiktionary_fp, "rb") as f:
             self.line_count = sum(1 for _ in f)
 
+    def read_entries(self, limit, desc):
+        """Yield the dump's entries that render, numbered 1, 2, ... in file order."""
+        entry_id = 0
+        with open(self.wiktionary_fp, "r", encoding="utf-8") as f:
+            for line in tqdm(f, unit="lines", unit_scale=True, total=limit, desc=desc):
+                json_entry = json_loads(line)
+                alt_id, alt_page = self.entries.get(
+                    json_entry.get("alt_of"), (None, None)
+                )
+                entry = Entry(json_entry, entry_id + 1, alt_id, alt_page)
+                if not entry.valid_pairs():
+                    continue
+                entry_id += 1
+                yield entry
+                if entry_id >= limit:
+                    break
+
+    @staticmethod
+    def card_row(entry, reached):
+        """List entry on a card: its headword, and the parses of the forms that were tapped."""
+        reached = set(reached)
+        parses = []
+        for form, inflection in sorted(
+            entry.inflected_forms.items(), key=lambda kv: kv[1]
+        ):
+            if reached.intersection(generate_vowel_variants(form)):
+                parses += [str(tag) for tag in sorted(inflection.morph_tags)]
+        block, header = entry.valid_pairs()[0]
+        sense = next(iter(block.senses.values()))
+        return CardRow(
+            head=header.head_word,
+            pos=entry.pos,
+            parses=list(dict.fromkeys(p for p in parses if p)),
+            gloss=format_gloss(sense),
+            id=entry.id_number,
+        )
+
     def build_dictionary(
         self,
         max_page_len=5000,
@@ -429,73 +486,58 @@ class KindleDict:
         recursive_senses=True,
         include_etymology=True,
     ):
+        """Index every entry's labels, give each spelling one owner (an entry or a
+        disambiguation card, see label_resolver), then render entries and cards."""
         self.init_dict_dir()
         if limit is None:
             if self.line_count is None:
                 self.count_lines()
             limit = self.line_count
 
+        resolver = LabelResolver()
+        for entry in self.read_entries(limit, "Indexing labels"):
+            resolver.add(entry.id_number, entry.head_word, entry.all_forms)
+        cards = resolver.resolve()
+
+        cards_of = defaultdict(list)
+        for card in cards:
+            for owner in card.owners:
+                cards_of[owner].append(card)
+        rows = defaultdict(dict)  # card id -> entry id -> CardRow
+
         html_pages = {
             "main": HTMLPage(
                 max_lines=max_page_len, output_fp_prefix=self.output_sub_dir + "/"
             ),
-            "inflections": HTMLPage(
-                max_lines=max_page_len, output_fp_prefix=self.output_sub_dir + "/inf-"
+            "cards": HTMLPage(
+                max_lines=max_page_len, output_fp_prefix=self.output_sub_dir + "/card-"
             ),
         }
 
-        last_entry_id = 0
-        all_inflections = defaultdict(list)
+        for entry in self.read_entries(limit, "Building"):
+            orth, iforms = resolver.entry_labels(
+                entry.id_number, entry.head_word, sorted(entry.all_forms)
+            )
+            self.add_entry_to_dictionary(
+                entry,
+                html_pages,
+                descendant_langs,
+                recursive_senses,
+                include_etymology,
+                orth,
+                iforms,
+            )
+            for card in cards_of.pop(entry.id_number, []):
+                row = self.card_row(entry, card.reached[entry.id_number])
+                rows[card.id_number][entry.id_number] = row
 
-        with open(self.wiktionary_fp, "r", encoding="utf-8") as f:
-            for line in tqdm(
-                f, unit="lines", unit_scale=True, total=limit, desc="Building"
-            ):
-                json_entry = json_loads(line)
-                alt_id, alt_page = self.entries.get(
-                    json_entry.get("alt_of"), (None, None)
-                )
-                entry = Entry(json_entry, last_entry_id + 1, alt_id, alt_page)
-
-                for split_entry in entry.split():
-                    last_entry_id += 1
-                    split_entry.id_number = last_entry_id
-
-                    if not self.add_entry_to_dictionary(
-                        split_entry,
-                        html_pages,
-                        descendant_langs,
-                        recursive_senses,
-                        include_etymology,
-                    ):
-                        continue
-
-                    for form, inflection in split_entry.inflected_forms.items():
-                        norm_key = normalize(form, lowercase=True)
-                        all_inflections[norm_key].append((split_entry, inflection))
-
-                if len(self.entries) >= limit:
-                    break
-
-        # Render standalone inflection entries only for ambiguous cases
-        for norm_form, inflection_list in all_inflections.items():
-            is_headword = norm_form in self.normalized_lemmas
-            is_multi_parent = len(inflection_list) > 1
-
-            if is_headword or is_multi_parent:
-                seen_pairs = set()
-                for split_entry, inflection in inflection_list:
-                    pair_key = (split_entry.id_number, inflection.form)
-                    if pair_key in seen_pairs:
-                        continue
-                    seen_pairs.add(pair_key)
-
-                    last_entry_id += 1
-                    html_pages["inflections"].add_lines(
-                        HTMLRenderer.render_inflection(
-                            inflection, f"inf_{last_entry_id}", self.entry_ids
-                        )
-                    )
+        for card in cards:
+            card_rows = []
+            for owner in card.owners:
+                row = rows[card.id_number][owner]
+                row.page = self.entry_ids.get(owner, "")
+                card_rows.append(row)
+            html_pages["cards"].add_lines(HTMLRenderer.render_card(card, card_rows))
 
         for page in html_pages.values():
             page.write()

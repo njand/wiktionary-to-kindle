@@ -12,7 +12,7 @@ from .labels import build_index, read_entries
 
 SCALARS = (
     "entries",
-    "inflection_cards",
+    "cards",
     "labels",
     "folded_keys",
     "tied_keys",
@@ -28,7 +28,7 @@ def collect(dict_dir):
     dict_dir = Path(dict_dir)
     entries = read_entries(dict_dir / "files")
     index = build_index(entries)
-    main = [e for e in entries if not e.is_inflection_card]
+    main = [e for e in entries if not e.is_card]
 
     ties = []
     for fold, run in index.by_fold.items():
@@ -39,7 +39,7 @@ def collect(dict_dir):
 
     return {
         "entries": len(main),
-        "inflection_cards": len(entries) - len(main),
+        "cards": len(entries) - len(main),
         "labels": sum(len(set(e.labels)) for e in entries),
         "folded_keys": len(index.by_fold),
         "tied_keys": len(ties),

@@ -2,18 +2,11 @@
 <idx:entry name="Latin" scriptable="yes" spell="yes" exact="yes" id="{{ entry.id_number }}">
     {%- set main_header = valid_pairs[0][1] -%}
     <h3>
-        <idx:orth value="{{ entry.head_word | e }}">
+        <idx:orth value="{{ orth | e }}">
             {{- main_header.prefix | e -}}{{- main_header.head_word | e -}}
-            
-            {%- set ns = namespace(inflections=[]) -%}
-            {%- for form in entry.all_forms | sort -%}
-                {%- if form != entry.head_word and " " not in form -%}
-                    {%- set ns.inflections = ns.inflections + [form] -%}
-                {%- endif -%}
-            {%- endfor -%}
-            {%- if ns.inflections -%}
+            {%- if iforms -%}
             <idx:infl>
-                {%- for form in ns.inflections -%}
+                {%- for form in iforms -%}
                 <idx:iform value="{{ form | e }}" exact="yes" />
                 {%- endfor -%}
             </idx:infl>

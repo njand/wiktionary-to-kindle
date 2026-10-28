@@ -1,10 +1,8 @@
-import copy
 import re
 
 from ..utils import (
     form_of_root,
     generate_vowel_variants,
-    normalize,
     remove_breves,
     sanitize_xhtml,
 )
@@ -190,40 +188,28 @@ class Entry:
         return forms
 
     def get_all_forms(self):
+        """Every spelling a tap should find this entry by, before label resolution.
+
+        The device folds macrons and case itself, so no unmacronized or lowercase variants
+        are added; a disputed vowel (ā̆) gives both its short and long spellings.
+        """
         all_forms = set()
         for form in [header.head_word for header in self.headers] + list(
             self.inflected_forms.keys()
         ):
-            all_forms.add(form)
             all_forms.update(generate_vowel_variants(form))
-            all_forms.add(normalize(form))
-        all_forms.discard("")
-        return all_forms
+        return {form for form in all_forms if form and " " not in form}
+
+    def valid_pairs(self):
+        """(senses block, header) pairs that render; an entry with none is left out."""
+        return [
+            (block, header)
+            for block, header in zip(self.senses_blocks, self.headers)
+            if len(block.senses) > 0
+        ]
 
     def filter_descendants(self, filter_langs):
         if not filter_langs:
             return self.descendants
         # d[0] is the language name ("French"), d[1] is the word
         return [d for d in self.descendants if d[0] in filter_langs]
-
-    def split(self, max_forms=200):
-        split_entries = []
-        if len(self.all_forms) <= max_forms:
-            return [self]
-
-        forms_chunk = set()
-        for i, form in enumerate(sorted(self.all_forms)):
-            forms_chunk.add(form)
-            if len(forms_chunk) == max_forms or (i + 1 == len(self.all_forms)):
-                split_entry = copy.deepcopy(self)
-                split_entry.id_number = self.id_number + len(split_entries)
-                split_entry.all_forms = forms_chunk
-                split_entry.inflected_forms = {}
-                for f in forms_chunk:
-                    if f in self.inflected_forms:
-                        inflection = self.inflected_forms[f]
-                        inflection.parent = split_entry
-                        split_entry.inflected_forms[f] = inflection
-                split_entries.append(split_entry)
-                forms_chunk = set()
-        return split_entries

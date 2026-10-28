@@ -51,18 +51,26 @@ Found while doing Stage 1, not yet fixed:
 - [ ] Alternative-form links never render: `build_dictionary` looks up a top-level `alt_of`, but Kaikki puts `alt_of` on senses, so `alt_id`/`alt_page` are always `None`.
 - [ ] `Entry.get_senses_blocks` adds each sense to the most recently created block instead of block `head_nr`, so a first-headword sense listed after a second-headword one lands under the second.
 
-## Stage 2: Deterministic lookups, entries kept separate
+## Stage 2: Deterministic lookups, entries kept separate — implemented, not yet measured on a full build
 
 Goal: every tap opens one predictable thing, and a macronized tap opens the matching entry.
 
-- [ ] Build a label index over the whole dictionary: exact spelling → owners, and folded key → owners.
-- [ ] **One owner per exact spelling.** A macronized label such as `lātum` stays on its own entry when only one entry has it, so a macronized tap goes straight there.
-- [ ] **Unmacronized spellings of ambiguous keys go to a disambiguation card.** If a folded key (e.g. `latum`) reaches several entries, an unmacronized label owned by one short card lists each candidate (headword, part of speech, parse, first gloss, link). Remove that spelling from the entries themselves. A tap in an unmacronized text then lands on the card instead of whatever index order picks.
-- [ ] Spellings shared exactly by several entries (same macrons, different lemmas) also go to a card.
-- [ ] Stop generating unmacronized and case variants except where a card needs the label.
-- [ ] Drop entry splitting (kindling only).
+- [x] Build a label index over the whole dictionary: exact spelling → owners, and folded key → owners.
+- [x] **One owner per exact spelling.** A macronized label such as `lātum` stays on its own entry when only one entry has it, so a macronized tap goes straight there.
+- [x] **Unmacronized spellings of ambiguous keys go to a disambiguation card.** If a folded key (e.g. `latum`) reaches several entries, an unmacronized label owned by one short card lists each candidate (headword, part of speech, parse, first gloss, link). Remove that spelling from the entries themselves. A tap in an unmacronized text then lands on the card instead of whatever index order picks.
+- [x] Spellings shared exactly by several entries (same macrons, different lemmas) also go to a card.
+- [x] Stop generating unmacronized and case variants except where a card needs the label.
+- [x] Drop entry splitting (kindling only).
 - [ ] Revisit if the device can show multiple entries natively (Stage 0 check).
 - Done when: coverage shows 0 ambiguous words, kindling reports no hidden labels, and the capital-letter and macron probe words open the same entry every time.
+
+How it works (`builders/label_resolver.py`): the build reads the dump twice. The first pass collects every entry's labels; the resolver groups them by folded key and creates cards; the second pass renders entries with the labels left to them, then the cards (`card-NNNN.xhtml`, ids `card_N`). An entry whose headword a card takes is indexed as `latus¹`, `latus²` (its place on the card); the superscript has its own weight, so no tap reaches it.
+
+Still to check:
+- [ ] Full build: `quality stats` and `quality coverage` against the Stage 0 baseline (count of cards, ambiguous words, build time and memory of the two passes).
+- [ ] kindling: a label like `latus¹` compiles, and each card's `<a href>` opens its entry.
+- [ ] On a device: cards are readable in the popup, and a tap on a capitalized word (`Latus`) opens the card.
+- [ ] Taps on a macronized spelling no label has (a text marking a vowel Wiktionary does not) still fall to index order.
 
 ## Stage 3: Coverage
 
