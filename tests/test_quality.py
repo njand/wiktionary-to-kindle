@@ -30,7 +30,7 @@ def entry(entry_id, orth, iforms=(), pos="noun"):
     return (
         f'<idx:entry name="Latin" id="{entry_id}"><h3><idx:orth value="{orth}">{orth}'
         f"<idx:infl>{infl}</idx:infl></idx:orth></h3>"
-        f'<p class="pos">{pos}</p></idx:entry><hr/>'
+        f'<p><i>{pos}</i></p></idx:entry><hr/>'
     )
 
 

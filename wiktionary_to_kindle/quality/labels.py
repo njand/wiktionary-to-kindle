@@ -13,7 +13,8 @@ ENTRY_PATTERN = re.compile(
 )
 ORTH_PATTERN = re.compile(r"<idx:orth\b[^>]*\bvalue=\"([^\"]*)\"")
 IFORM_PATTERN = re.compile(r"<idx:iform\b[^>]*\bvalue=\"([^\"]*)\"")
-POS_PATTERN = re.compile(r"<p class=\"pos\">(.*?)</p>")
+# The first paragraph that is only italic text; builds before Stage 4 wrote <p class="pos">
+POS_PATTERN = re.compile(r"<p(?: class=\"pos\">|><i>)([^<]*)(?:</i>)?</p>")
 
 
 @dataclass

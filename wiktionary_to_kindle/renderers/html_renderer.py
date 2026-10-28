@@ -63,6 +63,7 @@ class HTMLRenderer:
 
     entry_tmpl = env.get_template("entry.html.jinja")
     card_tmpl = env.get_template("card.html.jinja")
+    front_tmpl = env.get_template("front.html.jinja")
 
     @classmethod
     def render_entry(
@@ -101,4 +102,13 @@ class HTMLRenderer:
     def render_card(cls, card, rows):
         """Render a disambiguation card: one row (a CardRow) per entry its labels reach."""
         html_str = cls.card_tmpl.render(card=card, rows=rows)
+        return html_str.strip().split("\n")
+
+    @classmethod
+    def render_front(cls, dump_date, build_date, version):
+        """Render the page before the entries: what the dictionary is, its sources and
+        license (Wiktionary's CC BY-SA asks for attribution), and its version."""
+        html_str = cls.front_tmpl.render(
+            dump_date=dump_date, build_date=build_date, version=version
+        )
         return html_str.strip().split("\n")

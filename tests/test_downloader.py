@@ -138,3 +138,21 @@ def test_input_is_used_without_no_download(tmp_path, run_cli):
 def test_missing_input_is_an_error(run_cli):
     with pytest.raises(SystemExit):
         run_cli("--lang", "la", "--input", "missing.jsonl")
+
+
+def test_dump_date_follows_the_dump_to_its_sorted_file(tmp_path, gz_dump, monkeypatch):
+    monkeypatch.setattr(downloader.shutil, "which", lambda tool: None)
+    downloader.date_path(gz_dump).write_text("2026-10-25", encoding="utf-8")
+    out = tmp_path / "kaikki-la.jsonl"
+    downloader.filter_dump(gz_dump, "la", out)
+    assert downloader.dump_date(out) == "2026-10-25"
+
+    sorted_file = tmp_path / "kaikki-la(sorted).jsonl"
+    sorted_file.write_text("", encoding="utf-8")
+    assert downloader.dump_date(sorted_file) == "2026-10-25"
+
+
+def test_dump_date_without_a_record_is_the_files_date(tmp_path):
+    dump = tmp_path / "my-dump.jsonl"
+    dump.write_text("", encoding="utf-8")
+    assert len(downloader.dump_date(dump)) == len("2026-10-25")

@@ -62,3 +62,10 @@ def test_header_prefix_is_escaped_once():
     assert "&lt;†&gt; &amp; amō" in html
     assert "&amp;lt;" not in html
     assert "&amp;amp;" not in html
+
+
+def test_entries_say_their_style_in_markup():
+    # kindling strips class attributes from entries, and the popup applies no stylesheet
+    html = render(lemma("amo", "verb", "amō", ["to love"]))
+    assert "<p><i>verb</i></p>" in html
+    assert "class=" not in html

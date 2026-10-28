@@ -19,8 +19,8 @@
             {%- else -%}
                 <b>{{ row.head | e }}</b>
             {%- endif -%}
-            {%- if row.pos %} <span class="pos">{{ row.pos | e }}</span>{% endif -%}
-            {%- if row.parses %} <span class="tag">{{ row.parses | join("; ") | e }}</span>{% endif -%}
+            {%- if row.pos %} <i>{{ row.pos | e }}</i>{% endif -%}
+            {%- if row.parses %} {{ row.parses | join("; ") | e }}{% endif -%}
             {%- if row.gloss %}: {{ row.gloss | safe }}{% endif -%}
         </li>
     {%- endfor -%}

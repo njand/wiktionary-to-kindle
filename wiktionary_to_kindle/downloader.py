@@ -1,8 +1,10 @@
+import datetime
 import gzip
 import json
 import shutil
 import subprocess
 import urllib.request
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 
 from tqdm import tqdm
@@ -33,11 +35,29 @@ def partial_path(path: Path) -> Path:
     return path.with_name(path.name + ".part")
 
 
+def date_path(path: Path) -> Path:
+    """Where the date of the Wiktionary data in path is kept."""
+    return path.with_name(path.name + ".date")
+
+
+def dump_date(path) -> str:
+    """The date (YYYY-MM-DD) of the Wiktionary data in path or the dump it was filtered or
+    sorted from, as Kaikki's server gave it; else the date the file was last written."""
+    path = Path(path)
+    unsorted = path.with_name(path.name.replace("(sorted)", ""))
+    for candidate in (path, unsorted):
+        if date_path(candidate).exists():
+            return date_path(candidate).read_text(encoding="utf-8").strip()
+    mtime = path.stat().st_mtime
+    return datetime.date.fromtimestamp(mtime).isoformat()
+
+
 def download(url: str, path: Path):
     part = partial_path(path)
     req = urllib.request.Request(url, headers=HEADERS)
     with urllib.request.urlopen(req) as response, open(part, "wb") as f:
         total_size = int(response.info().get("Content-Length", 0))
+        last_modified = response.info().get("Last-Modified")
         with tqdm(
             total=total_size, unit="B", unit_scale=True, desc="Downloading dump"
         ) as pbar:
@@ -45,6 +65,9 @@ def download(url: str, path: Path):
                 f.write(chunk)
                 pbar.update(len(chunk))
     part.replace(path)
+    if last_modified:
+        date = parsedate_to_datetime(last_modified).date().isoformat()
+        date_path(path).write_text(date, encoding="utf-8")
 
 
 def filter_dump(gz_dump_path: Path, lang: str, output_path: Path):
@@ -77,6 +100,8 @@ def filter_dump(gz_dump_path: Path, lang: str, output_path: Path):
                     jsonl_out.write(line)
 
     part.replace(output_path)
+    if date_path(gz_dump_path).exists():
+        shutil.copyfile(date_path(gz_dump_path), date_path(output_path))
 
 
 def pipe_commands(first_cmd, second_cmd, output_path):

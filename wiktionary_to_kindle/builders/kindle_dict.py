@@ -1,3 +1,4 @@
+import datetime
 import heapq
 import json
 import os
@@ -8,10 +9,13 @@ from collections import defaultdict
 from contextlib import ExitStack
 from dataclasses import dataclass
 from pathlib import Path
+from string import Template
 from subprocess import CalledProcessError
 
 from tqdm import tqdm
 
+from .. import __version__
+from ..downloader import dump_date
 from ..models.entry import Entry
 from ..models.header import Header
 from ..renderers.html_renderer import HTMLRenderer, format_gloss
@@ -25,6 +29,7 @@ from ..utils import (
 from .forms import enrich_forms
 from .html_page import HTMLPage
 from .label_resolver import LabelResolver
+from .related import MERGED_KEY, merged_page
 
 USING_ORJSON = False
 try:
@@ -47,7 +52,7 @@ except ImportError:
 
 
 # Bump when sort_jsonl's output changes, so cached sorted files are rebuilt
-SORT_VERSION = 5
+SORT_VERSION = 6
 
 
 @dataclass
@@ -71,6 +76,9 @@ class KindleDict:
         )
         self.output_sub_dir = os.path.join(self.output_dir, "files")
         self.kindlegen_path = kindlegen_path
+        # Read before sort_jsonl points wiktionary_fp at the sorted file
+        self.dump_date = dump_date(wiktionary_fp)
+        self.build_date = datetime.date.today().isoformat()
 
         self.entries = {}
         self.entry_ids = {}
@@ -125,9 +133,11 @@ class KindleDict:
         self, alt_forms_dict, head_key, part_of_speech, lemma_pos, promoted
     ):
         """Collect forms of entries that only point at head_key (inflections, comparatives,
-        alternative spellings), following chains such as a form of an alternative form."""
+        alternative spellings), following chains such as a form of an alternative form.
+        Return them with the merged pages that are words of their own (see related)."""
         seen_keys = {head_key}
         addl_forms = []
+        merged = []
         stack = [head_key]
 
         while stack:
@@ -143,12 +153,20 @@ class KindleDict:
                 ):
                     continue
                 addl_forms.extend(self.preprocess_addl_forms(json_entry))
+                if page := merged_page(json_entry, alt_header):
+                    merged.append(page)
 
                 sub_key = remove_breves(alt_header)
-                if sub_key in alt_forms_dict and sub_key not in seen_keys:
+                # A form spelled like another lemma (ferō, dative of ferus) leads to that
+                # lemma's own pointers (lātum, supine of the verb ferō): not this entry's
+                if (
+                    sub_key in alt_forms_dict
+                    and sub_key not in seen_keys
+                    and not lemma_pos.get(sub_key)
+                ):
                     seen_keys.add(sub_key)
                     stack.append(sub_key)
-        return addl_forms
+        return addl_forms, merged
 
     @staticmethod
     def rekey_plain_roots(alt_forms_dict, known):
@@ -380,7 +398,7 @@ class KindleDict:
                     desc="Merging Chunks",
                 ) as pbar:
                     for _lower_word, _raw_word, header, pos, obj in merged_iter:
-                        addl_forms = self.get_addl_forms(
+                        addl_forms, merged = self.get_addl_forms(
                             alt_forms_dict,
                             remove_breves(header),
                             pos,
@@ -391,6 +409,8 @@ class KindleDict:
                             obj["forms"] = enrich_forms(
                                 obj.get("forms", []), known, addl_forms
                             )
+                        if merged:
+                            obj[MERGED_KEY] = merged
 
                         out_f.write(json_dumps(obj) + "\n")
                         pbar.update(1)
@@ -428,11 +448,22 @@ class KindleDict:
         html_pages["main"].add_lines(lines)
         return True
 
+    def make_front(self):
+        header = TEMPLATES.joinpath("html_header.txt").read_text("utf-8").split("\n")
+        footer = TEMPLATES.joinpath("html_footer.txt").read_text("utf-8").split("\n")
+        body = HTMLRenderer.render_front(self.dump_date, self.build_date, __version__)
+        Path(self.output_sub_dir, "front.xhtml").write_text(
+            "\n".join(header + body + footer), encoding="utf-8"
+        )
+
     def make_opf(self, html_pages):
         entry_page_len = html_pages["main"].index
         card_page_len = html_pages["cards"].index
 
-        html_lines = TEMPLATES.joinpath("opf_header.txt").read_text("utf-8").split("\n")
+        opf_header = Template(TEMPLATES.joinpath("opf_header.txt").read_text("utf-8"))
+        html_lines = opf_header.substitute(
+            dump_date=self.dump_date, build_date=self.build_date, version=__version__
+        ).split("\n")
 
         for prefix, page_len in [
             ("", entry_page_len),
@@ -443,7 +474,7 @@ class KindleDict:
                     f'<item id="{prefix}page-{page_num}" href="{prefix}{page_num:04}.xhtml" media-type="application/xhtml+xml"/>'
                 )
 
-        html_lines.extend(["</manifest>", "<spine>"])
+        html_lines.extend(["</manifest>", "<spine>", '<itemref idref="front"/>'])
         for prefix, page_len in [
             ("", entry_page_len),
             ("card-", card_page_len),
@@ -455,6 +486,7 @@ class KindleDict:
             [
                 "</spine>",
                 "<guide>",
+                '    <reference type="copyright-page" title="Sources and license" href="front.xhtml"/>',
                 '    <reference type="index" title="Dictionary" href="0000.xhtml"/>',
                 "</guide>",
                 "</package>",
@@ -605,5 +637,6 @@ class KindleDict:
 
         for page in html_pages.values():
             page.write()
+        self.make_front()
         self.make_opf(html_pages)
         self.make_mobi()

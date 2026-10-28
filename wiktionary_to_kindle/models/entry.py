@@ -1,5 +1,6 @@
 import re
 
+from ..builders.related import MERGED_KEY, related_lines
 from ..utils import (
     form_of_root,
     kindle_fold,
@@ -53,6 +54,10 @@ class Entry:
         self.descendants = self.get_descendants()
         self.inflected_forms = self.get_inflected_forms()
         self.all_forms = self.get_all_forms()
+        self.related = related_lines(
+            json_entry.get(MERGED_KEY, []),
+            " ".join(header.full_header_text for header in self.headers),
+        )
 
     def get_headers(self):
         headers = []

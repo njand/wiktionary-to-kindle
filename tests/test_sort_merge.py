@@ -289,3 +289,26 @@ def test_forms_of_an_orphan_merge_into_it(tmp_path, monkeypatch):
     sorted_entries = sort_entries(tmp_path, monkeypatch, entries)
     assert [e["word"] for e in sorted_entries] == ["bellatrix"]
     assert "bellātrīcēs" in forms_of(sorted_entries[0])
+
+
+def test_chain_stops_at_a_form_spelled_like_another_lemma(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    entries = [
+        lemma("ferus", "adj", "ferus (feminine fera)", ["wild"]),
+        lemma("fero", "verb", "ferō (present infinitive ferre)", ["to bear"]),
+        # ferō is also the dative of ferus; lātum points at the verb ferō
+        pointer("fero", "adj", "ferō", "dative singular of ferus", "ferus"),
+        pointer("latum", "verb", "lātum", "accusative supine of ferō", "ferō"),
+    ]
+    src = tmp_path / "kaikki-la.jsonl"
+    src.write_text(
+        "".join(json.dumps(e, ensure_ascii=False) + "\n" for e in entries),
+        encoding="utf-8",
+    )
+    kd = KindleDict(str(src), "la", "kindling")
+    kd.sort_jsonl()
+    with open(kd.wiktionary_fp, encoding="utf-8") as f:
+        merged = [json.loads(line) for line in f]
+    assert "lātum" in forms_of(find(merged, "fero", "verb"))
+    assert "lātum" not in forms_of(find(merged, "ferus", "adj"))
+    assert "ferō" in forms_of(find(merged, "ferus", "adj"))
