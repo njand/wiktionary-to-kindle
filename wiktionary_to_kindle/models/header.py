@@ -1,10 +1,29 @@
 import re
+import unicodedata
 
-from ..utils import BREVE, normalize, sanitize_xhtml
+from ..utils import normalize, sanitize_xhtml
 
 _ABBREVIATION_PATTERN = re.compile(
     r"\b(present infinitive|perfect active|supine|genitive|feminine|neuter)\b\s*"
 )
+
+
+def find_unaccented(text, word):
+    """Return the (start, end) span of text that reads as word once accents are stripped,
+    including the combining marks after its last letter (the breve of ā̆), or None."""
+    if not word:
+        return None
+    # offsets[k] is the index in text of the k-th character of the accent-stripped text
+    offsets = []
+    for i, char in enumerate(text):
+        offsets.extend([i] * len(normalize(char)))
+    start = "".join(normalize(char) for char in text).find(word)
+    if start == -1:
+        return None
+    end = offsets[start + len(word) - 1] + 1
+    while end < len(text) and unicodedata.combining(text[end]):
+        end += 1
+    return offsets[start], end
 
 
 class Header:
@@ -20,34 +39,17 @@ class Header:
         self.split_components()
 
     def split_components(self):
-        unmacronized_text = normalize(self.full_header_text)
+        span = find_unaccented(self.full_header_text, self.plain_word)
 
-        start_idx = unmacronized_text.find(self.plain_word)
-        end_idx = start_idx + len(self.plain_word)
-
-        if start_idx == -1:  # word not found in expansion
+        if span is None:  # word not found in expansion
             self.head_word = self.plain_word
             self.prefix = ""
             self.remainder = self.full_header_text
         else:
-            last_end_idx = end_idx
-            breve_count = 1
-            while breve_count > 0:
-                self.head_word = self.full_header_text[start_idx:end_idx]
-                new_end_idx = end_idx + self.head_word.count(BREVE)
-                breve_count = self.full_header_text[last_end_idx:new_end_idx].count(
-                    BREVE
-                )
-                if (
-                    new_end_idx < len(self.full_header_text)
-                    and self.full_header_text[new_end_idx] == BREVE
-                ):
-                    new_end_idx += 1
-                last_end_idx = new_end_idx
-
-            self.head_word = self.full_header_text[start_idx:last_end_idx].strip()
+            start_idx, end_idx = span
+            self.head_word = self.full_header_text[start_idx:end_idx].strip()
             self.prefix = self.full_header_text[:start_idx]
-            self.remainder = self.full_header_text[last_end_idx:].strip()
+            self.remainder = self.full_header_text[end_idx:].strip()
             self.abbreviate_grammatical_forms()
 
         self.prefix = sanitize_xhtml(self.prefix)
