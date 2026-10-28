@@ -87,7 +87,7 @@ uv run wiktionary-to-kindle --lang "la"
 | `--lang <code>` | **Required.** Target ISO language code (e.g., `la`). |
 | `--resort` | Re-runs the external merge sort. Otherwise the sorted file is cached beside the input and reused while the input is unchanged. (`--sort` is accepted but no longer needed.) |
 | `--input <path>` | Path to a local `.jsonl` dump file, skipping automatic downloads. |
-| `--no-download` | Disables automatic download of Kaikki raw dumps. |
+| `--no-download` | Uses the dump already in `downloads/` instead of downloading one. |
 | `--kindlegen <path>` | Explicit path to the `kindlegen` binary if not in system `PATH`. |
 | `--descendants <list>` | Space-separated list of descendant languages to retain in dictionary entries (default: English, Portuguese, Spanish, French, Italian). |
 

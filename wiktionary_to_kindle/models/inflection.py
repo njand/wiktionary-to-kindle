@@ -21,7 +21,7 @@ class Inflection:
         self.morph_tags.sort(key=len)
         remove_idxs = []
         for i, tag in enumerate(self.morph_tags[:-1]):
-            for j, other_tag in enumerate(self.morph_tags[i + 1 :]):
+            for other_tag in self.morph_tags[i + 1 :]:
                 if tag.is_subset(other_tag):
                     remove_idxs.append(i)
                     break
@@ -38,8 +38,11 @@ class Inflection:
                 )
                 return
 
+    def sort_key(self):
+        # Untagged forms first, then by first tag, then by form
+        if not self.morph_tags:
+            return (False, (), self.form)
+        return (True, self.morph_tags[0].sort_key(), self.form)
+
     def __lt__(self, other: "Inflection") -> bool:
-        # Fallback to an empty string key if morph_tags is empty []
-        key_self = (self.morph_tags[0] if self.morph_tags else "", self.form)
-        key_other = (other.morph_tags[0] if other.morph_tags else "", other.form)
-        return key_self < key_other
+        return self.sort_key() < other.sort_key()

@@ -24,7 +24,7 @@
     {%- set current_max = namespace(value=max_senses) -%}
     {%- for block in inflection.parent.senses_blocks -%}
         {%- if current_max.value > 0 and block.senses -%}
-            {{- macros.render_senses(block, link_examples=False, recursive=False, max_senses=current_max.value) -}}
+            {{- macros.render_senses(block, recursive=False, max_senses=current_max.value) -}}
             {%- set current_max.value = current_max.value - block.senses|length -%}
         {%- endif -%}
     {%- endfor -%}

@@ -1,7 +1,13 @@
 import copy
 import re
 
-from ..utils import form_of_root, generate_vowel_variants, normalize, remove_breves
+from ..utils import (
+    form_of_root,
+    generate_vowel_variants,
+    normalize,
+    remove_breves,
+    sanitize_xhtml,
+)
 from .etymology import Etymology
 from .header import Header
 from .inflection import Inflection
@@ -30,41 +36,24 @@ class Entry:
         id_number=1,
         alt_id=None,
         alt_page=None,
-        examples_page=None,
-        entry_ids=None,
-        add_tags=True,
     ):
         self.json_entry = json_entry
         self.id_number = id_number
         self.alt_word = None
         self.alt_id = alt_id
         self.alt_page = alt_page
-        self.examples_page = examples_page
-        self.entry_ids = entry_ids
 
         self.head_word = None
-        self.unmacronized_head_word = None
         self.headers = self.get_headers()
         if len(self.headers) > 0:
             self.head_word = remove_breves(self.headers[0].head_word)
-            self.unmacronized_head_word = normalize(self.head_word)
 
         self.pos = json_entry.get("pos", None)
         self.senses_blocks = self.get_senses_blocks()
         self.etymology = self.get_etymology()
         self.descendants = self.get_descendants()
-        self.no_senses = False
-        self.inflected_forms = self.get_inflected_forms(add_tags)
+        self.inflected_forms = self.get_inflected_forms()
         self.all_forms = self.get_all_forms()
-
-        sorted_forms = sorted(self.all_forms, key=len, reverse=True)
-        if sorted_forms:
-            pattern = (
-                r"\b(?:" + "|".join(map(re.escape, sorted_forms)) + r")(?:que|ne|ve)?\b"
-            )
-            self.bold_pattern = re.compile(pattern, flags=re.IGNORECASE)
-        else:
-            self.bold_pattern = None
 
     def get_headers(self):
         headers = []
@@ -87,7 +76,7 @@ class Entry:
                 headers.append(header)
             else:
                 num_headers -= 1
-                headers[-1].remainder += f"<br/>{header_text}"
+                headers[-1].remainder += f"<br/>{sanitize_xhtml(header_text)}"
                 for header in headers:
                     header.num_headers = num_headers
         return headers
@@ -125,27 +114,15 @@ class Entry:
                     glosses = [self.alt_word]
                     raw_glosses = [f"Abbreviation of {self.alt_word}"]
 
-            examples = sense.get("examples", [])
             head_nr = sense.get("head_nr", 1)
             if head_nr > len(blocks):
-                block = SensesBlock(
-                    self,
-                    len(blocks) + 1,
-                    self.alt_word,
-                    self.alt_id,
-                    self.alt_page,
-                    self.examples_page,
-                )
+                block = SensesBlock(self.alt_word, self.alt_id, self.alt_page)
                 blocks.append(block)
 
             block.add_glosses(glosses, raw_glosses)
-            sense_obj = block.lookup_sense(glosses, raw_glosses)
-            sense_obj.add_examples(examples)
 
         if not blocks and senses:
-            block = SensesBlock(
-                self, 1, self.alt_word, self.alt_id, self.alt_page, self.examples_page
-            )
+            block = SensesBlock(self.alt_word, self.alt_id, self.alt_page)
             block.add_glosses(
                 ["<i>Definition not available</i>"], ["<i>Definition not available</i>"]
             )
@@ -160,16 +137,16 @@ class Entry:
         )
 
     def get_descendants(self) -> list[tuple[str, str]]:
-        """Extracts all descendant (lang_code, word) tuples, recursing into nested trees."""
+        """Extracts all descendant (language name, word) tuples, recursing into nested trees."""
 
         def _parse(nodes: list[dict]) -> list[tuple[str, str]]:
             results = []
             for node in nodes:
                 word = node.get("word")
-                lang_code = node.get("lang_code")
+                lang = node.get("lang")
 
                 if word:
-                    results.append((lang_code, word))
+                    results.append((lang, word))
 
                 if "descendants" in node:
                     results.extend(_parse(node["descendants"]))
@@ -178,7 +155,7 @@ class Entry:
         raw_descendants = self.json_entry.get("descendants", [])
         return _parse(raw_descendants)
 
-    def get_inflected_forms(self, add_tags=False):
+    def get_inflected_forms(self):
         forms = {}
         for form_obj in self.json_entry.get("forms", []):
             form = form_obj.get("form")
@@ -209,8 +186,7 @@ class Entry:
 
             if form not in forms:
                 forms[form] = Inflection(form, self)
-            if add_tags:
-                forms[form].add_tags(tags)
+            forms[form].add_tags(tags)
         return forms
 
     def get_all_forms(self):
@@ -224,13 +200,10 @@ class Entry:
         all_forms.discard("")
         return all_forms
 
-    def id_path(self):
-        return self.id_number
-
     def filter_descendants(self, filter_langs):
         if not filter_langs:
             return self.descendants
-        # d[0] is lang_code, d[1] is word
+        # d[0] is the language name ("French"), d[1] is the word
         return [d for d in self.descendants if d[0] in filter_langs]
 
     def split(self, max_forms=200):
@@ -245,19 +218,6 @@ class Entry:
                 split_entry = copy.deepcopy(self)
                 split_entry.id_number = self.id_number + len(split_entries)
                 split_entry.all_forms = forms_chunk
-
-                # Recompile strict local regex pattern rather than duplicating a massive global one
-                sorted_forms = sorted(forms_chunk, key=len, reverse=True)
-                if sorted_forms:
-                    pattern = (
-                        r"\b(?:"
-                        + "|".join(map(re.escape, sorted_forms))
-                        + r")(?:que|ne|ve)?\b"
-                    )
-                    split_entry.bold_pattern = re.compile(pattern, flags=re.IGNORECASE)
-                else:
-                    split_entry.bold_pattern = None
-
                 split_entry.inflected_forms = {}
                 for f in forms_chunk:
                     if f in self.inflected_forms:
@@ -267,6 +227,3 @@ class Entry:
                 split_entries.append(split_entry)
                 forms_chunk = set()
         return split_entries
-
-    def __lt__(self, other):
-        return self.unmacronized_head_word < other.unmacronized_head_word

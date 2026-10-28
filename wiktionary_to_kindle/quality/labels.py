@@ -70,7 +70,5 @@ def build_index(entries):
 
 
 def _spine_order(page):
-    # make_opf lists main pages, then inf- pages, then ex- pages
-    name = page.name
-    prefix = 1 if name.startswith("inf-") else 2 if name.startswith("ex-") else 0
-    return prefix, name
+    # make_opf lists main pages, then inf- pages
+    return page.name.startswith("inf-"), page.name

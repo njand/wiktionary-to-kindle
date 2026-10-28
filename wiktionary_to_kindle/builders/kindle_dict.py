@@ -1,4 +1,3 @@
-import copy
 import heapq
 import json
 import os
@@ -15,7 +14,7 @@ from tqdm import tqdm
 from ..models.entry import Entry
 from ..models.header import Header
 from ..renderers.html_renderer import HTMLRenderer
-from ..utils import form_of_root, normalize, remove_breves
+from ..utils import TEMPLATES, form_of_root, normalize, remove_breves
 from .html_page import HTMLPage
 
 USING_ORJSON = False
@@ -37,8 +36,6 @@ except ImportError:
     def json_dumps(obj):
         return json.dumps(obj)
 
-
-TEMPLATES_DIR = Path(__file__).resolve().parent.parent.parent / "templates"
 
 # Bump when sort_jsonl's output changes, so cached sorted files are rebuilt
 SORT_VERSION = 2
@@ -70,8 +67,9 @@ class KindleDict:
 
     def init_dict_dir(self):
         os.makedirs(self.output_sub_dir, exist_ok=True)
-        shutil.copy(TEMPLATES_DIR / "style.css", self.output_sub_dir)
-        shutil.copy(TEMPLATES_DIR / "cover.png", self.output_sub_dir)
+        for name in ("style.css", "cover.png"):
+            data = TEMPLATES.joinpath(name).read_bytes()
+            Path(self.output_sub_dir, name).write_bytes(data)
 
     @staticmethod
     def root_form(senses):
@@ -337,10 +335,19 @@ class KindleDict:
         entry,
         html_pages,
         descendant_langs,
-        link_examples,
         recursive_senses,
         include_etymology,
     ):
+        """Render entry and index it; return False, indexing nothing, if it has no senses."""
+        lines = HTMLRenderer.render_entry(
+            entry,
+            descendant_langs,
+            recursive_senses,
+            include_etymology,
+        )
+        if not lines:
+            return False
+
         entry_filename = html_pages["main"].get_filename()
         self.entries.setdefault(entry.head_word, (entry.id_number, entry_filename))
         self.normalized_lemmas[normalize(entry.head_word, lowercase=True)].add(
@@ -348,32 +355,18 @@ class KindleDict:
         )
         self.entry_ids[entry.id_number] = entry_filename
 
-        html_pages["main"].add_lines(
-            HTMLRenderer.render_entry(
-                entry,
-                descendant_langs,
-                link_examples,
-                recursive_senses,
-                include_etymology,
-            )
-        )
-        if link_examples:
-            html_pages["examples"].add_lines(
-                HTMLRenderer.render_examples(entry, entry_filename)
-            )
+        html_pages["main"].add_lines(lines)
+        return True
 
     def make_opf(self, html_pages):
         entry_page_len = html_pages["main"].index
         inflection_page_len = html_pages["inflections"].index
-        example_page_len = html_pages["examples"].index
 
-        with open(TEMPLATES_DIR / "opf_header.txt", "r", encoding="utf-8") as f:
-            html_lines = f.read().split("\n")
+        html_lines = TEMPLATES.joinpath("opf_header.txt").read_text("utf-8").split("\n")
 
         for prefix, page_len in [
             ("", entry_page_len),
             ("inf-", inflection_page_len),
-            ("ex-", example_page_len),
         ]:
             for page_num in range(page_len):
                 html_lines.append(
@@ -384,7 +377,6 @@ class KindleDict:
         for prefix, page_len in [
             ("", entry_page_len),
             ("inf-", inflection_page_len),
-            ("ex-", example_page_len),
         ]:
             for page_num in range(page_len):
                 html_lines.append(f'<itemref idref="{prefix}page-{page_num}"/>')
@@ -434,7 +426,6 @@ class KindleDict:
         max_page_len=5000,
         limit=None,
         descendant_langs=None,
-        link_examples=True,
         recursive_senses=True,
         include_etymology=True,
     ):
@@ -451,9 +442,6 @@ class KindleDict:
             "inflections": HTMLPage(
                 max_lines=max_page_len, output_fp_prefix=self.output_sub_dir + "/inf-"
             ),
-            "examples": HTMLPage(
-                max_lines=max_page_len, output_fp_prefix=self.output_sub_dir + "/ex-"
-            ),
         }
 
         last_entry_id = 0
@@ -467,35 +455,20 @@ class KindleDict:
                 alt_id, alt_page = self.entries.get(
                     json_entry.get("alt_of"), (None, None)
                 )
-                entry = Entry(
-                    json_entry,
-                    last_entry_id + 1,
-                    alt_id,
-                    alt_page,
-                    html_pages["examples"].get_filename(),
-                )
+                entry = Entry(json_entry, last_entry_id + 1, alt_id, alt_page)
 
                 for split_entry in entry.split():
                     last_entry_id += 1
-                    new_id_str = f"i{last_entry_id}_1"
                     split_entry.id_number = last_entry_id
-                    split_entry.id = new_id_str
 
-                    # Update nested Header objects for main entry rendering
-                    if hasattr(split_entry, "main_header") and split_entry.main_header:
-                        split_entry.main_header.id = new_id_str
-                    if hasattr(split_entry, "headers") and split_entry.headers:
-                        for h in split_entry.headers:
-                            h.id = new_id_str
-
-                    self.add_entry_to_dictionary(
+                    if not self.add_entry_to_dictionary(
                         split_entry,
                         html_pages,
                         descendant_langs,
-                        link_examples,
                         recursive_senses,
                         include_etymology,
-                    )
+                    ):
+                        continue
 
                     for form, inflection in split_entry.inflected_forms.items():
                         norm_key = normalize(form, lowercase=True)
@@ -518,25 +491,9 @@ class KindleDict:
                     seen_pairs.add(pair_key)
 
                     last_entry_id += 1
-                    inf_id_str = f"inf_{last_entry_id}"
-
-                    temp_entry = copy.copy(split_entry)
-                    temp_entry.id_number = last_entry_id
-                    temp_entry.id = inf_id_str
-
-                    # Copy and update nested Header objects so Jinja gets a unique ID
-                    if hasattr(temp_entry, "main_header") and temp_entry.main_header:
-                        temp_entry.main_header = copy.copy(temp_entry.main_header)
-                        temp_entry.main_header.id = inf_id_str
-                    if hasattr(temp_entry, "headers") and temp_entry.headers:
-                        temp_entry.headers = [copy.copy(h) for h in temp_entry.headers]
-                        for h in temp_entry.headers:
-                            h.id = inf_id_str
-
-                    temp_entry.inflected_forms = {inflection.form: inflection}
                     html_pages["inflections"].add_lines(
-                        HTMLRenderer.render_inflections_html(
-                            temp_entry, 1, entry_ids=self.entry_ids
+                        HTMLRenderer.render_inflection(
+                            inflection, f"inf_{last_entry_id}", self.entry_ids
                         )
                     )
 

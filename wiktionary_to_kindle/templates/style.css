@@ -1,0 +1,24 @@
+body {
+    font-family: serif;
+    margin: 1em;
+}
+
+b {
+    font-size: 1.2em;
+}
+
+p {
+    margin-left: 1em;
+}
+
+.pagebreak {
+    page-break-before: always;
+}
+
+.tag {
+    font-variant: small-caps;
+}
+
+.pos {
+	font-style: italic;
+}

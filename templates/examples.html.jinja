@@ -1,5 +1,0 @@
-{%- import 'macros.html.jinja' as macros -%}
-<a href="{{ entry_page }}#{{ entry.id_number }}">↩</a>
-{%- for block in entry.senses_blocks -%}
-    {{- macros.render_examples_block(block) -}}
-{%- endfor -%}
