@@ -340,6 +340,17 @@ class KindleDict:
         recursive_senses,
         include_etymology,
     ):
+        """Render entry and index it; return False, indexing nothing, if it has no senses."""
+        lines = HTMLRenderer.render_entry(
+            entry,
+            descendant_langs,
+            link_examples,
+            recursive_senses,
+            include_etymology,
+        )
+        if not lines:
+            return False
+
         entry_filename = html_pages["main"].get_filename()
         self.entries.setdefault(entry.head_word, (entry.id_number, entry_filename))
         self.normalized_lemmas[normalize(entry.head_word, lowercase=True)].add(
@@ -347,19 +358,12 @@ class KindleDict:
         )
         self.entry_ids[entry.id_number] = entry_filename
 
-        html_pages["main"].add_lines(
-            HTMLRenderer.render_entry(
-                entry,
-                descendant_langs,
-                link_examples,
-                recursive_senses,
-                include_etymology,
-            )
-        )
+        html_pages["main"].add_lines(lines)
         if link_examples:
             html_pages["examples"].add_lines(
                 HTMLRenderer.render_examples(entry, entry_filename)
             )
+        return True
 
     def make_opf(self, html_pages):
         entry_page_len = html_pages["main"].index
@@ -486,14 +490,15 @@ class KindleDict:
                         for h in split_entry.headers:
                             h.id = new_id_str
 
-                    self.add_entry_to_dictionary(
+                    if not self.add_entry_to_dictionary(
                         split_entry,
                         html_pages,
                         descendant_langs,
                         link_examples,
                         recursive_senses,
                         include_etymology,
-                    )
+                    ):
+                        continue
 
                     for form, inflection in split_entry.inflected_forms.items():
                         norm_key = normalize(form, lowercase=True)

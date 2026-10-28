@@ -53,7 +53,6 @@ class Entry:
         self.senses_blocks = self.get_senses_blocks()
         self.etymology = self.get_etymology()
         self.descendants = self.get_descendants()
-        self.no_senses = False
         self.inflected_forms = self.get_inflected_forms(add_tags)
         self.all_forms = self.get_all_forms()
 

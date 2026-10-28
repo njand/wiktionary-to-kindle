@@ -92,7 +92,6 @@ class HTMLRenderer:
             if len(block.senses) > 0
         ]
         if not valid_pairs:
-            entry.no_senses = True
             return []
 
         descendants = entry.filter_descendants(filter_descendants_langs)
