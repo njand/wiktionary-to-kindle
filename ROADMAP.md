@@ -35,17 +35,21 @@ Still to do:
 - [ ] **Check enclitic pre-segmentation on a device.** Insert U+200B between a word and its enclitic in a test book and confirm the Kindle selects only the word when tapped. If the reader does not treat it as a word break, the invisible character weighs nothing and the tap becomes `virumque` again (a miss).
 - [ ] **Check whether the Kindle popup can show several entries** (the swipe between results). Find what triggers it; it changes the Stage 2 design.
 
-## Stage 1: Quick correctness fixes (each with a test)
+## Stage 1: Quick correctness fixes (each with a test) — done
 
-- [ ] Descendants: filter by `lang` (name), not `lang_code`; show the language name.
-- [ ] Move templates into the package (`importlib.resources`) so an installed wheel works.
-- [ ] `format_etymology`: rewrite with `str.find`; it drops trailing characters and misses overlapping matches.
-- [ ] `Header.split_components`: headwords with two or more ā̆ vowels are cut short.
-- [ ] `MorphTag`: `sup` means both supine and superlative; `__lt__` returns `None`. `Inflection.__lt__` raises `TypeError` with mixed tag/no-tag inflections.
-- [ ] Do not index entries that render no senses.
-- [ ] Downloader: write to a temp name and rename; no `shell=True`; honor `--input` without `--no-download`.
-- [ ] `SensesBlock.lookup_sense` mutates the caller's list; `sanitize_xhtml` misses `&`; header prefixes are escaped twice.
-- [ ] Remove the examples pipeline (decision above) and other dead code: `Descendant`, `.id` on headers and split entries, `Example.bold_word`, `MACRONIZED_VOWELS`, unused parameters, the per-entry bold regex.
+- [x] Descendants: filter by `lang` (name), not `lang_code`; show the language name.
+- [x] Move templates into the package (`importlib.resources`) so an installed wheel works.
+- [x] `format_etymology`: rewrite with `str.find`; it drops trailing characters and misses overlapping matches.
+- [x] `Header.split_components`: headwords with two or more ā̆ vowels are cut short.
+- [x] `MorphTag`: `sup` means both supine and superlative (superlative is now `superl`); `__lt__` returns `None`. `Inflection.__lt__` raises `TypeError` with mixed tag/no-tag inflections.
+- [x] Do not index entries that render no senses.
+- [x] Downloader: write to a temp name and rename; no `shell=True`; honor `--input` without `--no-download`.
+- [x] `SensesBlock.lookup_sense` mutates the caller's list; `sanitize_xhtml` misses `&`; header prefixes are escaped twice.
+- [x] Remove the examples pipeline (decision above) and other dead code: `Descendant`, `.id` on headers and split entries, `Example.bold_word`, `MACRONIZED_VOWELS`, unused parameters, the per-entry bold regex.
+
+Found while doing Stage 1, not yet fixed:
+- [ ] Alternative-form links never render: `build_dictionary` looks up a top-level `alt_of`, but Kaikki puts `alt_of` on senses, so `alt_id`/`alt_page` are always `None`.
+- [ ] `Entry.get_senses_blocks` adds each sense to the most recently created block instead of block `head_nr`, so a first-headword sense listed after a second-headword one lands under the second.
 
 ## Stage 2: Deterministic lookups, entries kept separate
 
