@@ -87,7 +87,6 @@ def main():
     print(f"Building dictionary for language: {args.lang}")
     kd.build_dictionary(
         descendant_langs=args.descendants,
-        link_examples=False,
         recursive_senses=True,
         include_etymology=True,
     )

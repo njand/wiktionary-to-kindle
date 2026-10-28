@@ -18,7 +18,7 @@ def build(tmp_path, monkeypatch, entries):
         encoding="utf-8",
     )
     kd = KindleDict(str(src), "la", "kindling")
-    kd.build_dictionary(descendant_langs=["English"], link_examples=False)
+    kd.build_dictionary(descendant_langs=["English"])
     return kd, Path(kd.output_sub_dir)
 
 

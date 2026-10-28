@@ -22,28 +22,3 @@ p {
 .pos {
 	font-style: italic;
 }
-
-.example {
-	font-style: italic;
-	color: #444;
-	margin-left: 10px;
-	padding: 5px 0;
-}
-
-.translation {
-	color: #666;
-	margin-top: 3px;
-	padding-left: 10px;
-}
-
-.citation {
-	font-size: 0.85em;
-	font-style: italic;
-	color: #555;
-	margin-top: 8px;
-	margin-left: 10px;
-}
-
-.roman {
-	text-transform: uppercase;
-}

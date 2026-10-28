@@ -6,7 +6,7 @@ from wiktionary_to_kindle.models.entry import Entry
 from wiktionary_to_kindle.models.header import Header
 from wiktionary_to_kindle.models.inflection import Inflection
 from wiktionary_to_kindle.models.morph_tag import MorphTag
-from wiktionary_to_kindle.utils import sanitize_xhtml
+from wiktionary_to_kindle.utils import generate_vowel_variants, sanitize_xhtml
 
 
 @pytest.mark.parametrize(
@@ -60,7 +60,7 @@ def test_inflections_sort_with_and_without_tags():
     assert sorted([nominative, genitive, untagged]) == [untagged, nominative, genitive]
 
 
-def test_lookup_sense_leaves_glosses_alone():
+def test_entry_leaves_glosses_alone():
     raw_glosses = ["to love", "to be fond of"]
     entry = Entry(
         {
@@ -85,3 +85,9 @@ def test_lookup_sense_leaves_glosses_alone():
 )
 def test_sanitize_xhtml(text, expected):
     assert sanitize_xhtml(text) == expected
+
+
+def test_vowel_variants_resolve_disputed_length():
+    variants = generate_vowel_variants("Ā̆mā̆tus")
+    assert sorted(variants) == sorted(["Amatus", "Āmatus", "Amātus", "Āmātus"])
+    assert all(len(v) == len("amatus") for v in variants)  # precomposed ā

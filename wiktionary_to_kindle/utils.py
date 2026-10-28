@@ -12,20 +12,6 @@ TEMPLATES = files("wiktionary_to_kindle") / "templates"
 
 MACRON = "̄"
 BREVE = "̆"
-MACRONIZED_VOWELS = {
-    "a": "ā",
-    "A": "Ā",
-    "e": "ē",
-    "E": "Ē",
-    "i": "ī",
-    "I": "Ī",
-    "o": "ō",
-    "O": "Ō",
-    "u": "ū",
-    "U": "Ū",
-    "y": "ȳ",
-    "Y": "Ȳ",
-}
 
 
 def normalize(text: str, lowercase: bool = False) -> str:
@@ -115,23 +101,16 @@ def generate_vowel_variants(word: str) -> list[str]:
             short_str = unicodedata.normalize(
                 "NFC", base_char + "".join(remaining_marks)
             )
-
-            if base_char in MACRONIZED_VOWELS and not remaining_marks:
-                long_str = MACRONIZED_VOWELS[base_char]
-            else:
-                long_str = unicodedata.normalize(
-                    "NFC", base_char + MACRON + "".join(remaining_marks)
-                )
-
+            # NFC composes the vowel and macron into one character (ā)
+            long_str = unicodedata.normalize(
+                "NFC", base_char + MACRON + "".join(remaining_marks)
+            )
             options_per_group.append([short_str, long_str])
         elif has_macron:
             remaining_marks = [m for m in marks if m != MACRON]
-            if base_char in MACRONIZED_VOWELS and not remaining_marks:
-                macron_str = MACRONIZED_VOWELS[base_char]
-            else:
-                macron_str = unicodedata.normalize(
-                    "NFC", base_char + MACRON + "".join(remaining_marks)
-                )
+            macron_str = unicodedata.normalize(
+                "NFC", base_char + MACRON + "".join(remaining_marks)
+            )
             options_per_group.append([macron_str])
         else:
             normal_str = unicodedata.normalize("NFC", base_char + "".join(marks))

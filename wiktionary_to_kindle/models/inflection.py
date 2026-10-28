@@ -21,7 +21,7 @@ class Inflection:
         self.morph_tags.sort(key=len)
         remove_idxs = []
         for i, tag in enumerate(self.morph_tags[:-1]):
-            for j, other_tag in enumerate(self.morph_tags[i + 1 :]):
+            for other_tag in self.morph_tags[i + 1 :]:
                 if tag.is_subset(other_tag):
                     remove_idxs.append(i)
                     break
