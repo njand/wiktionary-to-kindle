@@ -26,7 +26,7 @@ reaches it, and the card links to the entry instead.
 from collections import defaultdict
 from dataclasses import dataclass, field
 
-from ..utils import KINDLE_LIGATURES, kindle_fold, normalize
+from .utils import KINDLE_LIGATURES, kindle_fold, normalize
 
 SUPERSCRIPTS = str.maketrans("0123456789", "⁰¹²³⁴⁵⁶⁷⁸⁹")
 UNLIGATE = str.maketrans(KINDLE_LIGATURES)

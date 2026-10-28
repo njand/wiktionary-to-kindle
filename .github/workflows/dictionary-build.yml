@@ -6,6 +6,12 @@ on:
     - cron: '14 2 * * 0'
   workflow_dispatch: # Allows you to trigger the build manually from the GitHub UI
 
+env:
+  KINDLING_VERSION: v0.45.6
+  KINDLING_SHA256: 417ad6dad4b1072fabb20610f320ba44ca8f4afcbe2f47948dcefc3955bd6439
+  # Abort the build when an entry cannot be found in the text (a blank popup on device)
+  KINDLING_STRICT_ENTRIES: "1"
+
 jobs:
   build-dictionaries:
     runs-on: ubuntu-latest
@@ -22,11 +28,14 @@ jobs:
       - name: Install system dependencies
         run: sudo apt-get update && sudo apt-get install -y ripgrep pigz
 
-      - name: Install Kindling Compiler
+      - name: Install kindling
+        # Pinned, and checked against the release's SHA-256, so a new kindling release
+        # cannot change a build unnoticed; bump both together after checking a build
         run: |
-          wget -qO kindlegen https://github.com/ciscoriordan/kindling/releases/latest/download/kindling-cli-linux
-          chmod +x kindlegen
-          sudo mv kindlegen /usr/local/bin/kindlegen
+          curl -fsSLo kindling-cli "https://github.com/ciscoriordan/kindling/releases/download/${KINDLING_VERSION}/kindling-cli-linux"
+          echo "${KINDLING_SHA256}  kindling-cli" | sha256sum --check
+          chmod +x kindling-cli
+          sudo mv kindling-cli /usr/local/bin/kindling-cli
 
       - name: Setup environment
         uses: astral-sh/setup-uv@v5
@@ -36,13 +45,15 @@ jobs:
         run: uv sync --all-extras
 
       - name: Audit codebase
-        run: uvx ruff check .
+        run: |
+          uvx ruff@0.17.3 check .
+          uvx ruff@0.17.3 format --check .
 
       - name: Run tests
         run: uv run pytest
 
       - name: Build ${{ matrix.language }} Dictionary
-        run: uv run wiktionary-to-kindle --lang "${{ matrix.language }}"
+        run: uv run wiktionary-to-kindle --lang "${{ matrix.language }}" --kindling kindling-cli
 
       - name: Measure ${{ matrix.language }} index
         run: >
@@ -56,7 +67,7 @@ jobs:
           uv run python -m wiktionary_to_kindle.quality coverage
           outputs/KindleDictionary-${{ matrix.language }} corpus/${{ matrix.language }}.tsv
           -o outputs/coverage-${{ matrix.language }}
-          --kindling kindlegen
+          --kindling kindling-cli
           --mobi outputs/KindleDictionary-${{ matrix.language }}/${{ matrix.language }}-wiktionary.mobi
 
       # Uploaded before the lookup check so a failing build can still be inspected
@@ -72,9 +83,9 @@ jobs:
 
       - name: Check ${{ matrix.language }} lookups
         if: hashFiles(format('tests/lookup_words_{0}.txt', matrix.language)) != ''
-        # kindling was installed as `kindlegen`; its `lookup` subcommand simulates a Paperwhite 5
+        # kindling's `lookup` subcommand simulates a Paperwhite 5
         run: >
-          uv run python scripts/check_lookups.py --kindling kindlegen
+          uv run python scripts/check_lookups.py --kindling kindling-cli
           outputs/KindleDictionary-${{ matrix.language }}/${{ matrix.language }}-wiktionary.mobi
           tests/lookup_words_${{ matrix.language }}.txt
 

@@ -48,7 +48,7 @@ Still to do:
 - [x] Remove the examples pipeline (decision above) and other dead code: `Descendant`, `.id` on headers and split entries, `Example.bold_word`, `MACRONIZED_VOWELS`, unused parameters, the per-entry bold regex.
 
 Found while doing Stage 1, not yet fixed:
-- [ ] Alternative-form links never render: `build_dictionary` looks up a top-level `alt_of`, but Kaikki puts `alt_of` on senses, so `alt_id`/`alt_page` are always `None`.
+- [ ] Alternative-form links never render: Kaikki puts `alt_of` on senses, but the build only looked up a top-level `alt_of` (removed in Stage 5), so `alt_id`/`alt_page` are always `None`.
 - [ ] `Entry.get_senses_blocks` adds each sense to the most recently created block instead of block `head_nr`, so a first-headword sense listed after a second-headword one lands under the second.
 
 ## Stage 2: Deterministic lookups, entries kept separate — done, device check pending
@@ -111,12 +111,20 @@ Still to check:
 - [ ] Each card's `<a href>` opens its entry (also listed under Stage 2).
 - [ ] The full build's call to kindling failed once on Windows with 0xC0000142 (a DLL initialization failure) after the pages were written; compiling the same OPF by hand worked. A relative `--kindlegen` path also broke the call (kindling runs from the output folder); the CLI now makes an existing path absolute.
 
-## Stage 5: Code health
+## Stage 5: Code health — done
 
-- [ ] Restructure into stages: ingest → merge → lexicon model → label resolution → render → compile (fits with Stage 2).
-- [ ] Run `ruff format` over the repo, then add `ruff format --check` to CI.
-- [ ] Pin the kindling version and verify its checksum in CI; set `KINDLING_STRICT_ENTRIES=1`.
-- [ ] CLI cleanup: `--lang` default, consistent errors.
+- [x] Restructure into stages: ingest → merge → lexicon model → label resolution → render → compile. `KindleDict` is gone; `pipeline.build_dictionary` runs `ingest.py` (was `downloader.py`), `merge/` (`sort.py` with the external sort and its cache, `pointers.py` with the pointer chains, plus `forms.py` and `related.py`), `models/` (`lexicon.read_entries`), `label_resolver.py`, `render/` (`book.BookWriter`, the card rows, the Jinja renderer) and `compiler.py` (OPF and kindling), and returns a `Build` with the output paths and dates.
+- [x] Run `ruff format` over the repo, then add `ruff format --check` to CI (ruff pinned at 0.17.3 in both workflows, so a new release cannot fail a PR).
+- [x] Pin the kindling version and verify its checksum in CI; set `KINDLING_STRICT_ENTRIES=1`. CI installs v0.45.6 as `kindling-cli` and checks it against the release's SHA-256.
+- [x] CLI cleanup: `--lang` defaults to `la` (it was required with a default), `--kindling` replaces `--kindlegen` (still accepted), every bad argument (no kindling, a missing `--input` or `--kindling` path, `--no-download` without a dump) is a usage error with exit code 2, and `--sort` is hidden. Only kindling is searched for (`kindling-cli` or `kindling` on `PATH`); the Kindle Previewer paths for Amazon's kindlegen are gone.
+
+Found while doing Stage 5:
+- [x] The cached sorted dump in `downloads/` had a broken line (line 54,049 started in the middle of an entry), most likely from two sorts writing it at once; the build failed on it. The sort now writes to a file named after its process and renames it when complete.
+- The top-level `alt_of` lookup behind the Stage 1 alternative-form bug was dead code and is gone; `Entry` still takes `alt_id`/`alt_page` for when the links are fixed.
+
+- [x] `scripts/check_lookups.py` crashed printing a macronized word to a Windows console; it now writes UTF-8.
+
+Measured (2026-10-28, same dump and kindling): the restructure changes no output. A full build before and after, both sorting the dump again, gives an identical sorted dump, identical XHTML pages and OPF, and a `.mobi` that differs only in the PalmDB header's timestamps (64.5 MB, 54,048 entries). The build passes with `KINDLING_STRICT_ENTRIES=1`, and every word in the lookup list opens. kindling still warns that the book has no NCX table of contents and that `cover.png` is over 127 KB.
 
 ## Stage 6: Releases
 

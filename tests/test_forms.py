@@ -2,8 +2,8 @@
 
 import json
 
-from wiktionary_to_kindle.builders.forms import GENERATED, decline, enrich_forms
-from wiktionary_to_kindle.builders.kindle_dict import KindleDict
+from wiktionary_to_kindle.merge.forms import GENERATED, decline, enrich_forms
+from wiktionary_to_kindle.merge.sort import merge_dump
 from wiktionary_to_kindle.models.entry import Entry
 
 from .test_sort_merge import find, forms_of, lemma, pointer
@@ -108,9 +108,8 @@ def test_alternative_and_generated_forms_reach_the_entry(tmp_path, monkeypatch):
         "".join(json.dumps(e, ensure_ascii=False) + "\n" for e in entries),
         encoding="utf-8",
     )
-    kd = KindleDict(str(src), "la", "kindling")
-    kd.sort_jsonl()
-    with open(kd.wiktionary_fp, encoding="utf-8") as f:
+    merged = merge_dump(str(src), "la")
+    with open(merged.path, encoding="utf-8") as f:
         sorted_entries = [json.loads(line) for line in f]
 
     dico = find(sorted_entries, "dico", "verb")

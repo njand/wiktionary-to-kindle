@@ -1,4 +1,4 @@
-"""What a page merged into its lemma during sort_jsonl says beyond its forms.
+"""What a page merged into its lemma during merge_dump says beyond its forms.
 
 A page that only points to a lemma becomes part of it, so a tap on frīgidulus opens frīgidus.
 When the page is a word of its own (a diminutive, a comparative, an alternative spelling),
@@ -11,7 +11,7 @@ import re
 
 from ..utils import normalize
 
-MERGED_KEY = "merged_pages"  # where sort_jsonl keeps them on the lemma's JSON
+MERGED_KEY = "merged_pages"  # where merge_dump keeps them on the lemma's JSON
 
 # The start of a pointer gloss ("diminutive of ..."), and the label its line gets
 KINDS = [

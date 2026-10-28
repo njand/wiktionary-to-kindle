@@ -1,16 +1,20 @@
 import argparse
 from pathlib import Path
 
-from .builders.kindle_dict import KindleDict
-from .downloader import download_kaikki_dump
-from .utils import find_kindlegen
+from .ingest import download_kaikki_dump
+from .pipeline import build_dictionary
+from .utils import find_kindling
+
+DOWNLOADS = Path("downloads")
 
 
-def main():
+def parse_args(argv=None):
     parser = argparse.ArgumentParser(
         description="Build a Kindle Dictionary from Wiktionary JSONL Dumps."
     )
-    parser.add_argument("--lang", required=True, default="la", help="Language code")
+    parser.add_argument(
+        "--lang", default="la", help="Language code (default: %(default)s)"
+    )
     parser.add_argument(
         "--input",
         type=Path,
@@ -31,13 +35,15 @@ def main():
         help="Use the dump already in downloads/ instead of downloading",
     )
     parser.add_argument(
-        "--kindlegen", type=Path, help="Path to kindlegen executable", default=None
+        "--kindling",
+        "--kindlegen",
+        dest="kindling",
+        type=Path,
+        default=None,
+        help="Path to the kindling-cli executable (default: searched on PATH)",
     )
-    parser.add_argument(
-        "--sort",
-        action="store_true",
-        help="Deprecated: sorting always runs, and its output is cached",
-    )
+    # Sorting always runs, and its output is cached; still accepted by old scripts
+    parser.add_argument("--sort", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument(
         "--resort",
         action="store_true",
@@ -49,50 +55,50 @@ def main():
         default=["English", "Portuguese", "Spanish", "French", "Italian"],
         help="Descendant languages to retain",
     )
+    return parser, parser.parse_args(argv)
 
-    args = parser.parse_args()
 
-    kindlegen_path = args.kindlegen or find_kindlegen()
-    if not kindlegen_path:
-        raise FileNotFoundError(
-            "kindlegen executable not found. Provide path via --kindlegen."
-        )
-
+def choose_input(parser, args):
+    """The dump to build from: --input, else a download, else the one in downloads/."""
     if args.input:
         if not args.input.is_file():
             parser.error(f"--input file '{args.input}' does not exist.")
-        input_file = args.input
-    elif args.auto_download:
-        input_file = download_kaikki_dump(args.lang, output_dir=Path("downloads"))
-    else:
-        downloads_dir = Path("downloads")
-        sorted_file = downloads_dir / f"kaikki-{args.lang}(sorted).jsonl"
-        raw_file = downloads_dir / f"kaikki-{args.lang}.jsonl"
+        return args.input
+    if args.auto_download:
+        return download_kaikki_dump(args.lang, output_dir=DOWNLOADS)
 
-        if raw_file.exists():
-            input_file = raw_file
-        elif sorted_file.exists():
-            input_file = sorted_file
-        else:
-            parser.error(
-                f"--input is required when --no-download is specified and '{raw_file}' does not exist."
-            )
+    raw_file = DOWNLOADS / f"kaikki-{args.lang}.jsonl"
+    sorted_file = DOWNLOADS / f"kaikki-{args.lang}(sorted).jsonl"
+    for candidate in (raw_file, sorted_file):
+        if candidate.exists():
+            return candidate
+    parser.error(
+        f"--no-download needs '{raw_file}' (or its sorted file), or a dump given with --input."
+    )
 
-    # The compiler runs from the output folder, where a relative path breaks; a bare name
-    # (kindlegen) is left for the PATH search
-    if Path(kindlegen_path).is_file():
-        kindlegen_path = Path(kindlegen_path).resolve()
-    kd = KindleDict(str(input_file), args.lang, str(kindlegen_path))
 
-    # A sorted file is already merged; otherwise sort, reusing an up-to-date cached result
-    if not Path(input_file).stem.endswith("(sorted)"):
-        kd.sort_jsonl(force=args.resort)
+def main(argv=None):
+    parser, args = parse_args(argv)
+
+    kindling = args.kindling or find_kindling()
+    if not kindling:
+        parser.error("kindling-cli not found on PATH. Give its path with --kindling.")
+    # kindling runs from the output folder, where a relative path breaks; a bare name
+    # (kindling-cli) is left for the PATH search
+    if Path(kindling).is_file():
+        kindling = Path(kindling).resolve()
+    elif args.kindling and len(Path(kindling).parts) > 1:
+        parser.error(f"--kindling '{args.kindling}' does not exist.")
+
+    input_file = choose_input(parser, args)
 
     print(f"Building dictionary for language: {args.lang}")
-    kd.build_dictionary(
+    build_dictionary(
+        str(input_file),
+        args.lang,
+        str(kindling),
         descendant_langs=args.descendants,
-        recursive_senses=True,
-        include_etymology=True,
+        resort=args.resort,
     )
 
 

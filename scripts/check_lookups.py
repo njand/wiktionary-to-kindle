@@ -37,10 +37,12 @@ def main():
     parser.add_argument(
         "--kindling",
         default=default_binary(),
-        help="kindling binary (CI installs it as `kindlegen`)",
+        help="kindling-cli binary (default: found on PATH)",
     )
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
+    # Latin words with macrons; a Windows console's code page cannot print them
+    sys.stdout.reconfigure(encoding="utf-8")
 
     failures = 0
     for word, xfail in read_words(args.words):

@@ -7,23 +7,23 @@ picked lemma comes along, so merges behave as they do on the full dump.
 
 import hashlib
 
+from ..jsonl import json_loads
+from ..merge.pointers import get_header, root_form
 from ..utils import remove_breves
 
 MAX_PASSES = 5
 
 
 def extract_sample(src, dst, lemmas=2000, include=(), lang_code="la"):
-    from ..builders.kindle_dict import KindleDict, json_loads
-
     include = set(include)
     keys = set()  # macronized headword keys of picked lemmas and their pointer chains
     lemma_count = 0
     for _, obj in _entries(src, lang_code, json_loads):
-        root = KindleDict.root_form(obj.get("senses", []))
+        root = root_form(obj.get("senses", []))
         if root is None:
             lemma_count += 1
             if obj["word"] in include:
-                keys.add(remove_breves(KindleDict.get_header(obj)))
+                keys.add(remove_breves(get_header(obj)))
         elif obj["word"] in include:
             keys.add(remove_breves(root))
     modulus = max(1, lemma_count // max(1, lemmas))
@@ -34,8 +34,8 @@ def extract_sample(src, dst, lemmas=2000, include=(), lang_code="la"):
         for line_no, obj in _entries(src, lang_code, json_loads):
             if line_no in picked:
                 continue
-            key = remove_breves(KindleDict.get_header(obj))
-            root = KindleDict.root_form(obj.get("senses", []))
+            key = remove_breves(get_header(obj))
+            root = root_form(obj.get("senses", []))
             if root is None:
                 # lemmas=0 keeps only the included words
                 take = key in keys or (lemmas and _stable_hash(key) % modulus == 0)

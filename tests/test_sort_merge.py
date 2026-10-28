@@ -7,7 +7,7 @@ import json
 
 import pytest
 
-from wiktionary_to_kindle.builders.kindle_dict import KindleDict
+from wiktionary_to_kindle.merge.sort import merge_dump
 from wiktionary_to_kindle.models.entry import Entry
 from wiktionary_to_kindle.utils import form_of_root
 
@@ -97,9 +97,8 @@ def sorted_entries(tmp_path, monkeypatch):
         "".join(json.dumps(e, ensure_ascii=False) + "\n" for e in ENTRIES),
         encoding="utf-8",
     )
-    kd = KindleDict(str(src), "la", "kindlegen")
-    kd.sort_jsonl()
-    with open(kd.wiktionary_fp, encoding="utf-8") as f:
+    merged = merge_dump(str(src), "la")
+    with open(merged.path, encoding="utf-8") as f:
         return [json.loads(line) for line in f]
 
 
@@ -152,9 +151,7 @@ def test_sorted_file_is_cached_until_input_changes(tmp_path, monkeypatch):
     src.write_text(json.dumps(ENTRIES[0], ensure_ascii=False) + "\n", encoding="utf-8")
 
     def sort(**kwargs):
-        kd = KindleDict(str(src), "la", "kindlegen")
-        kd.sort_jsonl(**kwargs)
-        return kd.line_count  # only set when a sort actually ran
+        return merge_dump(str(src), "la", **kwargs).line_count  # None when reused
 
     assert sort() == 1
     assert sort() is None
@@ -165,6 +162,7 @@ def test_sorted_file_is_cached_until_input_changes(tmp_path, monkeypatch):
         encoding="utf-8",
     )
     assert sort() == 1  # input changed: sorted again (amābō merges into amō)
+    assert [p.name for p in tmp_path.glob("*.part")] == []
 
 
 @pytest.mark.parametrize(
@@ -194,9 +192,8 @@ def sort_entries(tmp_path, monkeypatch, entries):
         "".join(json.dumps(e, ensure_ascii=False) + "\n" for e in entries),
         encoding="utf-8",
     )
-    kd = KindleDict(str(src), "la", "kindlegen")
-    kd.sort_jsonl()
-    with open(kd.wiktionary_fp, encoding="utf-8") as f:
+    merged = merge_dump(str(src), "la")
+    with open(merged.path, encoding="utf-8") as f:
         return [json.loads(line) for line in f]
 
 
@@ -305,9 +302,8 @@ def test_chain_stops_at_a_form_spelled_like_another_lemma(tmp_path, monkeypatch)
         "".join(json.dumps(e, ensure_ascii=False) + "\n" for e in entries),
         encoding="utf-8",
     )
-    kd = KindleDict(str(src), "la", "kindling")
-    kd.sort_jsonl()
-    with open(kd.wiktionary_fp, encoding="utf-8") as f:
+    merged = merge_dump(str(src), "la")
+    with open(merged.path, encoding="utf-8") as f:
         merged = [json.loads(line) for line in f]
     assert "lātum" in forms_of(find(merged, "fero", "verb"))
     assert "lātum" not in forms_of(find(merged, "ferus", "adj"))

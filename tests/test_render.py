@@ -4,7 +4,7 @@ import pytest
 
 from wiktionary_to_kindle.models.entry import Entry
 from wiktionary_to_kindle.models.etymology import Etymology
-from wiktionary_to_kindle.renderers.html_renderer import HTMLRenderer, format_etymology
+from wiktionary_to_kindle.render.html_renderer import HTMLRenderer, format_etymology
 from wiktionary_to_kindle.utils import TEMPLATES
 
 from .test_sort_merge import lemma

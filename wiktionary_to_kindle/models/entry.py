@@ -1,6 +1,6 @@
 import re
 
-from ..builders.related import MERGED_KEY, related_lines
+from ..merge.related import MERGED_KEY, related_lines
 from ..utils import (
     form_of_root,
     kindle_fold,
@@ -173,7 +173,7 @@ class Entry:
                 continue
 
             tags = set(form_obj.get("tags", []))
-            # Alternative spellings are kept; sort_jsonl drops those with a page of their own
+            # Alternative spellings are kept; merge_dump drops those with a page of their own
             filtered_tags = {
                 "table-tags",
                 "inflection-template",

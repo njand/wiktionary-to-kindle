@@ -4,14 +4,14 @@ import json
 
 import pytest
 
-from wiktionary_to_kindle.builders.kindle_dict import KindleDict
-from wiktionary_to_kindle.builders.related import (
+from wiktionary_to_kindle.merge.related import (
     MERGED_KEY,
     merged_page,
     related_lines,
 )
+from wiktionary_to_kindle.merge.sort import merge_dump
 from wiktionary_to_kindle.models.entry import Entry
-from wiktionary_to_kindle.renderers.html_renderer import HTMLRenderer
+from wiktionary_to_kindle.render.html_renderer import HTMLRenderer
 
 from .test_sort_merge import find, lemma, pointer
 
@@ -107,9 +107,8 @@ def test_sort_records_merged_pages_on_the_lemma(tmp_path, monkeypatch):
         "".join(json.dumps(e, ensure_ascii=False) + "\n" for e in entries),
         encoding="utf-8",
     )
-    kd = KindleDict(str(src), "la", "kindling")
-    kd.sort_jsonl()
-    with open(kd.wiktionary_fp, encoding="utf-8") as f:
+    merged = merge_dump(str(src), "la")
+    with open(merged.path, encoding="utf-8") as f:
         frigidus = find([json.loads(line) for line in f], "frigidus", "adj")
     assert frigidus[MERGED_KEY] == [
         {"kind": "dim.", "word": "frīgidulus", "gloss": "somewhat cold"}

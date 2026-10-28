@@ -13,8 +13,12 @@ class HTMLPage:
         self.output_fp = None
         self.update_output_fp()
 
-        self.header = TEMPLATES.joinpath("html_header.txt").read_text("utf-8").split("\n")
-        self.footer = TEMPLATES.joinpath("html_footer.txt").read_text("utf-8").split("\n")
+        self.header = (
+            TEMPLATES.joinpath("html_header.txt").read_text("utf-8").split("\n")
+        )
+        self.footer = (
+            TEMPLATES.joinpath("html_footer.txt").read_text("utf-8").split("\n")
+        )
 
         self.html_lines = list(self.header)
 

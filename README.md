@@ -57,7 +57,7 @@ This project addresses the strict formatting constraints, character diacritics, 
 
 ### Prerequisites
 * **Python 3.10+**
-* **KindleGen Binary:** Amazon's `kindlegen` (or `kindling-cli`) is required for MOBI compilation. The tool automatically searches your system `PATH` and common installation directories.
+* **kindling:** [`kindling-cli`](https://github.com/ciscoriordan/kindling/releases) compiles the `.mobi` (Amazon's `kindlegen` is not supported). The CLI looks for `kindling-cli` on your `PATH`; otherwise pass its path with `--kindling`. CI uses v0.45.6, checked against its SHA-256.
 * *(Optional, Recommended)*: [`uv`](https://docs.astral.sh/uv/) for package management, and system utilities `ripgrep` / `pigz` for faster file extraction.
 
 ### Environment Setup
@@ -86,22 +86,25 @@ uv run wiktionary-to-kindle --lang "la"
 
 | Flag | Description |
 | --- | --- |
-| `--lang <code>` | **Required.** Target ISO language code (e.g., `la`). |
-| `--resort` | Re-runs the external merge sort. Otherwise the sorted file is cached beside the input and reused while the input is unchanged. (`--sort` is accepted but no longer needed.) |
+| `--lang <code>` | Target ISO language code (default: `la`). |
+| `--resort` | Re-runs the external merge sort. Otherwise the sorted file is cached beside the input and reused while the input is unchanged. |
 | `--input <path>` | Path to a local `.jsonl` dump file, skipping automatic downloads. |
 | `--no-download` | Uses the dump already in `downloads/` instead of downloading one. |
-| `--kindlegen <path>` | Explicit path to the `kindlegen` binary if not in system `PATH`. |
+| `--kindling <path>` | Path to `kindling-cli` if it is not on your `PATH` (`--kindlegen` is the old name). |
 | `--descendants <list>` | Space-separated list of descendant languages to retain in dictionary entries (default: English, Portuguese, Spanish, French, Italian). |
 
 ---
 
 ## Pipeline Architecture
 
-1. **Download & Filter:** Downloads raw Wiktionary JSONL data from Kaikki.org and extracts language-specific entries using `pigz` and `ripgrep` (or standard Python `gzip`/`json` fallbacks).
-2. **External Merge Sort:** Performs a disk-backed merge sort via `heapq.merge` to group lemmas with their inflections sequentially without thrashing system memory.
-3. **Data Modeling:** Parses raw entries into structured Python models (`Entry`, `Header`, `Sense`, `Inflection`), normalizing tags and resolving cross-references.
-4. **XHTML Rendering:** Renders dictionary pages using Jinja2 templates following Kindle XML specifications (`idx:entry`, `idx:orth`, `idx:infl`).
-5. **Compilation:** Generates the `.opf` package index and invokes `kindlegen` to produce the finalized `.mobi` file.
+`pipeline.build_dictionary` runs the stages in order; each lives in its own module of `wiktionary_to_kindle/`:
+
+1. **Ingest** (`ingest.py`): Downloads raw Wiktionary JSONL data from Kaikki.org and extracts language-specific entries using `pigz` and `ripgrep` (or standard Python `gzip`/`json` fallbacks), keeping the dump's date.
+2. **Merge** (`merge/`): A disk-backed merge sort (`heapq.merge`) puts the lemmas in order without holding the dump in memory, and folds every page that only points to a lemma into it (`pointers.py`), with generated forms (`forms.py`) and a line for merged pages that are words of their own (`related.py`). The result is cached beside the input.
+3. **Lexicon model** (`models/`): Parses merged entries into `Entry`, `Header`, `Sense` and `Inflection` objects, normalizing tags.
+4. **Label resolution** (`label_resolver.py`): Gives each lookup spelling one owner, an entry or a disambiguation card.
+5. **Render** (`render/`): Writes entries, cards and the front page as XHTML with Jinja2 templates following Kindle's markup (`idx:entry`, `idx:orth`, `idx:infl`).
+6. **Compile** (`compiler.py`): Writes the `.opf` package and runs kindling to produce the `.mobi`.
 
 ### Measuring lookup quality
 

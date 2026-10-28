@@ -6,8 +6,9 @@ labels tied and whether the index order hides a label from the search.
 """
 
 import re
-import shutil
 import subprocess
+
+from ..utils import find_kindling
 
 RESOLVED = re.compile(r'resolves (?:via "(?P<label>.*)"|\(exact headword/alias\))')
 RUN = re.compile(r"index search returned (\d+) labels")
@@ -15,8 +16,7 @@ HIDDEN = re.compile(r"so the search cannot reach")
 
 
 def default_binary():
-    # CI installs kindling under the name `kindlegen`
-    return shutil.which("kindling-cli") or "kindlegen"
+    return str(find_kindling() or "kindling-cli")
 
 
 def lookup(kindling, mobi, word):

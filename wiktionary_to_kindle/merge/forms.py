@@ -1,4 +1,4 @@
-"""Forms added to an entry during sort_jsonl, from what its own forms already say.
+"""Forms added to an entry during merge_dump, from what its own forms already say.
 
 Wiktionary lists a verb's participles and an adjective's comparative and superlative only in
 the nominative; their declension is on the participle's or comparative's own page, which many
