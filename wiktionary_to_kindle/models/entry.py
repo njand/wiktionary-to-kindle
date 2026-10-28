@@ -160,16 +160,16 @@ class Entry:
         )
 
     def get_descendants(self) -> list[tuple[str, str]]:
-        """Extracts all descendant (lang_code, word) tuples, recursing into nested trees."""
+        """Extracts all descendant (language name, word) tuples, recursing into nested trees."""
 
         def _parse(nodes: list[dict]) -> list[tuple[str, str]]:
             results = []
             for node in nodes:
                 word = node.get("word")
-                lang_code = node.get("lang_code")
+                lang = node.get("lang")
 
                 if word:
-                    results.append((lang_code, word))
+                    results.append((lang, word))
 
                 if "descendants" in node:
                     results.extend(_parse(node["descendants"]))
@@ -230,7 +230,7 @@ class Entry:
     def filter_descendants(self, filter_langs):
         if not filter_langs:
             return self.descendants
-        # d[0] is lang_code, d[1] is word
+        # d[0] is the language name ("French"), d[1] is the word
         return [d for d in self.descendants if d[0] in filter_langs]
 
     def split(self, max_forms=200):
