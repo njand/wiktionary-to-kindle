@@ -12,20 +12,23 @@ def main():
     )
     parser.add_argument("--lang", required=True, default="la", help="Language code")
     parser.add_argument(
-        "--input", type=Path, default=None, help="Path to existing JSONL file"
+        "--input",
+        type=Path,
+        default=None,
+        help="Path to existing JSONL file (nothing is downloaded)",
     )
     parser.add_argument(
         "--download",
         dest="auto_download",
         action="store_true",
         default=True,
-        help="Automatically download Kaikki dump",
+        help="Download the Kaikki dump unless --input is given (default)",
     )
     parser.add_argument(
         "--no-download",
         dest="auto_download",
         action="store_false",
-        help="Use local file provided in --input",
+        help="Use the dump already in downloads/ instead of downloading",
     )
     parser.add_argument(
         "--kindlegen", type=Path, help="Path to kindlegen executable", default=None
@@ -55,10 +58,12 @@ def main():
             "kindlegen executable not found. Provide path via --kindlegen."
         )
 
-    if args.auto_download:
-        input_file = download_kaikki_dump(args.lang, output_dir=Path("downloads"))
-    elif args.input:
+    if args.input:
+        if not args.input.is_file():
+            parser.error(f"--input file '{args.input}' does not exist.")
         input_file = args.input
+    elif args.auto_download:
+        input_file = download_kaikki_dump(args.lang, output_dir=Path("downloads"))
     else:
         downloads_dir = Path("downloads")
         sorted_file = downloads_dir / f"kaikki-{args.lang}(sorted).jsonl"
