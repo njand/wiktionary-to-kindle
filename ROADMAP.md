@@ -76,13 +76,23 @@ Still to check:
 - [ ] Each card's `<a href>` opens its entry (kindling does not simulate following links).
 - [ ] On a device: cards are readable in the popup, a capitalized tap (`Latus`) opens the card, and a partially macronized tap (`Rōmāni`) opens the card as kindling predicts.
 
-## Stage 3: Coverage
+## Stage 3: Coverage — done
 
-- [ ] Spelling variants the device does not fold: v→u (`uir`, `uideo`), consonantal i→j (`iam`/`jam`).
-- [ ] Generated regular comparatives and superlatives (`-ior/-iōris…`, `-issimus/-a/-um`) and adverbs from the forms the lemma already tags, marked as generated and skipped where Wiktionary has them. Diminutives only from Wiktionary data. Indexed as forms linking to the root entry.
-- [ ] Declensions of participles that have no page of their own.
-- [ ] Reconsider forms filtered by tag (`alternative`, archaic, `Medieval-Latin`).
-- [ ] Headwords with a tie bar (`Orphe͡us`) keep a combining mark that weighs as itself, so a tap on `Orpheus` cannot reach them; add the spelling without it.
+- [x] Spelling variants the device does not fold: v→u (`uir`, `uideo`), consonantal i→j (`iam`/`jam`). `utils.lookup_spellings` adds both to every form; j replaces an i before a vowel at the start of a word, between vowels, or after a prefix (`adiuvō`). Cards that differ only by these spellings are merged into one.
+- [x] Generated regular comparatives and superlatives (`-ior/-iōris…`, `-issimus/-a/-um`) and the superlative adverb (`-issimē`) from the forms the lemma already tags, tagged `generated` and skipped where Wiktionary has a page. Diminutives only from Wiktionary data (merged from their pages, as before). Indexed as forms of the root entry.
+- [x] Declensions of participles that have no page of their own (about 5,100: present `-ns/-ntis`, and `-us/-a/-um` for the others).
+- [x] Forms filtered by tag: alternative and Medieval Latin spellings are indexed (`inlābor`, `prelium`), except reconstructions (`*luttra`) and spellings with a page of their own. The `conjugation-3` filter is gone (it only dropped verbs such as `revortō`). Archaic forms were never filtered.
+- [x] Headwords with a tie bar (`Orphe͡us`) or another accent that does not compose (`Boō̈tēs`) also get the spelling without it. Abbreviation signs (`aͣ`, `n̄`) are kept: without them the label is another word.
+- [x] Found during the full build: Kaikki's `form_of`/`alt_of` targets are often page titles (`iuro`) or macronized differently (`acontīzō`), so about 22,000 pointer pages, mostly single inflected forms and spelling variants (`nārrāvistis`, `jūrō`), stood alone as stub entries. They now merge into the headword with the same letters (the part of speech decides between homographs), so `jūrāvistī`, `iurauisti` and `jurare` all open `iūrō`. A merged page with no forms gives its headword, orphan chains are promoted from the top, and a no-gloss form-of sense counts as a pointer.
+
+How it works: generation and alternative spellings happen in `sort_jsonl`, which sees every headword (`builders/forms.py`, `SORT_VERSION` 5); spelling variants are added where labels are made. The coverage corpus gains `caesar-bg1-u`, Caesar with lowercase v written u.
+
+Measured (2026-10-28, same dump and kindling as the baseline): 54,048 entries (from 76,031; every headword that is no longer an entry still opens one, except 47 multi-word phrases no tap reaches) and 127,708 cards. Labels rose 21% and folded keys 22%, tied keys fell 14%, and the `.mobi` is 73.1 MB (+9%). The build takes 450 s with the re-sort, 310 s without. Corpus: the five Stage 2 sources open 84.8% of tokens (83.6% before): Vulgate 93.3% → 94.6%, Gate to Caesar 56.5% → 58.9%, the rest within 0.1%. The u edition of Caesar opens 97.6%, the same as the v edition. "j for i" misses fell from 380 tokens to 118 (English abbreviations in the glossary, and `Benjamin`). Index order still decides 0.2% of tokens. kindling: 0 hidden labels, and every word in the lookup list opens, including `jam`, `uir`, `uideo`, `Orpheus`, `inlabor` and generated forms such as `ignotiorem`.
+
+Still open, found while doing Stage 3:
+- [ ] `Benjamin`: consonantal i after a consonant inside a word (`Beniamīn`) gets no j spelling.
+- [ ] u texts print V for capital vocalic u (`Vt`, `Vrbem`); those taps miss.
+- [ ] A generated form can be another word's form (`dispēnsō`, dative of the generated participle `dispēnsus` and a verb of its own), which puts both on a card. That is correct, but check how often it happens.
 
 ## Stage 4: Entry content
 
