@@ -1,0 +1,8 @@
+# Latin texts for lookup coverage: name<TAB>format<TAB>url (see wiktionary_to_kindle/quality/corpus.py)
+# Downloads are cached in corpus/cache/. Mix unmacronized editions (what most e-books use)
+# with a macronized one, and classical with later Latin.
+caesar-bg1	latinlibrary	https://www.thelatinlibrary.com/caesar/gall1.shtml
+vergil-aen1	latinlibrary	https://www.thelatinlibrary.com/vergil/aen1.shtml
+cicero-cat1	latinlibrary	https://www.thelatinlibrary.com/cicero/cat1.shtml
+vulgate-genesis	latinlibrary	https://www.thelatinlibrary.com/bible/genesis.shtml
+gate-to-caesar-macrons	macron-lines	https://www.gutenberg.org/cache/epub/29645/pg29645.txt

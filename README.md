@@ -76,7 +76,7 @@ Run the CLI tool specifying your target ISO language code:
 
 ```bash
 # Download, filter, external merge-sort, and compile the Latin dictionary
-uv run wiktionary-to-kindle --lang "la" --sort
+uv run wiktionary-to-kindle --lang "la"
 
 ```
 
@@ -85,7 +85,7 @@ uv run wiktionary-to-kindle --lang "la" --sort
 | Flag | Description |
 | --- | --- |
 | `--lang <code>` | **Required.** Target ISO language code (e.g., `la`). |
-| `--sort` | Executes an external disk merge-sort on the filtered JSONL before dictionary generation. |
+| `--resort` | Re-runs the external merge sort. Otherwise the sorted file is cached beside the input and reused while the input is unchanged. (`--sort` is accepted but no longer needed.) |
 | `--input <path>` | Path to a local `.jsonl` dump file, skipping automatic downloads. |
 | `--no-download` | Disables automatic download of Kaikki raw dumps. |
 | `--kindlegen <path>` | Explicit path to the `kindlegen` binary if not in system `PATH`. |
@@ -100,6 +100,23 @@ uv run wiktionary-to-kindle --lang "la" --sort
 3. **Data Modeling:** Parses raw entries into structured Python models (`Entry`, `Header`, `Sense`, `Inflection`), normalizing tags and resolving cross-references.
 4. **XHTML Rendering:** Renders dictionary pages using Jinja2 templates following Kindle XML specifications (`idx:entry`, `idx:orth`, `idx:infl`).
 5. **Compilation:** Generates the `.opf` package index and invokes `kindlegen` to produce the finalized `.mobi` file.
+
+### Measuring lookup quality
+
+```bash
+# Index statistics of a build, and a comparison between two builds
+uv run python -m wiktionary_to_kindle.quality stats outputs/KindleDictionary-la -o stats.json
+uv run python -m wiktionary_to_kindle.quality diff old-stats.json stats.json
+
+# How many words of real Latin texts (corpus/la.tsv) open an entry, and why the rest do not
+uv run python -m wiktionary_to_kindle.quality coverage outputs/KindleDictionary-la corpus/la.tsv -o coverage
+
+# A small, self-consistent sample of the dump for fast development builds
+uv run python -m wiktionary_to_kindle.quality sample downloads/kaikki-la.jsonl downloads/sample-la.jsonl
+uv run wiktionary-to-kindle --lang la --no-download --input downloads/sample-la.jsonl
+```
+
+Coverage resolves each word with the Kindle's own matching rules: case and macrons are ignored, and when several entries share a label the index order picks one ("ambiguous"). Pass `--kindling <binary> --mobi <file>` to also check the most frequent words with kindling's on-device lookup simulator. CI publishes the statistics, their change since the last release, and the coverage report in each release's notes.
 
 ---
 

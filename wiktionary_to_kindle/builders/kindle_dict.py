@@ -1,5 +1,6 @@
 import copy
 import heapq
+import json
 import os
 import shutil
 import subprocess
@@ -14,7 +15,7 @@ from tqdm import tqdm
 from ..models.entry import Entry
 from ..models.header import Header
 from ..renderers.html_renderer import HTMLRenderer
-from ..utils import normalize
+from ..utils import form_of_root, normalize, remove_breves
 from .html_page import HTMLPage
 
 USING_ORJSON = False
@@ -29,7 +30,6 @@ try:
 
     USING_ORJSON = True
 except ImportError:
-    import json
 
     def json_loads(line):
         return json.loads(line)
@@ -39,6 +39,9 @@ except ImportError:
 
 
 TEMPLATES_DIR = Path(__file__).resolve().parent.parent.parent / "templates"
+
+# Bump when sort_jsonl's output changes, so cached sorted files are rebuilt
+SORT_VERSION = 2
 
 
 class KindleDict:
@@ -72,20 +75,11 @@ class KindleDict:
 
     @staticmethod
     def root_form(senses):
-        if not senses:
+        """Return the lemma this entry only points to, or None if any sense defines it."""
+        roots = [form_of_root(sense) for sense in senses]
+        if not roots or None in roots:
             return None
-        sense = senses[0]
-        if "alt_of" in sense:
-            return sense["alt_of"][0].get("word")
-        if "form_of" in sense:
-            return sense["form_of"][0].get("word")
-        links = sense.get("links", [])
-        if len(links) == 1 and len(links[0]) == 2 and links[0][1].endswith("#Latin"):
-            root_word = links[0][0]
-            for gloss in sense.get("glosses", []):
-                if gloss.endswith(f" of {root_word}"):
-                    return root_word
-        return None
+        return roots[0]
 
     @staticmethod
     def get_header(json_entry):
@@ -106,35 +100,94 @@ class KindleDict:
         return processed_forms
 
     def get_addl_forms(
-        self, alt_forms_dict, head_word, part_of_speech, seen_words=None
+        self, alt_forms_dict, head_key, part_of_speech, lemma_pos, promoted
     ):
-        if seen_words is None:
-            seen_words = set()
-        seen_words.add(head_word)
+        """Collect forms of entries that only point at head_key (inflections, comparatives,
+        alternative spellings), following chains such as a form of an alternative form."""
+        seen_keys = {head_key}
         addl_forms = []
-        stack = [(head_word, part_of_speech)]
+        stack = [head_key]
 
         while stack:
-            curr_word, _curr_pos = stack.pop()
-            # Fast O(1) Dictionary Lookup
-            matching_items = alt_forms_dict.get(curr_word, [])
-
-            for alt_pos, json_entry in matching_items:
+            curr_key = stack.pop()
+            for alt_pos, alt_header, json_entry in alt_forms_dict.get(curr_key, []):
+                if id(json_entry) in promoted:
+                    continue
+                # Leave a direct pointer to a same-POS homograph lemma if one exists
+                if (
+                    curr_key == head_key
+                    and alt_pos != part_of_speech
+                    and alt_pos in lemma_pos[head_key]
+                ):
+                    continue
                 addl_forms.extend(self.preprocess_addl_forms(json_entry))
-                sub_head_word = self.get_header(json_entry)
 
-                # Check directly in the dictionary keys (O(1)) to decide if we append
-                if sub_head_word in alt_forms_dict and sub_head_word not in seen_words:
-                    seen_words.add(sub_head_word)
-                    stack.append((sub_head_word, alt_pos))
+                sub_key = remove_breves(alt_header)
+                if sub_key in alt_forms_dict and sub_key not in seen_keys:
+                    seen_keys.add(sub_key)
+                    stack.append(sub_key)
         return addl_forms
+
+    def promote_orphans(self, alt_forms_dict, lemma_pos):
+        """Return pointer entries whose chain never reaches a lemma, so they become entries
+        themselves instead of being dropped. Promoted entries can in turn act as roots."""
+        reached = set()
+
+        def reach(key):
+            stack = [key]
+            while stack:
+                for _pos, alt_header, obj in alt_forms_dict.get(stack.pop(), []):
+                    if id(obj) not in reached:
+                        reached.add(id(obj))
+                        stack.append(remove_breves(alt_header))
+
+        for key in list(lemma_pos):
+            reach(key)
+
+        orphans = []
+        for key in sorted(alt_forms_dict):
+            for alt_pos, alt_header, obj in alt_forms_dict[key]:
+                if id(obj) in reached:
+                    continue
+                lemma_pos[remove_breves(alt_header)].add(alt_pos)
+                orphans.append((alt_header, alt_pos, obj))
+                reached.add(id(obj))
+                reach(remove_breves(alt_header))
+        return orphans
 
     def make_sorted_path(self):
         base, ext = os.path.splitext(self.wiktionary_fp)
         return f"{base}(sorted){ext}"
 
-    def sort_jsonl(self, chunk_size=200000):
-        """Sorts JSONL file using an external merge sort to prevent disk I/O thrashing."""
+    def sorted_cache_meta(self):
+        stat = os.stat(self.wiktionary_fp)
+        return {
+            "sort_version": SORT_VERSION,
+            "source_size": stat.st_size,
+            "source_mtime_ns": stat.st_mtime_ns,
+        }
+
+    def sort_jsonl(self, chunk_size=200000, force=False):
+        """Sorts JSONL file using an external merge sort to prevent disk I/O thrashing.
+
+        The result is cached beside the input; it is reused while the input file and
+        SORT_VERSION are unchanged, unless force is set.
+        """
+        output_path = self.make_sorted_path()
+        meta_path = Path(output_path + ".meta.json")
+        meta = self.sorted_cache_meta()
+        cached = (
+            not force
+            and os.path.exists(output_path)
+            and meta_path.exists()
+            and json.loads(meta_path.read_text(encoding="utf-8")) == meta
+        )
+        if cached:
+            print(f"Reusing sorted file {output_path} (pass --resort to rebuild it)")
+            self.wiktionary_fp = output_path
+            return
+
+        print("Sorting JSONL file...")
         if not USING_ORJSON:
             print(
                 "Info: `orjson` not detected. Running with standard `json` (install `wiktionary-to-kindle[fast]` for speedups)."
@@ -154,7 +207,9 @@ class KindleDict:
         with tempfile.TemporaryDirectory() as temp_dir:
             chunk_files = []
             current_chunk = []
+            # Keyed by macronized headword: Wiktionary's form_of/alt_of targets keep macrons
             alt_forms_dict = defaultdict(list)
+            lemma_pos = defaultdict(set)
 
             def write_chunk(chunk_data, chunk_index):
                 chunk_data.sort(
@@ -204,6 +259,7 @@ class KindleDict:
                             root = self.root_form(obj.get("senses", []))
 
                             if root is None:
+                                lemma_pos[remove_breves(header)].add(part_of_speech)
                                 current_chunk.append((header, part_of_speech, line))
                                 self.line_count += 1
                                 if len(current_chunk) >= chunk_size:
@@ -213,9 +269,20 @@ class KindleDict:
                                     current_chunk = []
                                     chunk_index += 1
                             else:
-                                alt_forms_dict[root].append((part_of_speech, obj))
+                                alt_forms_dict[remove_breves(root)].append(
+                                    (part_of_speech, header, obj)
+                                )
 
-            output_path = self.make_sorted_path()
+            orphans = self.promote_orphans(alt_forms_dict, lemma_pos)
+            promoted = {id(obj) for _, _, obj in orphans}
+            if orphans:
+                chunk_files.append(
+                    write_chunk(
+                        [(h, p, json_dumps(o) + "\n") for h, p, o in orphans],
+                        chunk_index + 1,
+                    )
+                )
+                self.line_count += len(orphans)
 
             def read_lines(file_obj):
                 for fl in file_obj:
@@ -225,6 +292,7 @@ class KindleDict:
                     yield (
                         normalize(header, lowercase=True),
                         normalize(header, lowercase=False),
+                        header,
                         obj.get("pos"),
                         obj,
                     )
@@ -247,17 +315,23 @@ class KindleDict:
                     unit_scale=True,
                     desc="Merging Chunks",
                 ) as pbar:
-                    for lower_word, _raw_word, pos, obj in merged_iter:
+                    for _lower_word, _raw_word, header, pos, obj in merged_iter:
                         if addl_forms := self.get_addl_forms(
-                            alt_forms_dict, lower_word, pos
+                            alt_forms_dict,
+                            remove_breves(header),
+                            pos,
+                            lemma_pos,
+                            promoted,
                         ):
                             obj.setdefault("forms", []).extend(addl_forms)
 
                         out_f.write(json_dumps(obj) + "\n")
                         pbar.update(1)
 
+        # Written last, so an interrupted sort is never mistaken for a finished one
+        meta_path.write_text(json.dumps(meta), encoding="utf-8")
         self.wiktionary_fp = output_path
-        
+
     def add_entry_to_dictionary(
         self,
         entry,

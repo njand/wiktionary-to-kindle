@@ -33,7 +33,12 @@ def main():
     parser.add_argument(
         "--sort",
         action="store_true",
-        help="Run external merge sort on JSONL before dictionary generation",
+        help="Deprecated: sorting always runs, and its output is cached",
+    )
+    parser.add_argument(
+        "--resort",
+        action="store_true",
+        help="Sort the JSONL again even if a cached sorted file is up to date",
     )
     parser.add_argument(
         "--descendants",
@@ -50,8 +55,6 @@ def main():
             "kindlegen executable not found. Provide path via --kindlegen."
         )
 
-    should_sort = args.sort
-
     if args.auto_download:
         input_file = download_kaikki_dump(args.lang, output_dir=Path("downloads"))
     elif args.input:
@@ -61,22 +64,20 @@ def main():
         sorted_file = downloads_dir / f"kaikki-{args.lang}(sorted).jsonl"
         raw_file = downloads_dir / f"kaikki-{args.lang}.jsonl"
 
-        if should_sort and sorted_file.exists():
-            input_file = sorted_file
-            should_sort = False  # Already sorted on disk; skip re-sorting
-        elif raw_file.exists():
+        if raw_file.exists():
             input_file = raw_file
+        elif sorted_file.exists():
+            input_file = sorted_file
         else:
-            expected_file = sorted_file if args.sort else raw_file
             parser.error(
-                f"--input is required when --no-download is specified and '{expected_file}' does not exist."
+                f"--input is required when --no-download is specified and '{raw_file}' does not exist."
             )
 
     kd = KindleDict(str(input_file), args.lang, str(kindlegen_path))
 
-    if should_sort:
-        print("Sorting JSONL file...")
-        kd.sort_jsonl()
+    # A sorted file is already merged; otherwise sort, reusing an up-to-date cached result
+    if not Path(input_file).stem.endswith("(sorted)"):
+        kd.sort_jsonl(force=args.resort)
 
     print(f"Building dictionary for language: {args.lang}")
     kd.build_dictionary(

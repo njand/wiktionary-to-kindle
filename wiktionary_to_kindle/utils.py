@@ -34,6 +34,50 @@ def normalize(text: str, lowercase: bool = False) -> str:
     return normalized
 
 
+KINDLE_LIGATURES = {
+    "ß": "ss",
+    "æ": "ae",
+    "Æ": "ae",
+    "œ": "oe",
+    "Œ": "oe",
+    "ĳ": "ij",
+    "Ĳ": "ij",
+}
+
+
+def kindle_fold(text: str) -> str:
+    """Approximate the weights a Kindle compares a tapped word and an index label by.
+
+    Per kindling's measurements: Latin letters weigh as their lowercase base letter (case and
+    accents, macrons included, do not count), ß/æ/œ as ss/ae/oe, ASCII and general punctuation
+    weigh nothing, and anything else, including a separate combining mark (the breve in ā̆),
+    weighs as itself. Two strings with the same fold reach the same index labels.
+    Approximation: Kindles fold only about half of Latin Extended-B; this folds all of it.
+    """
+    out = []
+    for char in unicodedata.normalize("NFC", text):
+        code = ord(char)
+        if char in KINDLE_LIGATURES:
+            out.append(KINDLE_LIGATURES[char])
+        elif char.isascii():
+            if char.isalnum() or char == " ":
+                out.append(char.lower())
+        elif _kindle_weighs_nothing(char, code):
+            continue
+        elif 0x00C0 <= code <= 0x024F and char.isalpha():
+            base = unicodedata.normalize("NFKD", char)[0]
+            out.append(base.lower() if base.isascii() else char)
+        else:
+            out.append(char)
+    return "".join(out)
+
+
+def _kindle_weighs_nothing(char, code):
+    # Latin-1 punctuation and symbols, spacing modifiers, and general punctuation
+    latin1_symbol = 0x00A1 <= code <= 0x00BF and char not in "µ¹²³"
+    return latin1_symbol or 0x02B0 <= code <= 0x02FF or 0x2000 <= code <= 0x206F
+
+
 def remove_breves(text: str) -> str:
     """Remove breve diacritics from characters in a given string."""
     normalized = unicodedata.normalize("NFD", text)
@@ -90,6 +134,29 @@ def generate_vowel_variants(word: str) -> list[str]:
             options_per_group.append([normal_str])
 
     return ["".join(comb) for comb in product(*options_per_group)]
+
+
+def form_of_root(sense: dict) -> str | None:
+    """Return the lemma a sense merely points to, or None if the sense defines the word itself.
+
+    "genitive singular of fors" or "alternative form of causa" only point at a lemma, while a
+    participle sense like "loved; having been loved" (form_of amō) carries its own meaning.
+    """
+    targets = sense.get("alt_of") or sense.get("form_of")
+    if targets:
+        root = targets[0].get("word")
+        glosses = normalize(" ".join(sense.get("glosses", [])), lowercase=True)
+        if root and normalize(root, lowercase=True) in glosses:
+            return root
+        return None
+
+    links = sense.get("links", [])
+    if len(links) == 1 and len(links[0]) == 2 and links[0][1].endswith("#Latin"):
+        root_word = links[0][0]
+        for gloss in sense.get("glosses", []):
+            if gloss.endswith(f" of {root_word}"):
+                return root_word
+    return None
 
 
 def sanitize_xhtml(text: str) -> str:
