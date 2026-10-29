@@ -79,3 +79,19 @@ def test_bundle_relinks_entries_and_adds_unaccented_spellings(tmp_path):
     assert "synwordcount=6\n" in ifo and ifo.startswith(
         "StarDict's dict ifo file\nversion=2.4.2\n"
     )
+
+
+def test_bundle_takes_out_the_soft_hyphens_of_shared_labels(tmp_path):
+    path = tmp_path / "la-wiktionary"
+    write_bundle(
+        path,
+        [("et", "<p>and</p>"), ("e\u00adt", "<p>also</p>"), ("quī", "<p>who</p>")],
+        [("quod", 2), ("q\u00aduod", 2), ("q\u00ad\u00aduod", 1)],
+    )
+    Bundle.read(path).unmark().write()
+
+    stem = path / path.name
+    words = [w for w, *_ in _records(stem.with_suffix(".idx"), ">II")]
+    assert words == ["et", "et", "quī"]
+    synonyms = [(w, i) for w, i in _records(stem.with_suffix(".syn"), ">I")]
+    assert synonyms == [("quod", 1), ("quod", 2)]

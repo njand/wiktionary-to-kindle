@@ -9,6 +9,7 @@ from wiktionary_to_kindle.render.html_renderer import (
     format_etymology,
     keep_spaces,
 )
+from wiktionary_to_kindle.render.shared_labels import mark, unmark
 from wiktionary_to_kindle.utils import TEMPLATES
 
 from .test_sort_merge import lemma
@@ -121,3 +122,16 @@ def test_descendants_of_one_language_share_a_line():
     assert (
         "<li><b>Spanish:</b> llave, clave</li><li><b>Italian:</b> chiave</li>" in html
     )
+
+
+@pytest.mark.parametrize(
+    "label, count, expected",
+    [
+        ("et", 1, "e\u00adt"),
+        ("ā", 2, "ā\u00ad\u00ad"),  # one letter: after it
+        ("a\u0306b", 1, "a\u0306\u00adb"),  # a separate breve stays on its letter
+    ],
+)
+def test_mark_puts_soft_hyphens_after_the_first_letter(label, count, expected):
+    assert mark(label, count) == expected
+    assert unmark(mark(label, count)) == label

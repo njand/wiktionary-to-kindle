@@ -177,3 +177,20 @@ def test_forms_written_with_a_symbol_are_not_indexed():
     )
     assert not any("2643" in form for form in entry.all_forms)
     assert "Iovis" in entry.all_forms
+
+
+@pytest.mark.parametrize(
+    "template, pos",
+    [("la-part", "participle"), ("la-gerund", "gerund"), ("la-verb", "verb")],
+)
+def test_participles_and_gerunds_are_named_as_such(template, pos):
+    # Kaikki files them under "verb"
+    entry = Entry(
+        {
+            "word": "amans",
+            "pos": "verb",
+            "head_templates": [{"name": template, "expansion": "amāns"}],
+            "senses": [{"glosses": ["loving"]}],
+        }
+    )
+    assert entry.pos == pos

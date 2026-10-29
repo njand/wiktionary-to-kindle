@@ -6,6 +6,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from ..render.shared_labels import unmark
 from ..utils import kindle_fold
 
 ENTRY_PATTERN = re.compile(
@@ -20,10 +21,10 @@ POS_PATTERN = re.compile(r"<p(?: class=\"pos\">|><i>)([^<]*)(?:</i>)?</p>")
 @dataclass
 class IndexedEntry:
     key: str  # "<file>#<id>", unique across the dictionary
-    headword: str
+    headword: str  # without the soft hyphens that keep a shared label distinct
     pos: str | None
     is_card: bool  # a disambiguation card (older builds), not an entry
-    labels: list[str] = field(default_factory=list)
+    labels: list[str] = field(default_factory=list)  # as stored, soft hyphens included
 
 
 @dataclass
@@ -46,14 +47,14 @@ def read_entries(pages_dir):
         text = page.read_text(encoding="utf-8")
         for entry_id, body in ENTRY_PATTERN.findall(text):
             orth = ORTH_PATTERN.search(body)
-            headword = html.unescape(orth.group(1)) if orth else ""
+            label = html.unescape(orth.group(1)) if orth else ""
             pos = POS_PATTERN.search(body)
-            labels = [headword] if orth else []
+            labels = [label] if orth else []
             labels += [html.unescape(v) for v in IFORM_PATTERN.findall(body)]
             entries.append(
                 IndexedEntry(
                     key=f"{page.name}#{entry_id}",
-                    headword=headword,
+                    headword=unmark(label),
                     pos=html.unescape(pos.group(1)) if pos else None,
                     is_card=entry_id.startswith("card_"),
                     labels=labels,

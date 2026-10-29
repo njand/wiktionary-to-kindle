@@ -6,6 +6,7 @@ from pathlib import Path
 from ..utils import TEMPLATES
 from .html_page import HTMLPage
 from .html_renderer import HTMLRenderer
+from .shared_labels import distinguish_shared_labels
 
 
 class BookWriter:
@@ -36,8 +37,12 @@ class BookWriter:
         return True
 
     def finish(self, dump_date, build_date, version):
-        """Write the last entry page and the front page."""
+        """Write the last entry page, give entries that share a label one each, and
+        write the front page."""
         self.entries.write()
+        distinguish_shared_labels(
+            Path(self.files_dir, f"{page:04}.xhtml") for page in range(self.page_count)
+        )
         self.write_front(dump_date, build_date, version)
 
     def write_front(self, dump_date, build_date, version):
