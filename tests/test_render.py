@@ -49,8 +49,8 @@ def test_descendants_filtered_and_shown_by_language_name():
         }
     )
     html = render(amo, ["French", "Italian"])
-    assert html.count("<b>French:</b> aimer") == 1
-    assert "<b>Italian:</b> amare" in html
+    assert html.count("Fr. aimer") == 1
+    assert "It. amare" in html
     assert "amer" not in html
 
 
@@ -80,7 +80,7 @@ def test_header_prefix_is_escaped_once():
 def test_entries_say_their_style_in_markup():
     # kindling strips class attributes from entries, and the popup applies no stylesheet
     html = render(lemma("amo", "verb", "amō", ["to love"]))
-    assert "<p><i>verb</i></p>" in html
+    assert "</idx:orth> &#183; <i>verb</i></p>" in html
     assert "class=" not in html
 
 
@@ -119,9 +119,7 @@ def test_descendants_of_one_language_share_a_line():
         {"lang": "Spanish", "lang_code": "es", "word": "llave"},
     ]
     html = render(clavis)
-    assert (
-        "<li><b>Spanish:</b> llave, clave</li><li><b>Italian:</b> chiave</li>" in html
-    )
+    assert "<p><i>Desc.</i> Sp. llave, clave; It. chiave</p>" in html
 
 
 @pytest.mark.parametrize(
@@ -164,3 +162,19 @@ def test_scripts_without_a_font_give_their_transliteration():
         "Greek a3-ku-pi-ti-jo (“Egyptian”) and Ancient Greek Αἴγυπτος (Aíguptos)."
     )
     assert format_etymology(etymology).startswith("Cognate with <i>Gothic atisk</i>")
+
+
+def test_headword_line_holds_forms_declension_and_part_of_speech():
+    rex = lemma("rex", "noun", "rēx m (genitive rēgis); third declension", ["king"])
+    html = render(rex)
+    assert (
+        '<p><idx:orth value="rēx"><b>rēx</b></idx:orth> m (rēgis); 3rd decl. '
+        "&#183; <i>noun</i></p>"
+    ) in html
+    part = lemma(
+        "amatus",
+        "participle",
+        "amātus (feminine amāta, neuter amātum); first/second-declension participle",
+        ["loved"],
+    )
+    assert "(amāta, amātum); 1st/2nd decl. &#183; <i>participle</i>" in render(part)

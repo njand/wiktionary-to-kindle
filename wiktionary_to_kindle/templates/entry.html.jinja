@@ -1,9 +1,10 @@
 {%- import 'macros.html.jinja' as macros -%}
 <idx:entry name="Latin" scriptable="yes" spell="yes" exact="yes" id="{{ entry.id_number }}">
     {%- set main_header = valid_pairs[0][1] -%}
-    <h3>
-        <idx:orth value="{{ orth | e }}">
+    {#- One line: headword, its forms and declension, part of speech -#}
+    <p><idx:orth value="{{ orth | e }}"><b>
             {{- main_header.prefix | e -}}{{- main_header.head_word | e -}}
+            </b>
             {%- if iforms -%}
             <idx:infl>
                 {%- for form in iforms -%}
@@ -12,43 +13,36 @@
             </idx:infl>
             {%- endif -%}
         </idx:orth>
-    </h3>
-    {%- if main_header.remainder -%}
-        <span>{{ main_header.remainder | safe }}</span>
-    {%- endif -%}
-
-    {%- if entry.pos -%}
-        <p><i>{{ entry.pos | e }}</i></p>
-    {%- endif -%}
+        {{- macros.header_tail(main_header, entry.pos) -}}
+    </p>
 
     {%- for block, header in valid_pairs -%}
         {%- if loop.index0 > 0 -%}
-            {{- macros.render_header(header) -}}
-            {%- if entry.pos -%}
-                <p><i>{{ entry.pos | e }}</i></p>
-            {%- endif -%}
+            <p><b>{{ header.prefix | e }}{{ header.head_word | e }}</b>
+            {{- macros.header_tail(header, entry.pos) -}}</p>
         {%- endif -%}
         
         {{- macros.render_senses(block, recursive_senses) -}}
     {%- endfor -%}
 
-    {%- for kind, words in entry.related -%}
-        <p><i>{{ kind }}</i> {% for word, gloss in words -%}
-            <b>{{ word | e }}</b>{% if gloss %}: {{ gloss | e }}{% endif %}{% if not loop.last %}; {% endif %}
-        {%- endfor %}</p>
-    {%- endfor -%}
+    {#- Alternative forms, diminutives and the like share one line -#}
+    {%- if entry.related -%}
+        <p>
+        {%- for kind, words in entry.related -%}
+            <i>{{ kind }}</i> {% for word, gloss in words -%}
+                <b>{{ word | e }}</b>{% if gloss %}: {{ gloss | e }}{% endif %}{% if not loop.last %}; {% endif %}
+            {%- endfor %}{% if not loop.last %}; {% endif %}
+        {%- endfor -%}
+        </p>
+    {%- endif -%}
 
     {%- if include_etymology and entry.etymology and entry.etymology.etymology_text -%}
-        <h4>Etymology</h4>
-        <p>{{ format_etymology(entry.etymology) | safe }}</p>
+        <p><i>Etym.</i> {{ format_etymology(entry.etymology) | safe }}</p>
     {%- endif -%}
 
     {%- if descendants -%}
-        <h4>Descendants</h4>
-        <ul>
-        {%- for lang, words in descendants -%}
-            <li><b>{{ lang | e }}:</b> {{ words | join(", ") | e }}</li>
-        {%- endfor -%}
-        </ul>
+        <p><i>Desc.</i> {% for lang, words in descendants -%}
+            {{ short_language(lang) | e }} {{ words | join(", ") | e }}{% if not loop.last %}; {% endif %}
+        {%- endfor %}</p>
     {%- endif -%}
 </idx:entry>

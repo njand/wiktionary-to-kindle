@@ -1,13 +1,7 @@
-{# Renders the dictionary headers with optional secondary grammatical info #}
-{%- macro render_header(header) -%}
-    {%- if header.num_headers == 1 -%}
-        <h3>{{ header.prefix | e }}{{ header.head_word | e }}</h3>
-        {%- if header.remainder -%}
-            <span>{{ header.remainder | safe }}</span>
-        {%- endif -%}
-    {%- else -%}
-        <h3>{{ header.prefix | e }}{{ header.head_word | e }}{% if header.remainder %} <span>{{ header.remainder | safe }}</span>{% endif %}</h3>
-    {%- endif -%}
+{# What follows the headword on its line: forms and declension, then the part of speech #}
+{%- macro header_tail(header, pos) -%}
+    {%- if header.remainder %} {{ compact_grammar(header.remainder, pos) | safe }}{% endif -%}
+    {%- if pos %} &#183; <i>{{ pos | e }}</i>{% endif -%}
 {%- endmacro -%}
 
 {# Recursively renders nested dictionary definitions #}

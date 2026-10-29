@@ -30,6 +30,40 @@ def format_etymology(etymology):
     return "".join(wrapped)
 
 
+ORDINALS = {
+    "first": "1st",
+    "second": "2nd",
+    "third": "3rd",
+    "fourth": "4th",
+    "fifth": "5th",
+}
+ORDINAL_PATTERN = re.compile(r"\b(" + "|".join(ORDINALS) + r")\b")
+# Short names of the descendant languages, as Latin dictionaries write them
+LANGUAGES = {
+    "Italian": "It.",
+    "Spanish": "Sp.",
+    "Portuguese": "Pt.",
+    "French": "Fr.",
+    "English": "Eng.",
+}
+
+
+def compact_grammar(remainder, pos):
+    """The headword line's grammar, shorter: "third declension" as "3rd decl.", and a
+    closing part of speech the line names anyway left out
+    ("first/second-declension participle" → "1st/2nd decl.")."""
+    text = ORDINAL_PATTERN.sub(lambda m: ORDINALS[m.group(1)], remainder)
+    text = re.sub(r"[- ]declension\b", " decl.", text)
+    text = re.sub(r" conjugation\b", " conj.", text)
+    if pos and text.endswith(" " + pos):
+        text = text[: -len(pos) - 1]
+    return text
+
+
+def short_language(name):
+    return LANGUAGES.get(name, name + ":")
+
+
 def format_gloss(sense):
     """Helper passed to Jinja to highlight differences and link alternate words."""
 
@@ -66,6 +100,8 @@ class HTMLRenderer:
         {
             "format_gloss": format_gloss,
             "format_etymology": format_etymology,
+            "compact_grammar": compact_grammar,
+            "short_language": short_language,
         }
     )
 

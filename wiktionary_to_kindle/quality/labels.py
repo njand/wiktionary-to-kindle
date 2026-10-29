@@ -14,8 +14,12 @@ ENTRY_PATTERN = re.compile(
 )
 ORTH_PATTERN = re.compile(r"<idx:orth\b[^>]*\bvalue=\"([^\"]*)\"")
 IFORM_PATTERN = re.compile(r"<idx:iform\b[^>]*\bvalue=\"([^\"]*)\"")
-# The first paragraph that is only italic text; builds before Stage 4 wrote <p class="pos">
-POS_PATTERN = re.compile(r"<p(?: class=\"pos\">|><i>)([^<]*)(?:</i>)?</p>")
+# The part of speech closing the headword line (" · <i>noun</i></p>"); builds before
+# 2026-10-29 gave it a paragraph of its own (<p><i>noun</i></p>), before Stage 4
+# <p class="pos">
+POS_PATTERN = re.compile(
+    r"(?:&#183; <i>|<p(?: class=\"pos\">|><i>))([^<]*)(?:</i>)?</p>"
+)
 
 
 @dataclass
