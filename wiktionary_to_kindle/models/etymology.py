@@ -46,10 +46,13 @@ def strip_tree(text, word):
 
 class Etymology:
     def __init__(self, etymology_text, etymology_templates, word=""):
-        # Paragraphs and list items run on: the popup shows one paragraph
-        self.etymology_text = etymology_text and re.sub(
-            r"\s*\n[\s*]*", " ", transliterate(strip_tree(etymology_text, word))
-        )
+        # Paragraphs run on; a list item (Caesar's competing theories) keeps a line of its
+        # own, marked "• ", which format_etymology breaks before
+        text = etymology_text and transliterate(strip_tree(etymology_text, word))
+        if text:
+            text = re.sub(r"\s*\n\s*\*+\s*", "\n• ", text)
+            text = re.sub(r"\s*\n(?!• )\s*", " ", text)
+        self.etymology_text = text
         self.templates = [
             EtymologyTemplate(
                 template.get("name", ""),
@@ -64,7 +67,6 @@ class Etymology:
 
 # Templates naming an ancestor: Latin got the word from args 2 (a language) as args 3
 ANCESTOR = {"inh", "inh+", "der", "der+", "bor", "bor+", "lbor", "slbor", "ubor"}
-BORROWED = {"bor", "bor+", "lbor", "slbor", "ubor"}
 # Templates naming a word in args 2 (a cognate, a mention), or several from args 2 on
 MENTION = {"cog", "noncog", "m", "l", "m+", "mention", "cognate"}
 AFFIXES = {"af", "affix", "prefix", "suffix", "compound", "confix", "surf"}

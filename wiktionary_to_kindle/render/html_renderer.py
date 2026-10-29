@@ -3,7 +3,6 @@ import re
 
 from jinja2 import Environment, PackageLoader
 
-from ..models.etymology import ANCESTOR, BORROWED
 from .headline import headline_tail
 
 # kindling drops a space that stands alone between two inline elements ("</a> <i>" compiles
@@ -15,55 +14,12 @@ def keep_spaces(html_str):
     return SPACE_BETWEEN_TAGS.sub(r"\1&#160;", html_str)
 
 
-# An etymology longer than this is told by its chain of ancestors instead (summarize)
-LONG_ETYMOLOGY = 300
-SENTENCE_END = re.compile(r"(?<=[.!?])\s+(?=[A-Z])")
-
-
 def format_etymology(etymology):
     """Helper passed to Jinja: the etymology as markup, with the words it cites in italics
-    and Proto-Indo-European as PIE. A long one is told by its chain of ancestors."""
-    text = etymology.etymology_text
-    if len(text) > LONG_ETYMOLOGY:
-        summary = summarize(etymology.templates)
-        if summary:
-            return summary
-        sentences = SENTENCE_END.split(text)
-        text = " ".join(sentences[:2]) + (" …" if len(sentences) > 2 else "")
-    return _abbreviate(_cite(text, etymology.templates))
-
-
-def summarize(templates):
-    """One sentence from the ancestors Wiktionary's templates name, one per language,
-    and up to two cognates: "From Proto-Italic *rēks, from PIE *h₃rḗǵs (“king”). Cf.
-    Sanskrit rā́jan." None when the templates name no ancestor."""
-    chain, languages = [], set()
-    for template in templates:
-        if template.name in ANCESTOR and template.args.get("2") not in languages:
-            languages.add(template.args.get("2"))
-            chain.append(template)
-    if not chain:
-        return None
-    names = {t.name for t in templates}
-    uncertain = names & {"unc", "unk"}
-    links = [_cite_template(chain[0])] + [
-        ("perhaps from " if uncertain else "from ") + _cite_template(t)
-        for t in chain[1:]
-    ]
-    opening = "Borrowed from" if chain[0].name in BORROWED else "From"
-    # An unknown origin with theories (Caesar: "From a Punic word ...") is no fact
-    if "unk" in names:
-        opening = "Origin unknown; perhaps " + opening.lower()
-    sentence = f"{opening} {', '.join(links)}."
-    cognates, languages = [], set()
-    for template in templates:
-        if template.name == "cog" and template.args.get("1") not in languages:
-            languages.add(template.args.get("1"))
-            cognates.append(_cite_template(template))
-    cognates = cognates[:2]
-    if cognates:
-        sentence += f" <i>Cf.</i> {', '.join(cognates)}."
-    return _abbreviate(sentence)
+    and Proto-Indo-European as PIE. It is given whole: it closes the entry, after the
+    meanings. Its list items start lines of their own."""
+    markup = _cite(etymology.etymology_text, etymology.templates)
+    return markup.replace("Proto-Indo-European", "PIE").replace("\n", "<br/>")
 
 
 def _cite(text, templates):
@@ -90,10 +46,6 @@ def _cite_template(template):
         term = re.escape(html.escape(term))
         cited = re.sub(rf"(?<![\w<>/]){term}(?!\w)", r"<i>\g<0></i>", cited, count=1)
     return cited
-
-
-def _abbreviate(markup):
-    return markup.replace("Proto-Indo-European", "PIE")
 
 
 # Short names of the descendant languages, as Latin dictionaries write them

@@ -106,30 +106,6 @@ def test_format_etymology(text, templates, expected):
     assert format_etymology(Etymology(text, templates)) == expected
 
 
-def test_long_etymology_is_told_by_its_ancestors():
-    text = "From Proto-Italic *mōs, of uncertain origin. " + "Discussion. " * 40
-    templates = [
-        inh("itc-pro", "*mōs", "Proto-Italic *mōs"),
-        {"name": "unc", "expansion": "uncertain", "args": {"1": "la"}},
-        {  # the word in the display slot
-            "name": "der",
-            "expansion": "Proto-Indo-European *moh₁-",
-            "args": {"1": "la", "2": "ine-pro", "3": "", "4": "*moh₁-"},
-        },
-        inh("ine-pro", "*med-", "Proto-Indo-European *med- (“to measure”)", name="der"),
-        cog("grc", "μαίομαι", "Ancient Greek μαίομαι (maíomai)"),
-        cog("en", "mood", "English mood"),
-        cog("de", "Mut", "German Mut"),
-    ]
-    assert format_etymology(Etymology(text, templates)) == (
-        "From Proto-Italic <i>*mōs</i>, perhaps from PIE <i>*moh₁-</i>. "
-        "<i>Cf.</i> Ancient Greek <i>μαίομαι</i> (maíomai), English <i>mood</i>."
-    )
-    # With no ancestor named, the first two sentences
-    plain = "One. Two. " + "Three. " * 60
-    assert format_etymology(Etymology(plain, [])) == "One. Two. …"
-
-
 def test_header_prefix_is_escaped_once():
     entry = lemma("amo", "verb", "<†> & amō (present infinitive amāre)", ["to love"])
     html = render(entry)
@@ -282,34 +258,6 @@ def test_parts_of_speech_and_cases_are_spelled_as_dictionaries_do():
     assert "</idx:orth> &#183; <i>preposition, + abl.</i></p>" in render(cum)
 
 
-def test_unknown_origin_is_not_told_as_fact():
-    text = "Unknown; many interpretations. " + "From a Punic word. " * 30
-    templates = [
-        {"name": "unk", "expansion": "Unknown", "args": {"1": "la"}},
-        {
-            "name": "der",
-            "expansion": "Punic",
-            "args": {"1": "la", "2": "xpu", "3": "-"},
-        },
-    ]
-    assert format_etymology(Etymology(text, templates)).startswith(
-        "Origin unknown; perhaps from Punic"
-    )
-
-
-def test_cognates_come_from_two_languages():
-    text = "From Proto-Italic *mōs. " + "Discussion. " * 40
-    templates = [
-        inh("itc-pro", "*mōs", "Proto-Italic *mōs"),
-        cog("grc", "μαίομαι", "Ancient Greek μαίομαι"),
-        cog("grc", "Μοῦσα", "Ancient Greek Μοῦσα"),
-        cog("en", "mood", "English mood"),
-    ]
-    assert format_etymology(Etymology(text, templates)).endswith(
-        "<i>Cf.</i> Ancient Greek <i>μαίομαι</i>, English <i>mood</i>."
-    )
-
-
 def test_trailing_construction_and_shared_glosses_are_shortened():
     amo = lemma("amo", "verb", "amō", [])
     amo["senses"] = [
@@ -320,3 +268,13 @@ def test_trailing_construction_and_shared_glosses_are_shortened():
         (["CAES", "CAESS"], "a title"),
         (["C."], ""),
     ]
+
+
+def test_long_etymology_is_given_whole():
+    # It closes the entry, so it is not shortened; each list item gets its own line
+    items = ["Unknown; theories are:", "* From a Punic word.", "* From caesariēs."]
+    text = "\n".join(items) + "\nDiscussion." * 40
+    assert format_etymology(Etymology(text, [])) == (
+        "Unknown; theories are:<br/>• From a Punic word.<br/>• From caesariēs."
+        + " Discussion." * 40
+    )
