@@ -6,6 +6,7 @@ from pathlib import Path
 from ..utils import TEMPLATES
 from .html_page import HTMLPage
 from .html_renderer import HTMLRenderer
+from .popup_order import add_plain_spellings, weigh
 from .shared_labels import distinguish_shared_labels
 
 
@@ -17,6 +18,7 @@ class BookWriter:
         self.files_dir = files_dir
         self.descendant_langs = descendant_langs
         self.entry_pages = {}  # entry id -> its page's filename
+        self.weights = {}  # entry id -> estimated frequency (popup_order)
         self.entries = HTMLPage(
             max_lines=max_page_len, output_fp_prefix=os.path.join(files_dir, "")
         )
@@ -33,16 +35,20 @@ class BookWriter:
         if not lines:
             return False
         self.entry_pages[entry.id_number] = self.entries.get_filename()
+        self.weights[entry.id_number] = weigh(entry)
         self.entries.add_lines(lines)
         return True
 
     def finish(self, dump_date, build_date, version):
-        """Write the last entry page, give entries that share a label one each, and
-        write the front page."""
+        """Write the last entry page, give the likeliest entry of each spelling without
+        accents that spelling, give entries that share a label one each, and write the
+        front page."""
         self.entries.write()
-        distinguish_shared_labels(
+        pages = [
             Path(self.files_dir, f"{page:04}.xhtml") for page in range(self.page_count)
-        )
+        ]
+        add_plain_spellings(pages, self.weights)
+        distinguish_shared_labels(pages, self.weights)
         self.write_front(dump_date, build_date, version)
 
     def write_front(self, dump_date, build_date, version):
