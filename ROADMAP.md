@@ -1,7 +1,7 @@
 # Roadmap
 
-Development plan for the Latin dictionary, with the decisions and research it rests on.
-Update this file as stages finish. Scope is Latin only; other languages come later.
+Development plan for the Latin dictionary and the languages after it (Ancient Greek, then Turkish), with the decisions and research it rests on.
+Update this file as stages finish. Stages 0–6 are Latin; Stage 7 makes the build language-neutral; Stages 8–11 are Ancient Greek; Stage 12 outlines Turkish.
 
 ## Decisions (2026-10-27)
 
@@ -12,6 +12,8 @@ Update this file as stages finish. Scope is Latin only; other languages come lat
 | Enclitics (-que, -ne, -ve) | **Not indexed.** Enclitics will be pre-segmented in the e-books with an invisible space instead. Verify on a device first (Stage 0). |
 | Examples pipeline | **Remove it.** The CLI never enables `link_examples`. |
 | Disambiguation cards (2026-10-28) | **Drop them.** The device popup lists every entry a tap reaches (see Stage 6, found on the device), and links do not work in the popup, so a card only added a step. Each entry keeps all its own spellings. |
+| Next languages (2026-10-29) | **Ancient Greek, then Turkish.** Greek is closest to Latin: an inflected classical language whose Wiktionary tables list nearly every form, so most of the Latin pipeline carries over. Turkish needs morphology the tables cannot list (Stage 12). |
+| Preparing books (2026-10-29) | **Allowed.** Where the dictionary alone cannot reach a word, a `prepare-book` command may normalize or segment the e-book (Unicode form and elision marks for Greek, an invisible break between stem and suffixes for Turkish, enclitics for Latin). The dictionary comes first: a book change is only for what labels cannot do at a reasonable size. |
 
 ## How Kindle lookup works (what the design must respect)
 
@@ -173,6 +175,92 @@ Second test book (2026-10-28, the build without cards): 38 of 87 popups listed f
 - [ ] Check the predicted order on the device with the fourth test book.
 - [ ] `vēnit` listed veniō before vēneō, although the index stores `vēnit` for vēneō and veniō is reached by `venit` (kindling predicts vēneō first). Every other popup put the entry spelled like the tap first.
 
+## How Kindle lookup works for Greek (what Stages 8–11 must respect)
+
+From kindling's README and source (checked 2026-10-29), not yet measured on a device by this project:
+
+- **The device folds nothing in Greek.** Latin letters weigh as their lowercase base letter, but "Greek, Cyrillic, Armenian and Hebrew letters, the combining marks" weigh as themselves, "so its case and accents count" (`Κάτι` does not find `κάτι`). This is the opposite of Latin: there, extra spellings only decide the popup order; in Greek, every spelling a text prints must be a label or the tap misses.
+- A Greek book ignores Greek case only when choosing among labels that already have the same weights, so it does not rescue a capitalized tap.
+- Code points count, not canonical equivalence: oxia `ά` (U+1F71) and tonos `ά` (U+03AC) are different characters to the device, and "a decomposed `é` is not a precomposed one". `kindle_fold` normalizes to NFC first, which is right for Latin texts and wrong here.
+- Punctuation weighs nothing: the right single quotation mark (U+2019) and the modifier apostrophe (U+02BC, in the spacing-modifier block) used for elision drop out of a tapped word; the Greek koronis/psili `᾽` (U+1FBD, Greek Extended) does not.
+- Greek dictionaries get kindlegen's Greek ORDT/SPL blob by default, which covers Greek Extended (U+1F00–U+1FFF). The language does not change the weights; the Kindle 4 looks a word up in the dictionary whose language matches the book's. kindling maps `grc` to its own LCID.
+- Lemma, the Modern Greek dictionary kindling's author builds, adds case variants (`φας`/`Φας`) and corpus-attested polytonic forms (from Wikisource) to its 31K headwords and 568K forms: the same approach this plan takes.
+- Kaikki's Ancient Greek data (2026-10-29, λύω): the headword and the table forms carry macrons and breves (`λῡ̆́ω`, `λῡ́ουσῐν`), the page title does not (`λύω`). Participles are listed in the nominative only (`λῡ́ων`, `λῡ́ουσᾰ`, `λῦον`). Dialects (Epic, Ionic, ...) are named by `table-tags` rows that head each table, not on each form. A full verb's forms run to hundreds; the page for λύω is 640K characters.
+
+## Stage 7: Language profiles — Latin output unchanged
+
+Goal: one place per language for everything Latin-specific, so `--lang grc` builds through the same pipeline.
+
+- [ ] `wiktionary_to_kindle/languages/` with `la.py` and `grc.py`, chosen by `--lang`. A profile holds:
+  - The language name and code: `name="Latin"` in `entry.html.jinja`, the front page title (`front.html.jinja`), the OPF, and the description in `pipeline.py`.
+  - The Wiktionary section anchor for form-of links (`#Latin` in `utils.py`, `#Ancient_Greek`).
+  - The page key a pointer target is matched by (`merge/pointers.py`, `merge/sort.py`): Latin drops macrons and breves; Greek drops the same length marks but keeps accents and breathings, which belong to the spelling.
+  - `lookup_spellings`: Latin's u/v, i/j and disputed lengths; Greek's in Stage 9.
+  - The text spelling `render/popup_order.py` groups ambiguous labels by: Latin without macrons; Greek without length marks.
+  - Language-specific tags and filters: `ALTERNATIVE_TAGS` (`Medieval-Latin`), `PATTERN_PERIPHRASTIC` (the forms of sum), `POS_BY_HEAD_TEMPLATE` (`la-part`), the generated comparatives and participles (`merge/forms.py`).
+  - The headline style (`render/headline.py`), sense-label abbreviations and short language names (`render/html_renderer.py`), and the default descendant languages.
+  - The StarDict synonym rule (`stardict.py`), corpus formats and coverage miss causes (`ENCLITICS`, "j for i" in `quality/coverage.py`), and the device checklist path.
+- [ ] `kindle_fold` stops normalizing to NFC: a label is normalized where it is made, and a tapped word is weighed as the text prints it. Latin output does not change (its labels are already NFC); Greek coverage would otherwise count oxia and decomposed texts as hits.
+- Done when: a full Latin build writes XHTML pages and an OPF identical to the build before (as Stage 5 checked), and the tests pass.
+
+## Stage 8: Ancient Greek — measure first
+
+- [ ] Filter the dump for `grc` and count: entries, pointer pages, forms per entry, forms with length marks, `table-tags` dialects, head templates (`grc-noun`, `grc-adj`, `grc-verb`, `grc-part`?). Build the sample dump (`quality sample --lang grc`) through the Stage 7 pipeline and list what breaks.
+- [ ] Corpus `corpus/grc.tsv` from freely licensed TEI texts (Perseus canonical-greekLit and First1KGreek, CC BY-SA 4.0): Iliad 1, Odyssey 1, Herodotus 1, Xenophon's Anabasis 1, Plato's Apology, a speech of Lysias, and a Koine text (the Gospel of John from a public-domain edition). `quality/corpus.py` gains a TEI format. Record each text's Unicode habits: tonos or oxia, precomposed or decomposed, which elision mark.
+- [ ] Coverage miss causes for Greek: capital, grave for acute, an enclitic's extra accent, elision, crasis, movable nu, oxia, decomposed, dialect form.
+- [ ] Device test book (`scripts/make_device_test.py`, words in `tests/device_words_grc.tsv`), each item predicted from kindling's README first:
+  - A capitalized tap (`Ἄνδρα`) and a lowercase label: expected miss.
+  - Oxia against tonos, decomposed against precomposed: expected miss.
+  - Grave against acute (`καλὸς`, `καλός`): expected miss.
+  - Elision marks `ἀλλ’` (U+2019), `ἀλλʼ` (U+02BC), `ἀλλ᾽` (U+1FBD), `ἀλλ'`: which the selection includes, and which weigh nothing.
+  - The dictionary declared as `grc` and as `el`: which one Settings → Dictionaries offers for a book declared `grc` and for one declared `el`.
+  - Polytonic letters in the popup and in the book (`ᾄ`, `ῷ`, `ἂν`, `᾽`) with the default fonts: no boxes (cf. Gothic, Stage 6).
+- [ ] Baseline: entries, labels, folded keys, `.mobi` size, build time, coverage per source. Measurements stay in `outputs/measure/`.
+
+## Stage 9: Ancient Greek — lookups
+
+The device folds nothing in Greek, so each kind of spelling a text prints becomes a label kind. Each is measured as coverage gained per label added; a kind that does not pay is dropped or limited to corpus-attested forms (Lemma's approach).
+
+- [ ] **Without length marks.** Every headword and form gets its spelling without macrons and breves (`λῡ́ουσῐν` → `λύουσιν`): precomposed `ᾱ ῑ ῡ ᾰ ῐ ῠ` lose the mark, combining U+0304 and U+0306 are dropped, and the rest is recomposed to NFC. This is the spelling texts print; the marked one stays only as the displayed headword.
+- [ ] **Capitalized.** The first letter of every headword and form capitalized, with the breathing and accent moved onto the capital (`ἄνδρα` → `Ἄνδρα`). Editions capitalize paragraph and speech openings and proper names.
+- [ ] **Grave.** A form with an acute on the last syllable gets the grave spelling (`καλός` → `καλὸς`, `ἀγαθόν` → `ἀγαθὸν`), which a text prints before another word.
+- [ ] **Enclitics.** Before an enclitic, a proparoxytone or properispomenon form gains an acute on its last syllable (`ἄνθρωπός τις`, `δῶρόν τι`), and the enclitics appear with or without an accent (`ἐστι`, `ἐστί`, `ἐστὶ`, `ἔστι`; `τις`, `τὶς`). Add the enclitics' spellings; add the extra-accent spellings only if the corpus shows they pay.
+- [ ] **Movable nu.** Forms in -σι(ν), -ε(ν) and `ἐστί(ν)` get the spelling with or without ν that the table lacks.
+- [ ] **Elision and crasis.** Elided forms (`ἀλλ’`, `δ’`, `ἐπ’`, `κατ’`) are indexed where Wiktionary has a page, plus those the corpus attests; the elision mark is the one the device test shows a tap ignores. Crasis (`κἀγώ`, `τοὔνομα`) only where Wiktionary has a page.
+- [ ] **Participles.** Wiktionary lists only their nominatives; generate the declension, as Stage 3 did for Latin (`-ων -οντος`, `-ουσα -ούσης`; `-μενος -η -ον`; `-σᾱς -σαντος`; `-θείς -θέντος`; `-ώς -ότος`, `-υῖα`), with the accent kept where the nominative has it as far as the ending allows. Tagged `generated`, skipped where Wiktionary has a page. Comparatives and superlatives the same way, from the forms the lemma tags.
+- [ ] **Dialects.** Read the `table-tags` row heading each table, so a form keeps its dialect (Epic, Ionic, Doric, Aeolic, Koine); index all of them.
+- [ ] **Popup order.** The estimate works as in Latin. Accents count, so entries tie only on the same accented spelling, mostly forms shared between lemmas; the likeliest gets the plain label, the rest soft hyphens by rank (`shared_labels.py`).
+- [ ] **Label budget.** Latin's baseline had 2.99M labels in a 98 MB `.mobi`; the length-free, capitalized and grave spellings could triple Greek's. Measure build time, size and the 65,535-record limit after each kind; if the budget is exceeded, index the costly kinds only for corpus-attested forms.
+- [ ] **Book preparation, first use.** If the device test shows oxia or decomposed accents miss and the corpus shows such editions are common, `prepare-book` normalizes the text instead of doubling labels: NFC with oxia as tonos, one elision mark, lunate sigma `ϲ` as `σ`/`ς`. Otherwise this waits for Turkish.
+- Done when: every word in `tests/lookup_words_grc.txt` opens, kindling's lookup agrees on the most frequent corpus words, and the remaining misses are listed by cause.
+
+## Stage 10: Ancient Greek — entries
+
+- [ ] Headline in the style of LSJ: `λόγος, -ου, ὁ · noun, 2nd decl.` (the article for the gender: ὁ, ἡ, τό); adjectives `-ος, -η, -ον`; verbs with principal parts taken from the tables where they exist (`λύω, λύσω, ἔλυσα, λέλυκα, λέλυμαι, ἐλύθην`). The headword keeps its length marks.
+- [ ] Sense labels shortened: Ep., Att., Ion., Dor., Aeol., Koine, Byz., poet.
+- [ ] Default descendant languages for Greek (Latin borrowings are the interesting ones): decide with a sample.
+- [ ] Wiktionary's romanization is not shown: the reader is reading Greek script.
+- [ ] Merged pointer pages keep their line by kind (`alt.`, `Ep.`, `dim.`), as in Stage 4.
+
+## Stage 11: Ancient Greek — releases
+
+- [ ] `grc` in the workflow matrix, with its own coverage gate against `corpus/grc.tsv`.
+- [ ] `docs/device-check-grc.md`, with pre-releases marked as the latest after the check, as for Latin.
+- [ ] StarDict: a synonym without accents, breathings and length marks for every label, since KOReader and GoldenDict searches are often typed without them.
+- [ ] README: install instructions per language, and what `prepare-book` does if Stage 9 needed it.
+
+## Stage 12: Turkish — outline
+
+From the 2026-10-29 plan; to be detailed after Greek.
+
+- What the device does: lookup matches the whole selected word, with no stemming; `ı`, `İ`, `I` and `i` weigh the same, as do ş/s, ğ/g, ç/c, ö/o, ü/u, so no case variants are needed and `popup_order.py` handles the extra ties. A noun's Wiktionary table gives about 100 forms (102 for `ev`, case × number × possessive), but texts add the copula (`evdeydi`), `-ki`, `-le` and derivations, which no table lists.
+- [ ] **Device test (shared with Stage 0's enclitic check):** does a long press stop at U+200B (zero-width space), U+2060 (word joiner), U+200A (hair space) or an apostrophe (`Türkiye'nin`)? Does `white-space: nowrap` keep a word with a zero-width space on one line? Everything in book segmentation depends on this.
+- [ ] **Baseline from Wiktionary forms**, measuring labels against the budget; stem variants as labels of their lemma (`kitab` → kitap, `ağz` → ağız, `hakk` → hak, `gid` → git), since they are what a split leaves.
+- [ ] **Corpus-attested forms**, lemmatized at build time by an existing analyzer (`zeyrek`, or Zemberek; licences to check), up to the label budget.
+- [ ] **`prepare-book` segmentation:** an invisible break between the stem and the suffix chain, only in words the dictionary cannot reach, after the longest stem the dictionary has (`gözlükçü​ler`), so a split never leaves a stem that cannot be looked up. Suffix-chain entries (`-lerinizden`: *pl. + your (pl.) + abl.*) for a tap on the suffixes. Alternative: a personal dictionary with the book's own analyzed forms (`--forms-from`), which leaves the text alone.
+- [ ] Releases as in Stage 11.
+
 ## Later
 
-Other languages. Hardcoded for Latin today: `name="Latin"` in templates, OPF and HTML headers, `#Latin` in form-of detection, the Latin auxiliary-verb filter.
+- Latin enclitics through `prepare-book` once the device test settles the separator.
+- Further inflected languages (Finnish, Hungarian) on the Turkish machinery.
