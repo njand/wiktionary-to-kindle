@@ -1,9 +1,3 @@
-{# What follows the headword on its line: forms and declension, then the part of speech #}
-{%- macro header_tail(header, pos) -%}
-    {%- if header.remainder %} {{ compact_grammar(header.remainder, pos) | safe }}{% endif -%}
-    {%- if pos %} &#183; <i>{{ pos | e }}</i>{% endif -%}
-{%- endmacro -%}
-
 {# Recursively renders nested dictionary definitions #}
 {%- macro render_senses(block, recursive=True, max_senses=0) -%}
     {%- if block.senses -%}

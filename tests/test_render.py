@@ -49,24 +49,84 @@ def test_descendants_filtered_and_shown_by_language_name():
         }
     )
     html = render(amo, ["French", "Italian"])
-    assert html.count("Fr. aimer") == 1
-    assert "It. amare" in html
+    assert html.count("<b>Fr.</b> aimer") == 1
+    assert "<b>It.</b> amare" in html
     assert "amer" not in html
 
 
+def cog(lang, term, expansion, **args):
+    return {
+        "name": "cog",
+        "expansion": expansion,
+        "args": {"1": lang, "2": term, **args},
+    }
+
+
+def inh(source, term, expansion, name="inh"):
+    return {
+        "name": name,
+        "expansion": expansion,
+        "args": {"1": "la", "2": source, "3": term},
+    }
+
+
 @pytest.mark.parametrize(
-    "text, expansions, expected",
+    "text, templates, expected",
     [
-        ("From X + aab tail", ["X", "ab"], "From <i>X</i> + a<i>ab</i> tail"),
-        ("From X yz", ["Q", "X"], "From <i>X</i> yz"),
-        ("From X and Y.", ["X", "Y"], "From <i>X</i> and <i>Y</i>."),
-        ("From A & B", ["A & B"], "From <i>A &amp; B</i>"),
+        # Only the cited word is italic, not the language or the gloss
+        (
+            "From Proto-Italic *rēks (“king”).",
+            [inh("itc-pro", "*rēks", "Proto-Italic *rēks (“king”)")],
+            "From Proto-Italic <i>*rēks</i> (“king”).",
+        ),
+        # Expansions are matched in order; a template without a cited word adds nothing
+        (
+            "Perhaps inherited from Old English beran and X.",
+            [
+                {"name": "glossary", "expansion": "i", "args": {"1": "inherited"}},
+                cog("ang", "beran", "Old English beran"),
+            ],
+            "Perhaps inherited from Old English <i>beran</i> and X.",
+        ),
+        (
+            "From A & B",
+            [cog("en", "A & B", "A & B")],
+            "From <i>A &amp; B</i>",
+        ),
+        (
+            "From Proto-Indo-European *bʰer-.",
+            [inh("ine-pro", "*bʰer-", "Proto-Indo-European *bʰer-")],
+            "From PIE <i>*bʰer-</i>.",
+        ),
         ("No templates", [], "No templates"),
     ],
 )
-def test_format_etymology(text, expansions, expected):
-    etymology = Etymology(text, [{"expansion": e} for e in expansions])
-    assert format_etymology(etymology) == expected
+def test_format_etymology(text, templates, expected):
+    assert format_etymology(Etymology(text, templates)) == expected
+
+
+def test_long_etymology_is_told_by_its_ancestors():
+    text = "From Proto-Italic *mōs, of uncertain origin. " + "Discussion. " * 40
+    templates = [
+        inh("itc-pro", "*mōs", "Proto-Italic *mōs"),
+        {"name": "unc", "expansion": "uncertain", "args": {"1": "la"}},
+        {  # the word in the display slot
+            "name": "der",
+            "expansion": "Proto-Indo-European *moh₁-",
+            "args": {"1": "la", "2": "ine-pro", "3": "", "4": "*moh₁-"},
+        },
+        inh("ine-pro", "*med-", "Proto-Indo-European *med- (“to measure”)", name="der"),
+        cog("grc", "μαίομαι", "Ancient Greek μαίομαι (maíomai)"),
+        cog("en", "mood", "English mood"),
+        cog("de", "Mut", "German Mut"),
+    ]
+    assert format_etymology(Etymology(text, templates)) == (
+        "From Proto-Italic <i>*mōs</i>, perhaps from PIE <i>*moh₁-</i>. "
+        "<i>Cf.</i> Ancient Greek <i>μαίομαι</i> (maíomai), English <i>mood</i>."
+    )
+    # With no ancestor named, the first two sentences
+    plain = "One. Two. " + "Three. " * 60
+    assert format_etymology(Etymology(plain, [])) == "One. Two. …"
 
 
 def test_header_prefix_is_escaped_once():
@@ -80,7 +140,7 @@ def test_header_prefix_is_escaped_once():
 def test_entries_say_their_style_in_markup():
     # kindling strips class attributes from entries, and the popup applies no stylesheet
     html = render(lemma("amo", "verb", "amō", ["to love"]))
-    assert "</idx:orth> &#183; <i>verb</i></p>" in html
+    assert '<font size="+1"><b>amō</b></font></idx:orth> &#183; <i>verb</i></p>' in html
     assert "class=" not in html
 
 
@@ -96,8 +156,8 @@ def test_qualifier_only_parent_senses_keep_their_children():
     ]
     html = render(omnis)
     assert "<li><i>(as adjective)</i><ol>" in html
-    assert "<i>(in the singular) </i>every" in html
-    assert "<i>(in the plural) </i>all" in html
+    assert "<i>in sg.</i> every" in html
+    assert "<i>in pl.</i> all" in html
 
 
 def test_spaces_between_tags_survive_kindling():
@@ -119,7 +179,10 @@ def test_descendants_of_one_language_share_a_line():
         {"lang": "Spanish", "lang_code": "es", "word": "llave"},
     ]
     html = render(clavis)
-    assert "<p><i>Desc.</i> Sp. llave, clave; It. chiave</p>" in html
+    assert (
+        '<p><b>Descendants.</b>&#160;<font size="-1" color="#555555"><b>Sp.</b> llave, '
+        "clave &#183; <b>It.</b> chiave</font></p>"
+    ) in html
 
 
 @pytest.mark.parametrize(
@@ -155,26 +218,55 @@ def test_scripts_without_a_font_give_their_transliteration():
         "(*aþalafuns); compare Mycenaean Greek 𐁁𐀓𐀠𐀴𐀍 (a3-ku-pi-ti-jo, “Egyptian”) "
         "and Ancient Greek Αἴγυπτος (Aíguptos)."
     )
-    expansion = "Gothic 𐌰𐍄𐌹𐍃𐌺 (atisk)"
-    etymology = Etymology(text, [{"expansion": expansion}])
+    gothic = cog("got", "𐌰𐍄𐌹𐍃𐌺", "Gothic 𐌰𐍄𐌹𐍃𐌺 (atisk)", tr="atisk")
+    etymology = Etymology(text, [gothic])
     assert etymology.etymology_text == (
         "Cognate with Gothic atisk and probably Gothic *aþalafuns; compare Mycenaean "
         "Greek a3-ku-pi-ti-jo (“Egyptian”) and Ancient Greek Αἴγυπτος (Aíguptos)."
     )
-    assert format_etymology(etymology).startswith("Cognate with <i>Gothic atisk</i>")
+    assert format_etymology(etymology).startswith("Cognate with Gothic <i>atisk</i>")
 
 
-def test_headword_line_holds_forms_declension_and_part_of_speech():
-    rex = lemma("rex", "noun", "rēx m (genitive rēgis); third declension", ["king"])
-    html = render(rex)
+def test_headword_line_is_written_as_dictionaries_write_it():
+    rex = lemma(
+        "rex",
+        "noun",
+        "rēx m (genitive rēgis, feminine rēgīna); third declension",
+        ["king"],
+    )
     assert (
-        '<p><idx:orth value="rēx"><b>rēx</b></idx:orth> m (rēgis); 3rd decl. '
-        "&#183; <i>noun</i></p>"
-    ) in html
+        '<font size="+1"><b>rēx</b></font></idx:orth>, rēgis <i>m.</i> '
+        '&#183; <i>noun, 3rd decl.</i><br/><font size="-1"><i>fem.</i> rēgīna</font></p>'
+    ) in render(rex)
+    amo = lemma(
+        "amo",
+        "verb",
+        "amō (present infinitive amāre, perfect active amāvī, supine amātum); "
+        "first conjugation",
+        ["to love"],
+    )
+    assert (
+        "</idx:orth>, amāre, amāvī, amātum &#183; <i>verb, 1st conj.</i></p>"
+        in render(amo)
+    )
     part = lemma(
         "amatus",
         "participle",
         "amātus (feminine amāta, neuter amātum); first/second-declension participle",
         ["loved"],
     )
-    assert "(amāta, amātum); 1st/2nd decl. &#183; <i>participle</i>" in render(part)
+    assert ", amāta, amātum &#183; <i>participle, 1st/2nd decl.</i>" in render(part)
+    # A line of another shape is only shortened
+    odd = lemma("x", "noun", "x (a) (b); third declension", ["x"])
+    assert "(a) (b); 3rd decl. &#183; <i>noun</i>" in render(odd)
+
+
+def test_sense_labels_are_shortened():
+    amo = lemma("amo", "verb", "amō", [])
+    amo["senses"] = [
+        {
+            "glosses": ["to love"],
+            "raw_glosses": ["(transitive, or in absolute use) to love"],
+        }
+    ]
+    assert "<li><i>trans., or absol.</i> to love</li>" in render(amo)

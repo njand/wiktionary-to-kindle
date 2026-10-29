@@ -1,10 +1,10 @@
 {%- import 'macros.html.jinja' as macros -%}
 <idx:entry name="Latin" scriptable="yes" spell="yes" exact="yes" id="{{ entry.id_number }}">
     {%- set main_header = valid_pairs[0][1] -%}
-    {#- One line: headword, its forms and declension, part of speech -#}
-    <p><idx:orth value="{{ orth | e }}"><b>
+    {#- One line: headword, principal parts, gender, part of speech and class -#}
+    <p><idx:orth value="{{ orth | e }}"><font size="+1"><b>
             {{- main_header.prefix | e -}}{{- main_header.head_word | e -}}
-            </b>
+            </b></font>
             {%- if iforms -%}
             <idx:infl>
                 {%- for form in iforms -%}
@@ -13,13 +13,13 @@
             </idx:infl>
             {%- endif -%}
         </idx:orth>
-        {{- macros.header_tail(main_header, entry.pos) -}}
+        {{- headline_tail(main_header, entry.pos) | safe -}}
     </p>
 
     {%- for block, header in valid_pairs -%}
         {%- if loop.index0 > 0 -%}
-            <p><b>{{ header.prefix | e }}{{ header.head_word | e }}</b>
-            {{- macros.header_tail(header, entry.pos) -}}</p>
+            <p><font size="+1"><b>{{ header.prefix | e }}{{ header.head_word | e }}</b></font>
+            {{- headline_tail(header, entry.pos) | safe -}}</p>
         {%- endif -%}
         
         {{- macros.render_senses(block, recursive_senses) -}}
@@ -31,18 +31,23 @@
         {%- for kind, words in entry.related -%}
             <i>{{ kind }}</i> {% for word, gloss in words -%}
                 <b>{{ word | e }}</b>{% if gloss %}: {{ gloss | e }}{% endif %}{% if not loop.last %}; {% endif %}
-            {%- endfor %}{% if not loop.last %}; {% endif %}
+            {%- endfor %}{% if not loop.last %} &#183; {% endif %}
         {%- endfor -%}
         </p>
     {%- endif -%}
 
+    {#- Etymology and descendants: a bold label, then smaller grey text -#}
     {%- if include_etymology and entry.etymology and entry.etymology.etymology_text -%}
-        <p><i>Etym.</i> {{ format_etymology(entry.etymology) | safe }}</p>
+        <p><b>Etymology.</b> <font size="-1" color="#555555">
+            {{- format_etymology(entry.etymology) | safe -}}
+        </font></p>
     {%- endif -%}
 
     {%- if descendants -%}
-        <p><i>Desc.</i> {% for lang, words in descendants -%}
-            {{ short_language(lang) | e }} {{ words | join(", ") | e }}{% if not loop.last %}; {% endif %}
-        {%- endfor %}</p>
+        <p><b>Descendants.</b> <font size="-1" color="#555555">
+        {%- for lang, words in descendants -%}
+            <b>{{ short_language(lang) | e }}</b> {{ words | join(", ") | e }}{% if not loop.last %} &#183; {% endif %}
+        {%- endfor -%}
+        </font></p>
     {%- endif -%}
 </idx:entry>

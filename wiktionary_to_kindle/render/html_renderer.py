@@ -3,41 +3,90 @@ import re
 
 from jinja2 import Environment, PackageLoader
 
+from ..models.etymology import ANCESTOR, BORROWED
+from .headline import headline_tail
+
 # kindling drops a space that stands alone between two inline elements ("</a> <i>" compiles
 # to "</a><i>"), so the words run together; a no-break space survives
-SPACE_BETWEEN_TAGS = re.compile(r"(</(?:a|b|i|span)>) +(?=<(?:a|b|i|span)\b)")
+SPACE_BETWEEN_TAGS = re.compile(r"(</(?:a|b|i|span|font)>) +(?=<(?:a|b|i|span|font)\b)")
 
 
 def keep_spaces(html_str):
     return SPACE_BETWEEN_TAGS.sub(r"\1&#160;", html_str)
 
 
-def format_etymology(etymology):
-    """Helper passed to Jinja to italicize each template expansion where it occurs in the text.
+# An etymology longer than this is told by its chain of ancestors instead (summarize)
+LONG_ETYMOLOGY = 300
+SENTENCE_END = re.compile(r"(?<=[.!?])\s+(?=[A-Z])")
 
-    Expansions are matched in order; one that does not occur after the previous match is skipped.
-    """
-    text = html.escape(etymology.etymology_text)
+
+def format_etymology(etymology):
+    """Helper passed to Jinja: the etymology as markup, with the words it cites in italics
+    and Proto-Indo-European as PIE. A long one is told by its chain of ancestors."""
+    text = etymology.etymology_text
+    if len(text) > LONG_ETYMOLOGY:
+        summary = summarize(etymology.templates)
+        if summary:
+            return summary
+        sentences = SENTENCE_END.split(text)
+        text = " ".join(sentences[:2]) + (" …" if len(sentences) > 2 else "")
+    return _abbreviate(_cite(text, etymology.templates))
+
+
+def summarize(templates):
+    """One sentence from the ancestors Wiktionary's templates name, one per language,
+    and up to two cognates: "From Proto-Italic *rēks, from PIE *h₃rḗǵs (“king”). Cf.
+    Sanskrit rā́jan." None when the templates name no ancestor."""
+    chain, languages = [], set()
+    for template in templates:
+        if template.name in ANCESTOR and template.args.get("2") not in languages:
+            languages.add(template.args.get("2"))
+            chain.append(template)
+    if not chain:
+        return None
+    uncertain = any(t.name in ("unc", "unk") for t in templates)
+    links = [_cite_template(chain[0])] + [
+        ("perhaps from " if uncertain else "from ") + _cite_template(t)
+        for t in chain[1:]
+    ]
+    opening = "Borrowed from" if chain[0].name in BORROWED else "From"
+    sentence = f"{opening} {', '.join(links)}."
+    cognates = [_cite_template(t) for t in templates if t.name == "cog"][:2]
+    if cognates:
+        sentence += f" <i>Cf.</i> {', '.join(cognates)}."
+    return _abbreviate(sentence)
+
+
+def _cite(text, templates):
+    """text escaped, with the words each template cites in italics where the template's
+    expansion occurs. Expansions are matched in order; one that does not occur after the
+    previous match is skipped."""
+    text = html.escape(text)
     wrapped, pos = [], 0
-    for elem in etymology.etymology_templates:
-        elem = html.escape(elem)
-        start = text.find(elem, pos)
+    for template in templates:
+        expansion = html.escape(template.expansion)
+        start = text.find(expansion, pos)
         if start == -1:
             continue
-        wrapped.extend([text[pos:start], "<i>", elem, "</i>"])
-        pos = start + len(elem)
+        wrapped.extend([text[pos:start], _cite_template(template)])
+        pos = start + len(expansion)
     wrapped.append(text[pos:])
     return "".join(wrapped)
 
 
-ORDINALS = {
-    "first": "1st",
-    "second": "2nd",
-    "third": "3rd",
-    "fourth": "4th",
-    "fifth": "5th",
-}
-ORDINAL_PATTERN = re.compile(r"\b(" + "|".join(ORDINALS) + r")\b")
+def _cite_template(template):
+    """The template's expansion escaped, with the words it cites in italics."""
+    cited = html.escape(template.expansion)
+    for term in template.terms:
+        term = re.escape(html.escape(term))
+        cited = re.sub(rf"(?<![\w<>/]){term}(?!\w)", r"<i>\g<0></i>", cited, count=1)
+    return cited
+
+
+def _abbreviate(markup):
+    return markup.replace("Proto-Indo-European", "PIE")
+
+
 # Short names of the descendant languages, as Latin dictionaries write them
 LANGUAGES = {
     "Italian": "It.",
@@ -48,20 +97,89 @@ LANGUAGES = {
 }
 
 
-def compact_grammar(remainder, pos):
-    """The headword line's grammar, shorter: "third declension" as "3rd decl.", and a
-    closing part of speech the line names anyway left out
-    ("first/second-declension participle" → "1st/2nd decl.")."""
-    text = ORDINAL_PATTERN.sub(lambda m: ORDINALS[m.group(1)], remainder)
-    text = re.sub(r"[- ]declension\b", " decl.", text)
-    text = re.sub(r" conjugation\b", " conj.", text)
-    if pos and text.endswith(" " + pos):
-        text = text[: -len(pos) - 1]
-    return text
-
-
 def short_language(name):
-    return LANGUAGES.get(name, name + ":")
+    return LANGUAGES.get(name, name)
+
+
+# The labels before a sense, as dictionaries shorten them: "(transitive) " → "trans."
+SENSE_LABELS = {
+    "transitive": "trans.",
+    "intransitive": "intrans.",
+    "ambitransitive": "trans. and intrans.",
+    "in absolute use": "absol.",
+    "reflexive": "refl.",
+    "impersonal": "impers.",
+    "figuratively": "fig.",
+    "figurative": "fig.",
+    "by extension": "by ext.",
+    "literally": "lit.",
+    "literal": "lit.",
+    "transferred sense": "transf.",
+    "metonymic": "meton.",
+    "chiefly in the plural": "chiefly pl.",
+    "usually in the plural": "usu. pl.",
+    "in the plural": "in pl.",
+    "in the singular": "in sg.",
+    "plural only": "pl. only",
+    "passive voice": "pass.",
+    "with dative": "w. dat.",
+    "with accusative": "w. acc.",
+    "with ablative": "w. abl.",
+    "with genitive": "w. gen.",
+    "with infinitive": "w. inf.",
+    "poetic": "poet.",
+    "derogatory": "derog.",
+    "historical": "hist.",
+    "post-classical": "post-class.",
+    "post-Classical": "post-class.",
+    "pre-classical": "pre-class.",
+    "Ecclesiastical Latin": "Eccl. Lat.",
+    "Medieval Latin": "Med. Lat.",
+    "New Latin": "New Lat.",
+    "Late Latin": "Late Lat.",
+    "Classical Latin": "Class. Lat.",
+    "Old Latin": "Old Lat.",
+    "Renaissance Latin": "Ren. Lat.",
+    "Contemporary Latin": "Contemp. Lat.",
+    "Greek mythology": "Gk. myth.",
+    "Roman mythology": "Rom. myth.",
+    "anatomy": "anat.",
+    "astronomy": "astron.",
+    "medicine": "med.",
+    "botany": "bot.",
+    "military": "mil.",
+    "grammar": "gramm.",
+    "mathematics": "math.",
+    "philosophy": "philos.",
+    "nautical": "naut.",
+    "architecture": "archit.",
+    "rhetoric": "rhet.",
+    "chemistry": "chem.",
+    "zoology": "zool.",
+    "geometry": "geom.",
+    "pathology": "pathol.",
+    "religion": "relig.",
+    "hapax legomenon": "hapax",
+}
+SENSE_LABEL_PATTERN = re.compile(
+    r"(?<![\w-])("
+    + "|".join(re.escape(k) for k in sorted(SENSE_LABELS, key=len, reverse=True))
+    + r")(?![\w-])"
+)
+LEADING_LABELS = re.compile(r"^<i>\(([^()<>]*)\) </i>")
+
+
+def short_sense_labels(gloss):
+    """gloss with the labels it opens with shortened and out of their parentheses:
+    "<i>(transitive, or in absolute use) </i>to love" → "<i>trans., or absol.</i> to love"."""
+
+    def shorten(match):
+        labels = SENSE_LABEL_PATTERN.sub(
+            lambda m: SENSE_LABELS[m.group(1)], match.group(1)
+        )
+        return f"<i>{labels}</i> "
+
+    return LEADING_LABELS.sub(shorten, gloss)
 
 
 def format_gloss(sense):
@@ -89,7 +207,7 @@ def format_gloss(sense):
             pattern, lambda m: f'<a href="{alt_page}#{alt_id}">{m.group(0)}</a>', gloss
         )
 
-    formatted = highlight_difference(sense.gloss, sense.raw_gloss)
+    formatted = short_sense_labels(highlight_difference(sense.gloss, sense.raw_gloss))
 
     return link_alt(formatted, sense.alt_word, sense.alt_page, sense.alt_id)
 
@@ -100,7 +218,7 @@ class HTMLRenderer:
         {
             "format_gloss": format_gloss,
             "format_etymology": format_etymology,
-            "compact_grammar": compact_grammar,
+            "headline_tail": headline_tail,
             "short_language": short_language,
         }
     )

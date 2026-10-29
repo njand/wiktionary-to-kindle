@@ -8,6 +8,7 @@ Before marking this release as the latest, load the `.mobi` on a Kindle (`docume
 - [ ] `Rōmāni` (partly macronized) lists the same entries as `Romani`.
 - [ ] `amāvistī` and `iurauisti` open amō and iūrō.
 - [ ] Parts of speech and labels show in italics in the popup.
+- [ ] In the popup for `rex`, the headword is larger than the text after it, and the etymology and descendants are smaller than the definitions. Note whether they are also grey.
 - [ ] An entry with many `alt.` lines (iūrō, causa) reads well in the popup.
 - [ ] `virum​que` with U+200B before `que` selects only `virum` (the enclitic check in Stage 0).
 

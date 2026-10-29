@@ -49,12 +49,50 @@ class Etymology:
         self.etymology_text = etymology_text and transliterate(
             strip_tree(etymology_text, word)
         )
-        self.etymology_templates = self.process_templates(etymology_templates)
+        self.templates = [
+            EtymologyTemplate(
+                template.get("name", ""),
+                transliterate(template.get("expansion", "")),
+                template.get("args", {}),
+            )
+            for template in etymology_templates
+            if template.get("expansion")
+        ]
+        self.etymology_templates = [t.expansion for t in self.templates]
 
-    def process_templates(self, etymology_templates):
-        processed_templates = []
-        for template in etymology_templates:
-            expansion = transliterate(template.get("expansion", ""))
-            if len(expansion) > 0:
-                processed_templates.append(expansion)
-        return processed_templates
+
+# Templates naming an ancestor: Latin got the word from args 2 (a language) as args 3
+ANCESTOR = {"inh", "inh+", "der", "der+", "bor", "bor+", "lbor", "slbor", "ubor"}
+BORROWED = {"bor", "bor+", "lbor", "slbor", "ubor"}
+# Templates naming a word in args 2 (a cognate, a mention), or several from args 2 on
+MENTION = {"cog", "noncog", "m", "l", "m+", "mention", "cognate"}
+AFFIXES = {"af", "affix", "prefix", "suffix", "compound", "confix", "surf"}
+
+
+class EtymologyTemplate:
+    def __init__(self, name, expansion, args):
+        self.name = name
+        self.expansion = expansion
+        self.args = args
+
+    @property
+    def terms(self):
+        """The words the template cites, which a dictionary sets in italics."""
+        # The word, or when it is empty the form to display instead (der la ine-pro "" *moh₁-)
+        if self.name in ANCESTOR:
+            keys = ["3"] if self.args.get("3") else ["4"]
+        elif self.name in MENTION:
+            keys = ["2"] if self.args.get("2") else ["3"]
+        elif self.name in AFFIXES:
+            keys = [k for k in self.args if k.isdigit() and int(k) >= 2]
+        else:
+            return []
+        terms = []
+        for key in keys:
+            term = self.args.get(key, "")
+            # A word in a script without a font is shown by its transliteration
+            if re.search(f"[{NO_FONT}]", term) and self.args.get("tr"):
+                term = ("*" if term.startswith("*") else "") + self.args["tr"]
+            if term:
+                terms.append(term)
+        return terms

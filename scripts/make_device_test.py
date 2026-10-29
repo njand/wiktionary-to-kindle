@@ -93,6 +93,11 @@ def write_book(out_dir, rows, built):
             "down the number of every word whose popup differs, and what it showed.</p>"
         ),
         (
+            "<p>Layout: in the popup of any word (rēx at 77 is a good one), is the "
+            "headword larger than the text after it? Are the etymology and descendants "
+            "smaller than the definitions, and are they grey?</p>"
+        ),
+        (
             "<p>Report: the Kindle model and firmware (Settings, Device Info), then each "
             "number that differs, for example “12: also listed latus (noun)”.</p>"
         ),
