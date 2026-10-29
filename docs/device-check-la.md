@@ -4,7 +4,7 @@ Before marking this release as the latest, load the `.mobi` on a Kindle (`docume
 - [ ] `et` lists et (conj.) and et (adv.), and `quod` lists quod (adv.), quod (conj.), quī and quis: entries with the same spelling are all listed.
 - [ ] `latus` (unmacronized) lists latus (noun) first, then ferō, lātus (adj.) and the others.
 - [ ] `Latus` (capitalized) lists the same entries.
-- [ ] `lātum` (macronized) lists ferō, lātus (verb) and lātus (adj.), and not latus (noun).
+- [ ] `lātum` (macronized) lists ferō, lātus (participle) and lātus (adj.), and not latus (noun).
 - [ ] `Rōmāni` (partly macronized) lists the same entries as `Romani`.
 - [ ] `amāvistī` and `iurauisti` open amō and iūrō.
 - [ ] Parts of speech and labels show in italics in the popup.
