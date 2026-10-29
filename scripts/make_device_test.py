@@ -15,6 +15,7 @@ predictions and corpus frequencies without building the book.
 """
 
 import argparse
+import datetime
 import html
 import subprocess
 import sys
@@ -67,12 +68,16 @@ def corpus_counts(cache_dir):
     return counts
 
 
-def write_book(out_dir, rows):
-    """Write the book's XHTML and OPF, with the dictionary's cover, into out_dir."""
+def write_book(out_dir, rows, built):
+    """Write the book's XHTML and OPF, with the dictionary's cover, into out_dir.
+
+    The build time is in the title and identifier, so the Kindle files each build as a
+    new book and a stale copy is easy to tell apart."""
     out_dir.mkdir(parents=True, exist_ok=True)
     Path(out_dir, "cover.png").write_bytes(TEMPLATES.joinpath("cover.png").read_bytes())
     body = [
         "<h1>Latin dictionary: device test</h1>",
+        f"<p><small>Built {built}.</small></p>",
         (
             "<p>Set the Wiktionary Latin dictionary as the Latin dictionary, then press and "
             "hold each word in bold. Under it are the entries the popup should list "
@@ -99,19 +104,20 @@ def write_book(out_dir, rows):
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<html xmlns="http://www.w3.org/1999/xhtml" lang="la" xml:lang="la">\n'
         '<head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>'
-        "<title>Latin dictionary device test</title></head>\n<body>\n"
+        f"<title>Latin dictionary device test {built}</title></head>\n<body>\n"
         + "\n".join(body)
         + "\n</body>\n</html>\n",
         encoding="utf-8",
     )
+    stamp = built.replace(" ", "-").replace(":", "")
     Path(out_dir, "test.opf").write_text(
-        """<?xml version="1.0" encoding="UTF-8"?>
+        f"""<?xml version="1.0" encoding="UTF-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" version="2.0" unique-identifier="bookid">
 <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
-<dc:title>Latin dictionary device test</dc:title>
+<dc:title>Latin dictionary device test {built}</dc:title>
 <dc:language>la</dc:language>
 <dc:creator>wiktionary-to-kindle</dc:creator>
-<dc:identifier id="bookid">latin-dictionary-device-test</dc:identifier>
+<dc:identifier id="bookid">latin-dictionary-device-test-{stamp}</dc:identifier>
 <meta name="cover" content="cover-image"/>
 </metadata>
 <manifest>
@@ -161,7 +167,8 @@ def main():
             print(f"{number:3} {section:12} {tapped:20} {counts[tapped]:6}  {expected}")
         return 0
 
-    write_book(args.output / "book", rows)
+    built = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+    write_book(args.output / "book", rows, built)
     write_predictions(args.output / "predictions.md", rows)
     book = (args.output / "la-device-test.azw3").resolve()
     subprocess.run(
