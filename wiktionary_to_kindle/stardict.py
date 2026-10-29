@@ -1,9 +1,12 @@
 """StarDict export for GoldenDict, KOReader and other readers that are not Kindles.
 
 kindling writes the bundle from the same OPF the .mobi is built from (`kindling stardict`):
-each entry under its idx:orth label, its idx:iform labels as .syn redirects. Two things
+each entry under its idx:orth label, its idx:iform labels as .syn redirects. Three things
 then need fixing, because these readers are not Kindles:
 
+- A label shared by several entries carries soft hyphens on all but the first
+  (render/shared_labels.py), because kindling keeps one Kindle index record per spelling.
+  StarDict keeps every entry of a word, so they come out.
 - A link between entries points at a page and id (`0048.xhtml#29169`), which a StarDict
   reader cannot follow; such links become `bword://<label>`, the label the entry is stored
   under.
@@ -24,6 +27,7 @@ import unicodedata
 from pathlib import Path
 
 from .quality.labels import read_entries
+from .render.shared_labels import unmark
 from .utils import ABBREVIATION_MARKS, MACRON, VOWELS
 
 OVERLINE = "̅"
@@ -49,7 +53,7 @@ def export_stardict(kindling, files_dir, bundle_dir, description):
         check=True,
     )
     labels = {e.key: e.headword for e in read_entries(files_dir)}
-    Bundle.read(bundle_dir).relink(labels).add_unaccented().write()
+    Bundle.read(bundle_dir).unmark().relink(labels).add_unaccented().write()
     zip_path = shutil.make_archive(
         str(bundle_dir) + "-stardict", "zip", bundle_dir.parent, bundle_dir.name
     )
@@ -107,6 +111,18 @@ class Bundle:
                 for word, index in _records(stem.with_suffix(".syn"), ">I")
             ]
         return cls(path, ifo, words, articles, synonyms)
+
+    def unmark(self):
+        """Take the soft hyphens that keep shared Kindle labels apart out of every word
+        and synonym, dropping a synonym that is then its own word or a repeat."""
+        self.words = [unmark(word) for word in self.words]
+        pairs = {(word, i) for i, word in enumerate(self.words)}
+        synonyms = {}
+        for word, index in self.synonyms:
+            if (unmark(word), index) not in pairs:
+                synonyms.setdefault((unmark(word), index), None)
+        self.synonyms = list(synonyms)
+        return self
 
     def relink(self, labels):
         """Point links to `<page>#<id>` at bword://<label>, labels mapping the one to the

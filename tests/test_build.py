@@ -63,3 +63,23 @@ def test_homographs_each_keep_their_spellings(tmp_path, monkeypatch):
         ("lātus", ["lātus", "lāta"]),
     ]
     assert not list(files.glob("card-*.xhtml"))
+
+
+def test_entries_sharing_a_label_each_keep_one(tmp_path, monkeypatch):
+    # kindling keeps one index record per spelling, so the second et and the forms
+    # spelled quod get soft hyphens; the headwords keep the plain spelling
+    qui = lemma("qui", "pron", "quī", ["who"], [("quod", ["neuter"])])
+    et_conj = lemma("et", "conj", "et", ["and"])
+    et_adv = lemma("et", "adv", "et", ["also"])
+    quod = lemma("quod", "conj", "quod", ["because"])
+    quis = lemma("quis", "pron", "quis", ["who?"], [("quod", ["neuter"])])
+    _build, files = run_build(tmp_path, monkeypatch, [et_conj, et_adv, qui, quis, quod])
+
+    labels = {(e.headword, e.pos): e.labels for e in read_entries(files)}
+    assert labels == {
+        ("et", "conj"): ["et"],
+        ("et", "adv"): ["e\u00adt"],
+        ("quī", "pron"): ["quī", "q\u00aduod"],
+        ("quis", "pron"): ["quis", "q\u00ad\u00aduod"],
+        ("quod", "conj"): ["quod"],
+    }

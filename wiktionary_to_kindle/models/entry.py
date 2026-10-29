@@ -29,6 +29,9 @@ INVALID_PATTERN = re.compile(
     f"{PATTERN_INVALID_FORMS}|{PATTERN_CONTAINS_PLUS}|{PATTERN_PERIPHRASTIC}"
 )
 
+# Kaikki files participles and gerunds under "verb"; their head template says which they are
+POS_BY_HEAD_TEMPLATE = {"la-part": "participle", "la-gerund": "gerund"}
+
 
 class Entry:
     def __init__(
@@ -50,6 +53,8 @@ class Entry:
             self.head_word = remove_breves(self.headers[0].head_word)
 
         self.pos = json_entry.get("pos", None)
+        head_templates = json_entry.get("head_templates") or [{}]
+        self.pos = POS_BY_HEAD_TEMPLATE.get(head_templates[0].get("name"), self.pos)
         self.senses_blocks = self.get_senses_blocks()
         self.etymology = self.get_etymology()
         self.descendants = self.get_descendants()
