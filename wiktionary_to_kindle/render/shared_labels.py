@@ -22,10 +22,12 @@ from collections import defaultdict
 from pathlib import Path
 
 from ..utils import kindle_fold
-from .popup_order import ENTRY_PATTERN
 
 MARKER = "\u00ad"  # soft hyphen
 
+ENTRY_PATTERN = re.compile(
+    r"(<idx:entry\b[^>]*\bid=\")(\d+)(\"[^>]*>)(.*?)(</idx:entry>)", re.DOTALL
+)
 LABEL_PATTERN = re.compile(r'(<idx:(orth|iform)\b[^>]*?\bvalue=")([^"]*)(")')
 
 

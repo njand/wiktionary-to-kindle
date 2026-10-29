@@ -6,7 +6,7 @@ from pathlib import Path
 from ..utils import TEMPLATES
 from .html_page import HTMLPage
 from .html_renderer import HTMLRenderer
-from .popup_order import add_plain_spellings, weigh
+from .popup_order import rank_spellings, weigh
 from .shared_labels import distinguish_shared_labels
 
 
@@ -40,14 +40,14 @@ class BookWriter:
         return True
 
     def finish(self, dump_date, build_date, version):
-        """Write the last entry page, give the likeliest entry of each spelling without
-        accents that spelling, give entries that share a label one each, and write the
+        """Write the last entry page, rank the entries each spelling without accents
+        reaches (popup_order), give entries that share a label one each, and write the
         front page."""
         self.entries.write()
         pages = [
             Path(self.files_dir, f"{page:04}.xhtml") for page in range(self.page_count)
         ]
-        add_plain_spellings(pages, self.weights)
+        rank_spellings(pages, self.weights)
         distinguish_shared_labels(pages, self.weights)
         self.write_front(dump_date, build_date, version)
 

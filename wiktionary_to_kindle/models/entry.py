@@ -144,6 +144,7 @@ class Entry:
         return Etymology(
             self.json_entry.get("etymology_text", None),
             self.json_entry.get("etymology_templates", []),
+            self.json_entry.get("word", ""),
         )
 
     def get_descendants(self) -> list[tuple[str, str]]:

@@ -193,6 +193,14 @@ def test_sorted_file_is_cached_until_input_changes(tmp_path, monkeypatch):
             },
             "pār",
         ),
+        (  # a phrase is not two lemmas
+            {
+                "glosses": ["initialism of ante diem"],
+                "form_of": [{"word": "ante diem"}],
+                "links": [["ante", "ante#Latin"], ["diem", "diem#Latin"]],
+            },
+            "ante diem",
+        ),
         ({"glosses": ["loved; having been loved"], "form_of": [{"word": "amō"}]}, None),
         ({"glosses": ["wide, broad"]}, None),
     ],

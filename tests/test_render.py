@@ -135,3 +135,32 @@ def test_descendants_of_one_language_share_a_line():
 def test_mark_puts_soft_hyphens_after_the_first_letter(label, count, expected):
     assert mark(label, count) == expected
     assert unmark(mark(label, count)) == label
+
+
+def test_etymology_tree_is_cut_before_the_prose():
+    text = (
+        "Etymology tree\nLatin abyssus\nProto-Italic *-ālis\nLatin -ālis\n"
+        "Latin abyssālis\nFrom abyssus + -ālis."
+    )
+    assert Etymology(text, [], "abyssalis").etymology_text == "From abyssus + -ālis."
+    # A reconstructed word is starred
+    starred = "Etymology tree\nLatin necō\nLatin *adnecō\nFrom ad- + necō."
+    assert Etymology(starred, [], "adneco").etymology_text == "From ad- + necō."
+    # No line for the word: left as it is
+    other = "Etymology tree\nLatin ab\nFrom ab."
+    assert Etymology(other, [], "abc").etymology_text == other
+
+
+def test_scripts_without_a_font_give_their_transliteration():
+    text = (
+        "Cognate with Gothic 𐌰𐍄𐌹𐍃𐌺 (atisk) and probably Gothic *𐌰𐌸𐌰𐌻𐌰𐍆𐌿𐌽𐍃 "
+        "(*aþalafuns); compare Mycenaean Greek 𐁁𐀓𐀠𐀴𐀍 (a3-ku-pi-ti-jo, “Egyptian”) "
+        "and Ancient Greek Αἴγυπτος (Aíguptos)."
+    )
+    expansion = "Gothic 𐌰𐍄𐌹𐍃𐌺 (atisk)"
+    etymology = Etymology(text, [{"expansion": expansion}])
+    assert etymology.etymology_text == (
+        "Cognate with Gothic atisk and probably Gothic *aþalafuns; compare Mycenaean "
+        "Greek a3-ku-pi-ti-jo (“Egyptian”) and Ancient Greek Αἴγυπτος (Aíguptos)."
+    )
+    assert format_etymology(etymology).startswith("Cognate with <i>Gothic atisk</i>")

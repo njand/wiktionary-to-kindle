@@ -52,7 +52,8 @@ def test_front_page_credits_wiktionary(tmp_path, monkeypatch):
 
 
 def test_homographs_each_keep_their_spellings(tmp_path, monkeypatch):
-    # The popup lists every entry a tap reaches, so no spelling is taken from either
+    # The popup lists every entry a tap reaches, so no spelling is taken from either; the
+    # one ranked second for a tap without macrons gets "latus" after a soft hyphen
     noun = lemma("latus", "noun", "latus n", ["side"], [("lateris", ["genitive"])])
     adj = lemma("latus", "adj", "lātus", ["wide"], [("lāta", ["feminine"])])
     _build, files = run_build(tmp_path, monkeypatch, [noun, adj])
@@ -60,7 +61,7 @@ def test_homographs_each_keep_their_spellings(tmp_path, monkeypatch):
     entries = read_entries(files)
     assert [(e.headword, e.labels) for e in entries] == [
         ("latus", ["latus", "lateris"]),
-        ("lātus", ["lātus", "lāta"]),
+        ("lātus", ["lātus", "lāta", "l­atus"]),
     ]
     assert not list(files.glob("card-*.xhtml"))
 
@@ -106,6 +107,7 @@ def test_likeliest_entry_gets_the_spelling_without_macrons(tmp_path, monkeypatch
 
     labels = {e.headword: e.labels for e in read_entries(files)}
     assert labels["nōn"] == ["nōn", "non"]
-    assert labels["nōnae"] == ["nōnae", "Nōn."]
+    # Nōn. would come before every unpunctuated label: nōnae is reached by n­on instead
+    assert labels["nōnae"] == ["nōnae", "n­on"]
     assert labels["suī"] == ["suī", "sē", "se"]
     assert labels["sī"] == ["sī", "s­e"]
