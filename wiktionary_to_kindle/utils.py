@@ -202,6 +202,11 @@ def form_of_root(sense: dict) -> str | None:
             normalize(root, lowercase=True) in glosses
             or (not glosses and "no-gloss" in sense.get("tags", []))
         ):
+            # A form two lemmas share names both ("erus and era", "pār m or f"): take the
+            # first linked word the target starts with
+            if " " in root:
+                links = [link[0] for link in sense.get("links", []) if link]
+                root = next((w for w in links if root.startswith(w + " ")), root)
             return root
         return None
 

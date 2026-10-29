@@ -2,7 +2,8 @@
 
 Each word in the list becomes a numbered line of the book with what it tests and the
 entries the popup should list: every entry with a label of the same weights, the one
-spelled like the tap first (the rest in index order, which is not predicted). Tap each word
+kindling predicts opens first, then the rest in the order kindling's index search returns
+them. Tap each word
 on the Kindle and report the numbers whose popup differs.
 
 Usage:
@@ -23,7 +24,7 @@ from collections import Counter
 from pathlib import Path
 
 from wiktionary_to_kindle.quality.corpus import tokenize
-from wiktionary_to_kindle.quality.kindling import default_binary
+from wiktionary_to_kindle.quality.kindling import default_binary, lookup
 from wiktionary_to_kindle.quality.labels import build_index, read_entries
 from wiktionary_to_kindle.utils import TEMPLATES
 
@@ -50,14 +51,21 @@ def read_words(path):
     return sorted(words, key=lambda w: list(SECTIONS).index(w[0]))
 
 
-def predict(index, word):
-    """The entries the popup lists for a tapped word: 'fēmina (noun) / femur (noun)'."""
+def predict(index, kindling, mobi, word):
+    """The entries the popup lists for a tapped word: 'fēmina (noun) / femur (noun)'.
+
+    The one kindling resolves comes first, then the rest in the order kindling's index
+    search returns their labels (the device lists them so: nōnae's Non. before nōn)."""
     tapped = word.split(ZWSP)[0]  # what a zero-width space should leave selected
     run = index.run(tapped)
     if not run:
         return "nothing opens"
-    exact = [entry for label, entry in run if label == tapped]
-    entries = {entry.key: entry for entry in exact + [entry for _, entry in run]}
+    result = lookup(kindling, mobi, tapped)
+    by_label = {label: entry for label, entry in run}
+    order = [result["label"]] + result["labels"]
+    ranked = [by_label[label] for label in order if label in by_label]
+    # Labels kindling did not list (none should be missing) keep their page order
+    entries = {entry.key: entry for entry in ranked + [entry for _, entry in run]}
     return " / ".join(f"{entry.headword} ({entry.pos})" for entry in entries.values())
 
 
@@ -81,9 +89,8 @@ def write_book(out_dir, rows, built):
         (
             "<p>Set the Wiktionary Latin dictionary as the Latin dictionary, then press and "
             "hold each word in bold. Under it are the entries the popup should list "
-            "(headword and part of speech), the first one first; the order of the rest is "
-            "not predicted. Write down the number of every word whose popup differs, and "
-            "what it showed.</p>"
+            "(headword and part of speech), in the order it should list them. Write "
+            "down the number of every word whose popup differs, and what it showed.</p>"
         ),
         (
             "<p>Report: the Kindle model and firmware (Settings, Device Info), then each "
@@ -155,8 +162,9 @@ def main():
     sys.stdout.reconfigure(encoding="utf-8")
 
     index = build_index(read_entries(args.dict_dir / "files"))
+    mobi = next(args.dict_dir.glob("*.mobi"))
     rows = [
-        (section, word, note, predict(index, word))
+        (section, word, note, predict(index, args.kindling, mobi, word))
         for section, word, note in read_words(args.words)
     ]
 

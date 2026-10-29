@@ -177,6 +177,22 @@ def test_sorted_file_is_cached_until_input_changes(tmp_path, monkeypatch):
             "causa",
         ),
         ({"glosses": ["inflection of amō:"], "form_of": [{"word": "amō"}]}, "amō"),
+        (
+            {
+                "glosses": ["dative/ablative plural of erus and era"],
+                "form_of": [{"word": "erus and era"}],
+                "links": [["erus", "erus#Latin"], ["era", "era#Latin"]],
+            },
+            "erus",
+        ),
+        (
+            {
+                "glosses": ["ablative singular of pār m or f (“companion”)"],
+                "form_of": [{"word": "pār m or f"}],
+                "links": [["pār", "par#Latin"], ["companion", "companion"]],
+            },
+            "pār",
+        ),
         ({"glosses": ["loved; having been loved"], "form_of": [{"word": "amō"}]}, None),
         ({"glosses": ["wide, broad"]}, None),
     ],
