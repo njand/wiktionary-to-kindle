@@ -29,8 +29,9 @@
     {%- if entry.related -%}
         <p>
         {%- for kind, words in entry.related -%}
-            <i>{{ kind }}</i> {% for word, gloss in words -%}
-                <b>{{ word | e }}</b>{% if gloss %}: {{ gloss | e }}{% endif %}{% if not loop.last %}; {% endif %}
+            <i>{{ kind }}</i> {% for group, gloss in by_gloss(words) -%}
+                {% for word in group %}<b>{{ word | e }}</b>{% if not loop.last %}, {% endif %}{% endfor -%}
+                {% if gloss %}: {{ gloss | e }}{% endif %}{% if not loop.last %}; {% endif %}
             {%- endfor %}{% if not loop.last %} &#183; {% endif %}
         {%- endfor -%}
         </p>

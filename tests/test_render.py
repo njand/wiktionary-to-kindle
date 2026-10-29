@@ -6,6 +6,7 @@ from wiktionary_to_kindle.models.entry import Entry
 from wiktionary_to_kindle.models.etymology import Etymology
 from wiktionary_to_kindle.render.html_renderer import (
     HTMLRenderer,
+    by_gloss,
     format_etymology,
     keep_spaces,
 )
@@ -207,9 +208,11 @@ def test_etymology_tree_is_cut_before_the_prose():
     # A reconstructed word is starred
     starred = "Etymology tree\nLatin necō\nLatin *adnecō\nFrom ad- + necō."
     assert Etymology(starred, [], "adneco").etymology_text == "From ad- + necō."
-    # No line for the word: left as it is
+    # No line for the word: left as it is, its lines run on
     other = "Etymology tree\nLatin ab\nFrom ab."
-    assert Etymology(other, [], "abc").etymology_text == other
+    assert (
+        Etymology(other, [], "abc").etymology_text == "Etymology tree Latin ab From ab."
+    )
 
 
 def test_scripts_without_a_font_give_their_transliteration():
@@ -270,3 +273,50 @@ def test_sense_labels_are_shortened():
         }
     ]
     assert "<li><i>trans., or absol.</i> to love</li>" in render(amo)
+
+
+def test_parts_of_speech_and_cases_are_spelled_as_dictionaries_do():
+    cum = lemma("cum", "prep", "cum + ablative", ["with"])
+    assert "</idx:orth> &#183; <i>preposition, + abl.</i></p>" in render(cum)
+    cum = lemma("cum", "prep", "cum (+ ablative)", ["with"])
+    assert "</idx:orth> &#183; <i>preposition, + abl.</i></p>" in render(cum)
+
+
+def test_unknown_origin_is_not_told_as_fact():
+    text = "Unknown; many interpretations. " + "From a Punic word. " * 30
+    templates = [
+        {"name": "unk", "expansion": "Unknown", "args": {"1": "la"}},
+        {
+            "name": "der",
+            "expansion": "Punic",
+            "args": {"1": "la", "2": "xpu", "3": "-"},
+        },
+    ]
+    assert format_etymology(Etymology(text, templates)).startswith(
+        "Origin unknown; perhaps from Punic"
+    )
+
+
+def test_cognates_come_from_two_languages():
+    text = "From Proto-Italic *mōs. " + "Discussion. " * 40
+    templates = [
+        inh("itc-pro", "*mōs", "Proto-Italic *mōs"),
+        cog("grc", "μαίομαι", "Ancient Greek μαίομαι"),
+        cog("grc", "Μοῦσα", "Ancient Greek Μοῦσα"),
+        cog("en", "mood", "English mood"),
+    ]
+    assert format_etymology(Etymology(text, templates)).endswith(
+        "<i>Cf.</i> Ancient Greek <i>μαίομαι</i>, English <i>mood</i>."
+    )
+
+
+def test_trailing_construction_and_shared_glosses_are_shortened():
+    amo = lemma("amo", "verb", "amō", [])
+    amo["senses"] = [
+        {"glosses": ["to like"], "raw_glosses": ["to like [with infinitive]"]}
+    ]
+    assert "<li>to like <i>w. inf.</i></li>" in render(amo)
+    assert by_gloss([("CAES", "a title"), ("C.", ""), ("CAESS", "a title")]) == [
+        (["CAES", "CAESS"], "a title"),
+        (["C."], ""),
+    ]

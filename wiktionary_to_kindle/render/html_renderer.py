@@ -44,14 +44,23 @@ def summarize(templates):
             chain.append(template)
     if not chain:
         return None
-    uncertain = any(t.name in ("unc", "unk") for t in templates)
+    names = {t.name for t in templates}
+    uncertain = names & {"unc", "unk"}
     links = [_cite_template(chain[0])] + [
         ("perhaps from " if uncertain else "from ") + _cite_template(t)
         for t in chain[1:]
     ]
     opening = "Borrowed from" if chain[0].name in BORROWED else "From"
+    # An unknown origin with theories (Caesar: "From a Punic word ...") is no fact
+    if "unk" in names:
+        opening = "Origin unknown; perhaps " + opening.lower()
     sentence = f"{opening} {', '.join(links)}."
-    cognates = [_cite_template(t) for t in templates if t.name == "cog"][:2]
+    cognates, languages = [], set()
+    for template in templates:
+        if template.name == "cog" and template.args.get("1") not in languages:
+            languages.add(template.args.get("1"))
+            cognates.append(_cite_template(template))
+    cognates = cognates[:2]
     if cognates:
         sentence += f" <i>Cf.</i> {', '.join(cognates)}."
     return _abbreviate(sentence)
@@ -167,19 +176,29 @@ SENSE_LABEL_PATTERN = re.compile(
     + r")(?![\w-])"
 )
 LEADING_LABELS = re.compile(r"^<i>\(([^()<>]*)\) </i>")
+# A construction after the gloss: "<i> [with infinitive]</i>"
+TRAILING_LABELS = re.compile(r"<i> \[([^\[\]<>]*)\]</i>$")
 
 
 def short_sense_labels(gloss):
-    """gloss with the labels it opens with shortened and out of their parentheses:
-    "<i>(transitive, or in absolute use) </i>to love" → "<i>trans., or absol.</i> to love"."""
+    """gloss with the labels around it shortened and out of their brackets:
+    "<i>(transitive, or in absolute use) </i>to love" → "<i>trans., or absol.</i> to love",
+    "to like<i> [with infinitive]</i>" → "to like <i>w. inf.</i>"."""
 
-    def shorten(match):
-        labels = SENSE_LABEL_PATTERN.sub(
-            lambda m: SENSE_LABELS[m.group(1)], match.group(1)
-        )
-        return f"<i>{labels}</i> "
+    def short(labels):
+        return SENSE_LABEL_PATTERN.sub(lambda m: SENSE_LABELS[m.group(1)], labels)
 
-    return LEADING_LABELS.sub(shorten, gloss)
+    gloss = LEADING_LABELS.sub(lambda m: f"<i>{short(m.group(1))}</i> ", gloss)
+    return TRAILING_LABELS.sub(lambda m: f" <i>{short(m.group(1))}</i>", gloss)
+
+
+def by_gloss(words):
+    """[(word, gloss)] as [([words], gloss)], words with the same gloss together, so a
+    gloss is given once: "CAES, CAESS: either as a name or title"."""
+    groups = {}
+    for word, gloss in words:
+        groups.setdefault(gloss or object(), ([], gloss))[0].append(word)
+    return list(groups.values())
 
 
 def format_gloss(sense):
@@ -218,6 +237,7 @@ class HTMLRenderer:
         {
             "format_gloss": format_gloss,
             "format_etymology": format_etymology,
+            "by_gloss": by_gloss,
             "headline_tail": headline_tail,
             "short_language": short_language,
         }

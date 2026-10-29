@@ -38,6 +38,30 @@ OTHER_FORMS = {
     "genitive": "gen.",
     "oblique": "obl.",
 }
+# Kaikki's part-of-speech codes as the headword line spells them
+POS_NAMES = {
+    "adj": "adjective",
+    "adv": "adverb",
+    "prep": "preposition",
+    "postp": "postposition",
+    "prep_phrase": "prepositional phrase",
+    "conj": "conjunction",
+    "det": "determiner",
+    "pron": "pronoun",
+    "num": "numeral",
+    "intj": "interjection",
+    "name": "proper noun",
+}
+CASES = {
+    "nominative": "nom.",
+    "genitive": "gen.",
+    "dative": "dat.",
+    "accusative": "acc.",
+    "ablative": "abl.",
+    "vocative": "voc.",
+    "locative": "loc.",
+}
+CASE_PATTERN = re.compile(r"\b(" + "|".join(CASES) + r")\b")
 GENDERS = {"m": "m.", "f": "f.", "n": "n.", "c": "c.", "sg": "sg.", "pl": "pl."}
 
 
@@ -48,8 +72,10 @@ def compact_grammar(remainder, pos):
     text = ORDINAL_PATTERN.sub(lambda m: ORDINALS[m.group(1)], remainder)
     text = re.sub(r"[- ]declension\b", " decl.", text)
     text = re.sub(r" conjugation\b", " conj.", text)
-    if pos and text.endswith(" " + pos):
-        text = text[: -len(pos) - 1]
+    text = CASE_PATTERN.sub(lambda m: CASES[m.group(1)], text)
+    for name in {pos, POS_NAMES.get(pos)} - {None}:
+        if text.endswith(" " + name):
+            text = text[: -len(name) - 1]
     return text.strip()
 
 
@@ -82,7 +108,8 @@ def headline(remainder, pos):
         elif label:
             others.append(f"<i>{OTHER_FORMS[label]}</i> {part[len(label) + 1 :]}")
         else:
-            notes.append(part)  # "not comparable", "indeclinable"
+            # "not comparable", "indeclinable", "+ ablative"
+            notes.append(CASE_PATTERN.sub(lambda m: CASES[m.group(1)], part))
     grammar = ", ".join(filter(None, [compact_grammar(after, pos), *notes]))
     return (
         "".join(f", {form}" for form in forms),
@@ -95,17 +122,18 @@ def headline(remainder, pos):
 def headline_tail(header, pos):
     """Markup for what follows the headword on its line: the principal parts, gender,
     then part of speech and class in italics, and the other forms on a smaller line."""
+    shown = POS_NAMES.get(pos, pos)
     parts = None
     if header.labelled is not None and "<br/>" not in header.remainder:
         parts = headline(header.labelled, pos)
     if parts is None:
         grammar = compact_grammar(header.remainder or "", pos)
         return (f" {grammar}" if grammar else "") + (
-            f" &#183; <i>{pos}</i>" if pos else ""
+            f" &#183; <i>{shown}</i>" if shown else ""
         )
     forms, gender, grammar, others = parts
     tail = forms + (f" {gender}" if gender else "")
-    kind = ", ".join(filter(None, [pos, grammar]))
+    kind = ", ".join(filter(None, [shown, grammar]))
     if kind:
         tail += f" &#183; <i>{kind}</i>"
     if others:

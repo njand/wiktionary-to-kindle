@@ -6,6 +6,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from ..render.headline import POS_NAMES
 from ..render.shared_labels import unmark
 from ..utils import kindle_fold
 
@@ -18,8 +19,9 @@ IFORM_PATTERN = re.compile(r"<idx:iform\b[^>]*\bvalue=\"([^\"]*)\"")
 # 2026-10-29 gave it a paragraph of its own (<p><i>noun</i></p>), before Stage 4
 # <p class="pos">
 POS_PATTERN = re.compile(
-    r"(?:&#183; <i>|<p(?: class=\"pos\">|><i>))([^<]*)(?:</i>)?</p>"
+    r"&#183; <i>([^<,]*)|<p(?: class=\"pos\">|><i>)([^<]*)(?:</i>)?</p>"
 )
+POS_CODES = {name: code for code, name in POS_NAMES.items()}
 
 
 @dataclass
@@ -59,7 +61,7 @@ def read_entries(pages_dir):
                 IndexedEntry(
                     key=f"{page.name}#{entry_id}",
                     headword=unmark(label),
-                    pos=html.unescape(pos.group(1)) if pos else None,
+                    pos=_pos_code(pos),
                     is_card=entry_id.startswith("card_"),
                     labels=labels,
                 )
@@ -78,3 +80,11 @@ def build_index(entries):
 def _spine_order(page):
     # Older builds listed main pages, then card- pages
     return page.name.startswith("card-"), page.name
+
+
+def _pos_code(match):
+    """Kaikki's code for the part of speech an entry shows ("adjective" → "adj")."""
+    if not match:
+        return None
+    shown = html.unescape(match.group(1) or match.group(2))
+    return POS_CODES.get(shown, shown)

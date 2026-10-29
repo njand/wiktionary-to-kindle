@@ -46,8 +46,9 @@ def strip_tree(text, word):
 
 class Etymology:
     def __init__(self, etymology_text, etymology_templates, word=""):
-        self.etymology_text = etymology_text and transliterate(
-            strip_tree(etymology_text, word)
+        # Paragraphs and list items run on: the popup shows one paragraph
+        self.etymology_text = etymology_text and re.sub(
+            r"\s*\n[\s*]*", " ", transliterate(strip_tree(etymology_text, word))
         )
         self.templates = [
             EtymologyTemplate(
