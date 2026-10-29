@@ -1,159 +1,197 @@
-# Wiktionary-to-Kindle
+# Wiktionary to Kindle
 
 [![Build and Release Dictionaries](https://github.com/njand/wiktionary-to-kindle/actions/workflows/dictionary-build.yml/badge.svg)](https://github.com/njand/wiktionary-to-kindle/actions/workflows/dictionary-build.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-A Python parser and rendering engine that converts large-scale [Kaikki](https://kaikki.org/) Wiktionary dumps into Kindle dictionaries (`.mobi`) with functional lookup for all inflected forms.
+**A free Latin dictionary for your Kindle, built from Wiktionary.**
+
+Press and hold any Latin word in a book — *amāverat*, *cujus*, *uirum* — and the dictionary opens the right entry, with its meanings, principal parts and etymology. Every inflected form is indexed, so you don't need to know the dictionary form to look a word up.
+
+The dictionary is rebuilt every week from the latest Wiktionary data. The same build is also available in StarDict format for KOReader and GoldenDict.
 
 > [!TIP]
-> **Looking to install the Latin dictionary on your Kindle?**  
-> You do not need to build the project from source. Download the pre-compiled `.mobi` file directly from **[GitHub Releases](https://github.com/njand/wiktionary-to-kindle/releases/latest)** and follow the installation instructions below.
+> **Just want the dictionary?** Download the `.mobi` file from the **[latest release](https://github.com/njand/wiktionary-to-kindle/releases/latest)** and follow the [installation steps](#install-on-a-kindle) below. You don't need to build anything.
 
----
+## Contents
 
-## 📱 How to Install & Use on Your Kindle
+- [Install on a Kindle](#install-on-a-kindle)
+- [Use with KOReader or GoldenDict](#use-with-koreader-or-goldendict)
+- [What's in the dictionary](#whats-in-the-dictionary)
+- [Build it yourself](#build-it-yourself)
+- [How it works](#how-it-works)
+- [Measuring lookup quality](#measuring-lookup-quality)
+- [Contributing](#contributing)
+- [License and credits](#license-and-credits)
 
-### 1. Transfer the Dictionary via USB
-1. Connect your Kindle to your computer via USB.
-2. Open the Kindle storage drive and navigate to the **`documents/dictionaries/`** folder. *(If the `dictionaries` folder does not exist, create it inside `documents/`)*.
-3. Copy the downloaded `.mobi` file into `documents/dictionaries/`.
-4. Safely eject and unplug your Kindle.
+## Install on a Kindle
+
+### 1. Copy the file to your Kindle
+
+1. Download `la-wiktionary.mobi` from the [latest release](https://github.com/njand/wiktionary-to-kindle/releases/latest).
+2. Connect your Kindle to your computer with a USB cable.
+3. Open the Kindle drive and go to `documents/dictionaries/`. If there is no `dictionaries` folder, create one inside `documents`.
+4. Copy the `.mobi` file into `documents/dictionaries/`.
+5. Eject the Kindle and unplug it.
 
 > [!NOTE]
-> Amazon's "Send to Kindle" service no longer supports `.mobi` uploads. Direct USB transfer into the `documents/dictionaries/` directory is required for Kindle OS for system lookup dictionaries.
+> Send to Kindle no longer accepts `.mobi` files, and a dictionary only works from the `dictionaries` folder, so it has to be copied over USB.
 
-### 2. Set as Default Dictionary
-1. Open your Kindle and navigate to **Settings** → **Device Options** → **Language and Dictionaries** → **Dictionaries**.
-2. Tap the language for your dictionary (e.g., **Latin**).
-3. Select the newly transferred Wiktionary dictionary to set it as the primary lookup tool.
+### 2. Make it your Latin dictionary
 
-### 3. Using Instant Lookups
-* Open any book on your Kindle written in the target language.
-* Press and hold any word to trigger the dictionary lookup card.
-* If a different dictionary opens by default, tap the dictionary title at the bottom right of the pop-up card to switch to your Wiktionary dictionary.
+On the Kindle, open **Settings → Device Options → Language and Dictionaries → Dictionaries**, tap **Latin**, and choose the Wiktionary dictionary.
 
-### KOReader and GoldenDict
-Each release also has `la-wiktionary-stardict.zip`, the same dictionary in StarDict format. Unzip it and copy the `la-wiktionary` folder into KOReader's `koreader/data/dict/` folder, or add the folder to GoldenDict's dictionary sources.
+### 3. Look up a word
 
----
+Open a Latin book and press and hold a word. If another dictionary opens, tap its name at the bottom of the popup to switch.
 
-## Overview & Key Features
+When a spelling belongs to more than one word, swipe across the popup to see the others. The word you most likely meant comes first.
 
-This project addresses the strict formatting constraints, character diacritics, and undocumented limitations of Kindle dictionary lookup engines when processing multi-gigabyte dictionary dumps.
+## Use with KOReader or GoldenDict
+
+Each release also includes `la-wiktionary-stardict.zip`. Unzip it, then:
+
+- **KOReader:** copy the `la-wiktionary` folder into `koreader/data/dict/`.
+- **GoldenDict:** add the `la-wiktionary` folder to your dictionary sources.
+
+## What's in the dictionary
+
+- **Every form of every word.** Inflected forms point to their lemma, including participles, comparatives and superlatives that Wiktionary only implies.
+- **Any spelling convention.** Lookups work with or without macrons (*amō*, *amo*), with *u* or *v* (*uir*, *vir*), and with *i* or *j* (*iam*, *jam*). Alternative and Medieval Latin spellings are indexed too.
+- **Homographs kept apart.** Words that share a spelling (*latus* "side", *lātus* "carried") are separate entries, ordered so the more likely one appears first.
+- **Related words in one place.** Diminutives and alternative forms appear in their lemma's entry, with a short gloss where Wiktionary gives one.
+- **Compact entries.** Each entry is laid out like a print dictionary — headword line, numbered senses, etymology — and sized for the lookup popup.
 
 > [!IMPORTANT]
-> **Language Support:** This repository is currently optimized and tested exclusively for **Latin** (handling macron stripping, vowel length variants, morphological tags, etc.) Only Latin `.mobi` files are currently published in Releases. However, the core parsing and rendering architecture is intended to be language-agnostic and can be extended to support other Wiktionary target languages.
+> Only Latin is built and tested today. The pipeline itself is designed to be language-agnostic; see [Contributing](#contributing) if you'd like to add another language.
 
-- **Kindle Constraint Resolution:**
-  - **Several entries per tap:** The Kindle popup lists every entry a tapped word reaches, the one spelled exactly like the word first, and the reader swipes between them. Each entry is therefore indexed by all of its own spellings, and homographs (*latus*, *lātus*) stay separate entries that share them. For a tap without macrons, the entry most likely meant comes first: Wiktionary has no frequencies, so the build estimates them from how much it says about each entry and gives the likeliest entry the spelling without macrons (*non* opens *nōn* before *nōnae*).
-- **Orthography & Variant Handling:** Handles both macronized and unmacronized text (e.g., *amō* vs. *amo*): the Kindle ignores macrons and case when matching, so entries carry macronized labels (plus the unmacronized spelling that puts the likeliest entry first), and disputed vowel lengths (ā̆) get both spellings. Texts that write u for consonantal v (*uir*) or j for consonantal i (*jam*, *cujus*) get those spellings too, since the device does not fold them.
-- **Forms Wiktionary implies:** Participles, comparatives and superlatives that have no page of their own get their regular declension, and alternative and Medieval Latin spellings without a page are indexed. Pages that only point to a lemma (an inflected form, an alternative spelling) merge into it, even when they name the lemma by its page title (*iuro* for *iūrō*).
-- **What merged pages say:** A merged page that is a word of its own keeps a line in its lemma's entry, with its meaning when Wiktionary gives one: *dim.* **frīgidulus**: somewhat cold; *alt.* **voltus**. Inflected forms get no line. A comparative or superlative the headword line already names gets none either.
-- **Popup-safe markup:** The lookup popup applies no stylesheet and kindling strips `class` attributes, so entries mark parts of speech and labels with `<i>` and `<b>` instead of CSS classes.
-- **Memory-Efficient Processing:** Processes multi-gigabyte Kaikki JSONL files without excessive memory usage by combining streaming CLI utilities (`pigz` + `ripgrep`) with an external disk-backed merge sort (`heapq` + `orjson`).
-- **Automated Builds:** Scheduled GitHub Actions run every Sunday to fetch the latest Wiktionary edits and compile fresh releases.
+## Build it yourself
 
----
+### Requirements
 
-## Developer Setup & Usage
+- **Python 3.10 or later**
+- **[kindling](https://github.com/ciscoriordan/kindling/releases)** (`kindling-cli`) to compile the `.mobi`. Amazon's `kindlegen` is not supported. Put `kindling-cli` on your `PATH` or pass its location with `--kindling`. The automated builds use v0.45.6.
+- **Recommended:** [uv](https://docs.astral.sh/uv/) to manage dependencies, and `ripgrep` and `pigz` for faster extraction of the Wiktionary dump. Without them the build falls back to pure Python.
 
-### Prerequisites
-* **Python 3.10+**
-* **kindling:** [`kindling-cli`](https://github.com/ciscoriordan/kindling/releases) compiles the `.mobi` (Amazon's `kindlegen` is not supported). The CLI looks for `kindling-cli` on your `PATH`; otherwise pass its path with `--kindling`. CI uses v0.45.6, checked against its SHA-256.
-* *(Optional, Recommended)*: [`uv`](https://docs.astral.sh/uv/) for package management, and system utilities `ripgrep` / `pigz` for faster file extraction.
-
-### Environment Setup
+### Set up
 
 ```bash
-# Clone the repository
-git clone [https://github.com/njand/wiktionary-to-kindle.git](https://github.com/njand/wiktionary-to-kindle.git)
+git clone https://github.com/njand/wiktionary-to-kindle.git
+```
+
+```bash
 cd wiktionary-to-kindle
+```
 
-# Sync dependencies using uv (includes optional 'fast' extras)
+```bash
 uv sync --all-extras
-
 ```
 
-### Running the CLI Engine
-
-Run the CLI tool specifying your target ISO language code:
+### Build
 
 ```bash
-# Download, filter, external merge-sort, and compile the Latin dictionary
-uv run wiktionary-to-kindle --lang "la"
-
+uv run wiktionary-to-kindle --lang la
 ```
 
-#### CLI Options
+This downloads the Latin data from [Kaikki.org](https://kaikki.org/), sorts and merges it, renders the entries and compiles the dictionary. The result is written to `outputs/KindleDictionary-la/la-wiktionary.mobi`.
 
-| Flag | Description |
+The first build downloads a large file and takes a while. Later builds reuse the sorted data as long as the download hasn't changed.
+
+### Options
+
+| Option | Description |
 | --- | --- |
-| `--lang <code>` | Target ISO language code (default: `la`). |
-| `--resort` | Re-runs the external merge sort. Otherwise the sorted file is cached beside the input and reused while the input is unchanged. |
-| `--input <path>` | Path to a local `.jsonl` dump file, skipping automatic downloads. |
-| `--no-download` | Uses the dump already in `downloads/` instead of downloading one. |
-| `--kindling <path>` | Path to `kindling-cli` if it is not on your `PATH` (`--kindlegen` is the old name). |
-| `--stardict` | Also writes `<lang>-wiktionary-stardict.zip`, a StarDict bundle for GoldenDict and KOReader (see below). |
-| `--descendants <list>` | Space-separated list of descendant languages to retain in dictionary entries (default: English, Portuguese, Spanish, French, Italian). |
+| `--lang <code>` | Language code to build (default: `la`). |
+| `--input <path>` | Build from a local `.jsonl` file instead of downloading. |
+| `--no-download` | Use the file already in `downloads/` instead of downloading a new one. |
+| `--resort` | Sort the data again even if a cached sorted file is up to date. |
+| `--kindling <path>` | Location of `kindling-cli`, if it isn't on your `PATH`. (`--kindlegen` is accepted as an older name.) |
+| `--stardict` | Also write `<lang>-wiktionary-stardict.zip` for KOReader and GoldenDict. |
+| `--descendants <names>` | Languages to keep in each entry's list of descendants (default: English Portuguese Spanish French Italian). |
 
----
-
-## Pipeline Architecture
-
-`pipeline.build_dictionary` runs the stages in order; each lives in its own module of `wiktionary_to_kindle/`:
-
-1. **Ingest** (`ingest.py`): Downloads raw Wiktionary JSONL data from Kaikki.org and extracts language-specific entries using `pigz` and `ripgrep` (or standard Python `gzip`/`json` fallbacks), keeping the dump's date.
-2. **Merge** (`merge/`): A disk-backed merge sort (`heapq.merge`) puts the lemmas in order without holding the dump in memory, and folds every page that only points to a lemma into it (`pointers.py`), with generated forms (`forms.py`) and a line for merged pages that are words of their own (`related.py`). The result is cached beside the input.
-3. **Lexicon model** (`models/`): Parses merged entries into `Entry`, `Header`, `Sense` and `Inflection` objects, normalizing tags.
-4. **Render** (`render/`): Writes entries and the front page as XHTML with Jinja2 templates following Kindle's markup (`idx:entry`, `idx:orth`, `idx:infl`).
-5. **Compile** (`compiler.py`): Writes the `.opf` package and runs kindling to produce the `.mobi`.
-6. **StarDict** (`stardict.py`, with `--stardict`): Runs `kindling stardict` on the same package, then points links between entries at `bword://` labels and adds every label's spelling without macrons (StarDict readers do not ignore them the way a Kindle does).
-
-### Measuring lookup quality
+### Run the tests
 
 ```bash
-# Index statistics of a build, and a comparison between two builds
-uv run python -m wiktionary_to_kindle.quality stats outputs/KindleDictionary-la -o stats.json
-uv run python -m wiktionary_to_kindle.quality diff old-stats.json stats.json
-
-# How many words of real Latin texts (corpus/la.tsv) open an entry, and why the rest do not
-uv run python -m wiktionary_to_kindle.quality coverage outputs/KindleDictionary-la corpus/la.tsv -o coverage
-
-# A small, self-consistent sample of the dump for fast development builds
-uv run python -m wiktionary_to_kindle.quality sample downloads/kaikki-la.jsonl downloads/sample-la.jsonl
-uv run wiktionary-to-kindle --lang la --no-download --input downloads/sample-la.jsonl
+uv run pytest
 ```
 
-Coverage resolves each word with the Kindle's own matching rules: case and macrons are ignored, and when several entries share a label and none is spelled like the word, the index order picks the one the popup shows first ("ambiguous"). Pass `--kindling <binary> --mobi <file>` to also check the most frequent words with kindling's on-device lookup simulator. CI publishes the statistics, their change since the last release, and the coverage report in each release's notes.
+## How it works
+
+`pipeline.build_dictionary` runs these stages in order. Each one lives in its own module under `wiktionary_to_kindle/`.
+
+| Stage | Module | What it does |
+| --- | --- | --- |
+| Ingest | `ingest.py` | Downloads the Wiktionary data from Kaikki.org, keeps the target language's entries, and records the date of the data. |
+| Merge | `merge/` | Sorts the entries on disk, so the multi-gigabyte dump never has to fit in memory. Folds pages that only point to a lemma (inflected forms, alternative spellings) into that lemma, generates implied forms (`forms.py`), and adds lines for related words (`related.py`). The result is cached next to the input. |
+| Model | `models/` | Parses the merged data into `Entry`, `Header`, `Sense` and `Inflection` objects and normalizes grammatical tags. |
+| Render | `render/` | Writes the entries and the front page as XHTML using Kindle's dictionary markup (`idx:entry`, `idx:orth`, `idx:infl`). |
+| Compile | `compiler.py` | Writes the `.opf` package and runs kindling to produce the `.mobi`. |
+| StarDict | `stardict.py` | With `--stardict`, converts the same package to StarDict and adds spellings without macrons, since StarDict readers don't ignore them the way a Kindle does. |
+
+### Working around Kindle's limits
+
+A Kindle's lookup engine has constraints that shape the output:
+
+- **The popup shows every entry a tap reaches**, with an exact spelling match first. Each entry is indexed under all of its spellings, and when a tap has no macrons the build decides which entry gets the plain spelling. Wiktionary has no word frequencies, so the build estimates them from how much Wiktionary says about each word: *non* opens *nōn* before *nōnae*.
+- **Matching ignores macrons and case, but not *u*/*v* or *i*/*j*.** Entries carry macronized labels, disputed vowel lengths (*ā̆*) get both spellings, and *u*/*j* spellings are added explicitly.
+- **The popup applies no stylesheet**, and kindling strips `class` attributes, so entries use `<b>` and `<i>` for formatting instead of CSS.
+
+## Measuring lookup quality
+
+The `quality` module reports how well a build serves real texts.
 
 ```bash
-# Coverage compared with an earlier build; --fail-on-drop exits 1 on a regression
+uv run python -m wiktionary_to_kindle.quality stats outputs/KindleDictionary-la -o stats.json
+```
+
+```bash
+uv run python -m wiktionary_to_kindle.quality diff old-stats.json stats.json
+```
+
+```bash
+uv run python -m wiktionary_to_kindle.quality coverage outputs/KindleDictionary-la corpus/la.tsv -o coverage
+```
+
+```bash
 uv run python -m wiktionary_to_kindle.quality coverage-diff old-coverage.json coverage.json --fail-on-drop
 ```
 
-A source regresses when the share of its tokens that open something falls by more than half a percentage point (`--threshold`). The share left to index order and the labels kindling says the index order hides are shown but not judged: the popup lists every entry a tap reaches, so they only decide which comes first. The weekly build compares its coverage with the latest release's and fails on a regression; to publish an intentional drop, run the workflow by hand with **Allow a coverage drop** checked.
+- **`stats`** summarizes a build's index; **`diff`** compares two builds.
+- **`coverage`** checks how many words in a set of real Latin texts (`corpus/la.tsv`) open an entry, and explains why the rest don't. It follows the Kindle's own matching rules. Add `--kindling <binary> --mobi <file>` to also check the most frequent words with kindling's on-device lookup simulator.
+- **`coverage-diff`** compares two coverage reports. With `--fail-on-drop` it exits with an error when any source's coverage falls by more than half a percentage point (adjustable with `--threshold`).
+
+### Faster development builds
+
+A full build processes the whole dump. For quicker iterations, build from a small, self-consistent sample:
+
+```bash
+uv run python -m wiktionary_to_kindle.quality sample downloads/kaikki-la.jsonl downloads/sample-la.jsonl
+```
+
+```bash
+uv run wiktionary-to-kindle --lang la --no-download --input downloads/sample-la.jsonl
+```
 
 ### Releases
 
-Each build is published as a pre-release with the `.mobi`, the StarDict bundle, the statistics and the coverage report, and its notes end with a device checklist ([docs/device-check-la.md](docs/device-check-la.md)). After going through the checklist on a Kindle, edit the release and mark it as the latest; the next build compares its coverage with that release.
+A scheduled GitHub Actions workflow builds the dictionary every Sunday and publishes it as a pre-release with the `.mobi`, the StarDict bundle, and the statistics and coverage reports. The build fails if coverage drops compared with the latest release; to publish an intentional drop, run the workflow manually with **Allow a coverage drop** checked.
 
----
+Each release's notes end with a [device checklist](docs/device-check-la.md). Once a build has been checked on a Kindle, it is marked as the latest release, and the next build compares its coverage against it.
 
 ## Contributing
 
-Contributions are welcome. If you would like to extend support to another language (e.g., Ancient Greek, French):
+Contributions are welcome — bug reports, lookup failures you've noticed while reading, and code alike.
 
-1. Add any language-specific normalization or morphological tag parsing needed in `wiktionary_to_kindle/models/`.
-2. Add the language code to the matrix in `.github/workflows/dictionary-build.yml`.
-3. Open a PR.
+To add a language (for example, Ancient Greek or French):
 
----
+1. Add any language-specific normalization or tag parsing to `wiktionary_to_kindle/models/`.
+2. Add the language code to the build matrix in `.github/workflows/dictionary-build.yml`.
+3. Open a pull request.
 
-## License & Credits
+## License and credits
 
-This project is open-source software licensed under the [MIT License](/LICENSE).
+The code is released under the [MIT License](LICENSE).
 
-Dictionary data is sourced from [Wiktionary](https://www.wiktionary.org/) via the [Kaikki.org](https://kaikki.org/) machine-readable parsing project.
+The dictionary content comes from [Wiktionary](https://www.wiktionary.org/), extracted by [Kaikki.org](https://kaikki.org/), and is licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). Each dictionary is distributed under that license and opens with a page that credits Wiktionary's contributors and Kaikki.org, states the license, and gives the dates of the data and the build.
 
-The dictionaries contain Wiktionary text, which is licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/); each dictionary is distributed under that license and opens with a page that credits Wiktionary's contributors and Kaikki.org, states the license, and gives the date of the Wiktionary data and the build. The downloader records the dump's date from Kaikki's `Last-Modified` header (`downloads/<file>.date`); for a dump passed with `--input`, put the date in `<file>.date` beside it, or the file's own date is used.
+The build takes the data's date from Kaikki's `Last-Modified` header and stores it in `downloads/<file>.date`. When you build from your own file with `--input`, put its date in a `<file>.date` file next to it; otherwise the file's modification date is used.
