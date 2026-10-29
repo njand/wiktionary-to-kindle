@@ -1,8 +1,8 @@
-Before marking this release as the latest, load the `.mobi` on a Kindle (`documents/dictionaries/`, set as the Latin dictionary) and tap each of these in a Latin book. The popup should list every entry a tap reaches, the one spelled like the tap first.
+Before marking this release as the latest, load the `.mobi` on a Kindle (`documents/dictionaries/`, set as the Latin dictionary) and tap each of these in a Latin book. The popup should list every entry a tap reaches, the one spelled like the tap first; for a tap without macrons, the entry the build estimates is most often meant.
 
 - [ ] The dictionary opens at the "Sources and license" page, which gives this release's Wiktionary and build dates.
 - [ ] `et` lists et (conj.) and et (adv.), and `quod` lists quod (adv.), quod (conj.), quī and quis: entries with the same spelling are all listed.
-- [ ] `latus` (unmacronized) lists latus (noun) first, then ferō, lātus (adj.) and the others.
+- [ ] `non` (unmacronized) lists nōn first, then nōnae; `latus` lists ferō first, then latus (noun), lātus (participle) and lātus (adj.).
 - [ ] `Latus` (capitalized) lists the same entries.
 - [ ] `lātum` (macronized) lists ferō, lātus (participle) and lātus (adj.), and not latus (noun).
 - [ ] `Rōmāni` (partly macronized) lists the same entries as `Romani`.
