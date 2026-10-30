@@ -308,7 +308,7 @@ Each kind of form was measured as coverage gained per label added, as in Stage 9
 - What the dictionary alone still misses (11.7% of tokens) is left to segmentation: names (`Boris`, `Naciye`), verbal nouns with a possessor (`olması`, `olmadığını`), the reflexive `kendi` (`kendini`, `kendisine`), postpositional nouns (`ardından`, `karşısına`), and verb forms with suffixes the tables omit (`olabilir`, `durmadan`, `bekleniyor`). Of these, 9.7% of all tokens have a stem of three or more letters that opens something.
 - Moved: stem variants to Stage 15; names with an apostrophe and homographs a suffix makes (`vardı`) to Stage 17, where context decides them; the lookup list to Stage 15.
 
-## Stage 14: Turkish — device check of segmentation
+## Stage 14: Turkish — device check of segmentation — test book built, check pending
 
 Everything after this stage assumes a split word reads and taps well; check that first.
 
@@ -321,35 +321,36 @@ Everything after this stage assumes a split word reads and taps well; check that
   - Dotless and dotted i in both cases (`KIZI`, `İyi`), and a homograph pair (`yüz`).
 - [ ] Decide from the results: the separator markup (`nowrap` or not), and whether names are split.
 
-## Stage 15: Turkish — the dictionary for split words
+## Stage 15: Turkish — the dictionary for split words — done
 
-A split leaves a stem and a suffix chain; each must open something useful.
+A split leaves a stem and a suffix chain; each must open something useful. Decisions made along the way are in `docs/decisions-tr.md` (3–6).
 
-- [ ] **Stem variants** as labels of their lemma, so every stem a split leaves opens it: consonant voicing (`kitab` → kitap, `ağac` → ağaç, `renğ` → renk), a dropped vowel (`ağz` → ağız, `burn` → burun), a doubled consonant (`hakk` → hak), and verb stems (`gid` → gitmek, `de`/`di` → demek, `ye`/`yi` → yemek, `ol` → olmak). Read them off the entry's own table forms where possible (the stem its accusative or possessive is built on), so no rule guesses.
-- [ ] **Verb stems as labels.** A verb's stem (`yaz`, `gel`) is its imperative and so mostly a label already; check every verb stem opens its verb.
-- [ ] **Suffix-chain entries** for a tap on the suffixes: an entry per chain (`lerinizden`: *pl. + your (pl.) + from*; `ması`: *verbal noun + his/her*; `abilir`: *can + aorist*), from a small suffix grammar (morphotactics with harmony), labelled by every harmony variant. Measure how many chains the corpus needs and how many labels the grammar makes; limit the grammar to attested chains if it is large. Each entry glosses the chain morpheme by morpheme.
-- [ ] Lookup list `tests/lookup_words_tr.txt` via `scripts/check_lookups.py`: lemmas, table forms, generated forms, stem variants and suffix chains.
+- [x] **Stem variants** (`tr_forms.stem_variants`), read off each entry's own forms, never guessed: a noun's stem from its accusative (`kitabı` → `kitab`, `ağzı` → `ağz`, `hakkı` → `hakk`, `burnu` → `burn`), a verb's from its progressive (`gidiyor` → `gid`, `ediyor` → `ed`, `diyor` → `di`, `bekliyor` → `bekli`, with the narrowed vowel). 2,133 nouns, 679 verbs; names are left out (`NATO'yu` would give `NATO'y`). Labels of their lemma, tagged `stem-variant`.
+- [x] **Verb stems as labels**: a verb's stem is its imperative, which the tables list (`ol`, `gel`, `git`), so every verb stem already opened its verb; the narrowed and voiced stems above complete them.
+- [x] **Suffix-chain entries** (`languages/tr_suffixes.py`, `Language.extra_entries`): a small morphotactic grammar with vowel harmony, consonant assimilation, buffer letters, k → ğ and the narrowing before `-Iyor`, spelled after each kind of stem (its last vowel, and whether it ends in a vowel, an l, another voiced or a voiceless consonant). Nouns: plural, possessive, case, `-ki` with a plural and case after it, the copula with persons. Verbs: passive, negation, ability, the tenses with persons and a copula, imperatives, verbal nouns and participles with possessive and case, infinitives, converbs. Six derivational suffixes with a short tail (`bulut-suz`, `gözlük-çü-ler`). 114,013 chain spellings, an entry each, filed as `-lerimizden` (the hyphen weighs nothing; a word spelled like a chain, `de`, is listed first), each sense one analysis: `-lerimizden` *plural + our + from (abl.)*, `-leri` *their / plural + definite object (acc.) / plural + his/her/its*. The same grammar decides which splits are candidates (Stage 16).
+- [x] Measured with the first 58,000 chains (before the passive and derivations): 85,321 entries, 2,713,421 labels (+2.5%), a 72.6 MB `.mobi` (+8%); corpus coverage of whole words unchanged, as expected. The final numbers are under Stage 19.
+- [ ] Lookup list `tests/lookup_words_tr.txt`: moved to Stage 19, against the release build.
 
-## Stage 16: Turkish — `prepare-book`
+## Stage 16: Turkish — `prepare-book` — done
 
-The command and everything deterministic around the segmenter; the decisions themselves come in Stage 17.
+- [x] **`prepare-book book.epub -o book-prepared.epub`** (`wiktionary_to_kindle/prepare/`, also `python -m wiktionary_to_kindle.prepare`): reads the EPUB's chapters from its OPF manifest, works block by block (paragraph, heading, list item), decides sentence by sentence, and writes the splits into the text between tags, leaving markup, entities and the rest of the archive as they were (`mimetype` first and stored). Split words are wrapped in `white-space: nowrap` (`--no-nowrap` to leave them free). A `.txt` book works too. `--kindling` also builds an `.azw3` from the prepared EPUB. A report (`*.splits.tsv`) lists every split with what its stem opens and its sentence. Books with DRM cannot be read.
+- [x] **Lexicon** (`prepare/lexicon.py`): what each spelling opens, with headword, part of speech and first gloss, read back from the built dictionary's pages and cached beside it (`lexicon.json.gz`, rebuilt when the pages change).
+- [x] **Candidates** (`prepare/segment.py`): every split whose stem opens a word of the dictionary (not a suffix-chain entry) and whose rest is a chain the grammar spells after that kind of stem; for a name, the split after its apostrophe.
+- [x] **Which words**: a word that opens nothing whole, or a name whose part before the apostrophe opens something the whole word does not (`Ali'nin`). A word that opens whole is left alone, homographs included: splitting `vardı` (`var` + `dı`) reaches the same entries, `var` being varmak's imperative too.
+- [x] **Deciders without a model**: `greedy` (the longest stem, the yardstick) and `rooted` (the shortest stem of the lemma the longest stem belongs to, so the chain stays together: `ol` + `madığını`, not `olmadığın` + `ı`; a derived word keeps its own stem: `gözlükçü` + `ler`). `rooted` is what runs without a model.
+- [x] **Prepared coverage** (`scripts/measure_prepared.py`; `outputs/measure/tr-stage16/`), each word counted once: words that open something go from **88.3% whole to 95.5% prepared** (BOUN 93.0–97.6%, the stories 91.6–98.2%); 7.4% of words are split. On BOUN's held-out test part (9,019 word tokens, gold lemmas): 84.2% reach their lemma whole, 89.9% after preparation, and 97.3% open something.
 
-- [ ] **`prepare-book --lang tr book.epub -o book-prepared.epub`**: reads an EPUB, walks the text of each XHTML file sentence by sentence (keeping markup), and writes a copy with U+200A inserted at the splits it is given, with the markup Stage 14 chose. A report lists every split. Books with DRM (Kindle store purchases) cannot be prepared; the output goes to the Kindle by Send to Kindle or a USB copy.
-- [ ] **Candidates per word**, from the built dictionary's label index (`quality.labels`): whether the whole word opens something and what; every split point whose stem opens an entry (with Stage 15's stem variants) and whose rest is a suffix chain the grammar accepts. A word with no candidate split is left whole.
-- [ ] **Which words are considered**: every word whose whole form opens nothing, and words whose whole form opens a homograph a split would narrow (`vardı`: var + dı, or the past of varmak). A word that opens one entry is left whole.
-- [ ] **A greedy baseline** (longest candidate stem) as the yardstick for Stage 17, and a `--greedy` mode that needs no model.
-- [ ] Coverage of a prepared text: `quality coverage` on a prepared corpus (the Stage 12 sources run through `prepare-book`), counting the halves of a split word as the device will select them.
+## Stage 17: Turkish — the context-aware segmenter — done
 
-## Stage 17: Turkish — the context-aware segmenter
+Decided 2026-10-29: the split point is chosen by a language model that reads the sentence. Decisions made along the way are in `docs/decisions-tr.md` (2, 10–14).
 
-Decided 2026-10-29: the split point is chosen by a language model that reads the sentence, not by the longest stem, so a split follows the word's meaning in context (`aslında` is a word, not `asl` + `ında`; `yüzü` is face or hundred by the sentence; `gözlükçüler` splits after `gözlükçü`, not `göz`).
-
-- [ ] **The model's task**: for each word Stage 16 marks, given its sentence (and the one before), choose among the candidate splits, or "leave whole", and name the lemma the stem belongs to. It chooses only among candidates, so every split it makes opens an entry; an answer that names no candidate leaves the word whole. Words are sent in batches per paragraph to keep the cost down.
-- [ ] **Which model and how it is called**: Claude through the Anthropic API (or the Message Batches API for whole books). **Ask before choosing**: the model (cost against accuracy, measured below), whether book text may be sent to the API (the user's own books, often copyrighted), and where the API key comes from.
-- [ ] **Cache and reproducibility**: each decision is stored by (word, sentence) beside the book, so a second run costs nothing and gives the same output; the report names the model and date.
-- [ ] **Accuracy**: on BOUN's test part (held out: the coverage corpus uses its training part), the share of words whose chosen stem belongs to BOUN's lemma, against the greedy baseline; and the share of tokens that open the right entry after preparation (the Stage 12 right-lemma measure). Also a hand-checked sample of a Seyfettin story.
-- [ ] **Names**: split after the apostrophe if Stage 14 shows the selection takes it in, so `Ali'nin` opens Ali, not `alının`.
-- [ ] **Cost and time** per novel (tokens sent, dollars, minutes), measured on one full book.
+- [x] **The model's task** (`prepare/model.py`): one request per sentence, for the words in it that need a decision. Each word comes with what it opens whole and its numbered candidates: the stem, the entries it opens with their first gloss, and the chain's analyses. The model answers `{number, choice, lemma}` per word as structured JSON; option 0 leaves the word whole, and an answer that names no candidate does too.
+- [x] **Model and call**: `claude-opus-5-5` through the `anthropic` package (optional: `pip install "wiktionary-to-kindle[segment]"`), effort `low`, the system prompt cached, server-side refusal fallbacks on. `--backend claude-cli` uses a logged-in Claude Code instead; `--decide rooted` sends nothing. Without credentials, `prepare-book` says so and uses `rooted`.
+- [x] **Cache and reproducibility**: each decision is a JSONL line beside the book (`book.splits.jsonl`), keyed by the prompt version, sentence, word and candidates, with the model and date; a rerun costs nothing and gives the same book. Requests can also be exported (`--decide export`) and answered elsewhere (`model.import_answers`).
+- [x] **Accuracy** (`scripts/eval_segmenter.py`; `outputs/measure/tr-stage17/`): no model could be called from a script on this machine, so Claude subagents answered the 460 exported requests (732 words) for BOUN's held-out test part under the same system prompt. A decision is right when it splits after a stem whose entries include BOUN's gold lemma, or leaves the word whole when no candidate has it. Greedy 77.6%, rooted 78.1%, the model **78.7%**; the model leaves 47 words whole (names and look-alike stems: `Şener`, `Boca`, `bardacıkları`, `SASA'nın`) and makes 113 misleading splits where greedy and rooted make 134. The candidates already exclude most wrong splits, so the model's gain is mostly in what it declines; BOUN's root lemmas (`kullanılması` → kullan) also mark some good derived stems wrong.
+- [x] **Names**: a name whose suffixed form opens nothing or the wrong word is split after its apostrophe; the model leaves it whole when the name is not in the dictionary and its stem only looks like a word.
+- [ ] **Cost and time per novel**: estimated only (about $10 for an 80,000-word novel at effort `low`; `docs/decisions-tr.md`, 13), since no API call could be made. Measure on the first real book.
+- [ ] A hand-checked sample of a Seyfettin story, against the model's decisions.
 - [ ] The same machinery, with its own candidates, then serves Latin enclitics (`-que`, `-ne`, `-ve`; see Later).
 
 ## Stage 18: Turkish — entries

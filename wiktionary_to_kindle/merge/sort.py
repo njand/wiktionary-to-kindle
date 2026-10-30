@@ -29,7 +29,7 @@ from .pointers import (
 from .related import MERGED_KEY
 
 # Bump when merge_dump's output changes, so cached sorted files are rebuilt
-SORT_VERSION = 12
+SORT_VERSION = 13
 
 SORTED_SUFFIX = "(sorted)"
 
@@ -175,6 +175,18 @@ def merge_dump(path, language, chunk_size=200000, force=False):
                 )
             )
             line_count += len(orphans)
+        # The language's own entries (Turkish suffix chains), filed like any other
+        extra = [
+            (get_header(o, language), o["pos"], o) for o in language.extra_entries()
+        ]
+        if extra:
+            chunk_files.append(
+                write_chunk(
+                    [(h, p, json_dumps(o) + "\n") for h, p, o in extra],
+                    chunk_index + 2,
+                )
+            )
+            line_count += len(extra)
 
         def read_lines(file_obj):
             for fl in file_obj:

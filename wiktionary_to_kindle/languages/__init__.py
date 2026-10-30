@@ -44,6 +44,8 @@ class Language:
     homographs: str  # words spelled alike, as markup, for the front page
     # (causes, variant) a word that opens nothing is retried with, to name why
     miss_variants: Callable[[str], Iterable[tuple[tuple[str, ...], str]]]
+    # Entries of the language's own making, added to Wiktionary's (Turkish suffix chains)
+    extra_entries: Callable[[], Iterable[dict]] = lambda: ()
 
     @property
     def anchor(self):

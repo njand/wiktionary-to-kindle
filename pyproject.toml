@@ -16,9 +16,14 @@ dependencies = [
 fast = [
     "orjson>=3.9.0",
 ]
+# The context-aware segmenter of prepare-book (Anthropic API)
+segment = [
+    "anthropic>=1.0",
+]
 
 [project.scripts]
 wiktionary-to-kindle = "wiktionary_to_kindle.cli:main"
+prepare-book = "wiktionary_to_kindle.prepare.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/njand/wiktionary-to-kindle"

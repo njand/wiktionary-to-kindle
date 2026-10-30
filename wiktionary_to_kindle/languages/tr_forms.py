@@ -78,7 +78,56 @@ def implied_forms(forms, known, entry):
             spelling = attach(base, template, front)
             if spelling:
                 implied.append((spelling, [*sorted(tags), *suffix_tags]))
-    return implied
+    return implied + [(stem, ["stem-variant"]) for stem in stem_variants(forms, entry)]
+
+
+def stem_variants(forms, entry):
+    """The stems an entry's suffixed forms are built on where they differ from its
+    headword, which a book split leaves before a hair space: kitab (kitabı, of kitap),
+    ağz (ağzı), hakk (hakkı), gid (gidiyor, of gitmek), bekli (bekliyor, of beklemek).
+    Read off the entry's own forms, so no rule guesses them."""
+    word = entry.get("word", "")
+    spellings = {form.get("form", "") for form in forms}
+    variants = []
+    if entry.get("pos") == "verb" and word.endswith(("mek", "mak")):
+        stem = word[:-3]
+        for vowel in "ıiuü":
+            if stem and stem[-1] in "ae":
+                # Narrowing: bekle-, bekliyor
+                narrowed = stem[:-1] + vowel
+                if narrowed + "yor" in spellings:
+                    variants.append(narrowed)
+            elif stem:
+                # A voiced final consonant: git-, gidiyor
+                for form in spellings:
+                    voiced = form[: -len(vowel + "yor")]
+                    if (
+                        form.endswith(vowel + "yor")
+                        and len(voiced) == len(stem)
+                        and voiced[:-1] == stem[:-1]
+                        and voiced != stem
+                    ):
+                        variants.append(voiced)
+    else:
+        nominative = _form(forms, {"nominative", "singular"})
+        accusative = _form(forms, {"accusative", "definite", "singular"})
+        if (
+            nominative
+            and accusative
+            and nominative[-1] not in BACK | FRONT
+            and accusative[-1] in BACK | FRONT
+            and accusative[:-1] != nominative
+        ):
+            variants.append(accusative[:-1])
+    # A name's apostrophe (NATO'yu) and a phrase's space leave no stem to split after
+    variants = [v for v in variants if v and v != word and v.isalpha()]
+    return list(dict.fromkeys(variants))
+
+
+def _form(forms, tags):
+    return next(
+        (f.get("form", "") for f in forms if set(f.get("tags", [])) == tags), ""
+    )
 
 
 def _only_points(entry):

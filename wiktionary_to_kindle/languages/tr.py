@@ -8,8 +8,11 @@ list a noun's cases and possessives and a verb's tenses, but texts add the copul
 (evdeydi), -ki, -le and derivations that no table lists (roadmap, Stage 12).
 """
 
+import re
+
 from . import Language
 from .tr_forms import implied_forms
+from .tr_suffixes import suffix_entries
 
 # Suffixes left over when the longest stem the dictionary has is cut off a missed word,
 # grouped by length: what a book split after that stem would leave for the reader
@@ -26,9 +29,15 @@ def skips_form(form):
     return not all(char.isalpha() or char in "-" + APOSTROPHES for char in form["form"])
 
 
+# A label inside the head line's parentheses, which render.headline cannot read:
+# "(definite accusative kitabı, plural kitaplar or (obsolete) kütüp)"
+INNER_LABEL = re.compile(r"\((obsolete|archaic|dialectal|colloquial|rare)\)\s*")
+
+
 def head_line(text, pos):
-    """The head line after the headword: "(definite accusative evi, plural evler)"."""
-    return text
+    """The head line after the headword, "(definite accusative evi, plural evler)", with
+    a label in nested parentheses unwrapped ("or obsolete kütüp")."""
+    return INNER_LABEL.sub(r"\1 ", text)
 
 
 def miss_variants(word):
@@ -67,4 +76,5 @@ TURKISH = Language(
     descendants=(),
     homographs="<i>yüz</i>, face and hundred",
     miss_variants=miss_variants,
+    extra_entries=suffix_entries,
 )
