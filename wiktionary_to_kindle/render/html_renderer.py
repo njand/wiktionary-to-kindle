@@ -3,9 +3,11 @@ import re
 
 from jinja2 import Environment, PackageLoader
 
+from .headline import headline_tail
+
 # kindling drops a space that stands alone between two inline elements ("</a> <i>" compiles
 # to "</a><i>"), so the words run together; a no-break space survives
-SPACE_BETWEEN_TAGS = re.compile(r"(</(?:a|b|i|span)>) +(?=<(?:a|b|i|span)\b)")
+SPACE_BETWEEN_TAGS = re.compile(r"(</(?:a|b|i|span|font)>) +(?=<(?:a|b|i|span|font)\b)")
 
 
 def keep_spaces(html_str):
@@ -13,21 +15,142 @@ def keep_spaces(html_str):
 
 
 def format_etymology(etymology):
-    """Helper passed to Jinja to italicize each template expansion where it occurs in the text.
+    """Helper passed to Jinja: the etymology as markup, with the words it cites in italics
+    and Proto-Indo-European as PIE. It is given whole: it closes the entry, after the
+    meanings. Its list items start lines of their own."""
+    markup = _cite(etymology.etymology_text, etymology.templates)
+    return markup.replace("Proto-Indo-European", "PIE").replace("\n", "<br/>")
 
-    Expansions are matched in order; one that does not occur after the previous match is skipped.
-    """
-    text = html.escape(etymology.etymology_text)
+
+def _cite(text, templates):
+    """text escaped, with the words each template cites in italics where the template's
+    expansion occurs. Expansions are matched in order; one that does not occur after the
+    previous match is skipped."""
+    text = html.escape(text)
     wrapped, pos = [], 0
-    for elem in etymology.etymology_templates:
-        elem = html.escape(elem)
-        start = text.find(elem, pos)
+    for template in templates:
+        expansion = html.escape(template.expansion)
+        start = text.find(expansion, pos)
         if start == -1:
             continue
-        wrapped.extend([text[pos:start], "<i>", elem, "</i>"])
-        pos = start + len(elem)
+        wrapped.extend([text[pos:start], _cite_template(template)])
+        pos = start + len(expansion)
     wrapped.append(text[pos:])
     return "".join(wrapped)
+
+
+def _cite_template(template):
+    """The template's expansion escaped, with the words it cites in italics."""
+    cited = html.escape(template.expansion)
+    for term in template.terms:
+        term = re.escape(html.escape(term))
+        cited = re.sub(rf"(?<![\w<>/]){term}(?!\w)", r"<i>\g<0></i>", cited, count=1)
+    return cited
+
+
+# Short names of the descendant languages, as Latin dictionaries write them
+LANGUAGES = {
+    "Italian": "It.",
+    "Spanish": "Sp.",
+    "Portuguese": "Pt.",
+    "French": "Fr.",
+    "English": "Eng.",
+}
+
+
+def short_language(name):
+    return LANGUAGES.get(name, name)
+
+
+# The labels before a sense, as dictionaries shorten them: "(transitive) " → "trans."
+SENSE_LABELS = {
+    "transitive": "trans.",
+    "intransitive": "intrans.",
+    "ambitransitive": "trans. and intrans.",
+    "in absolute use": "absol.",
+    "reflexive": "refl.",
+    "impersonal": "impers.",
+    "figuratively": "fig.",
+    "figurative": "fig.",
+    "by extension": "by ext.",
+    "literally": "lit.",
+    "literal": "lit.",
+    "transferred sense": "transf.",
+    "metonymic": "meton.",
+    "chiefly in the plural": "chiefly pl.",
+    "usually in the plural": "usu. pl.",
+    "in the plural": "in pl.",
+    "in the singular": "in sg.",
+    "plural only": "pl. only",
+    "passive voice": "pass.",
+    "with dative": "w. dat.",
+    "with accusative": "w. acc.",
+    "with ablative": "w. abl.",
+    "with genitive": "w. gen.",
+    "with infinitive": "w. inf.",
+    "poetic": "poet.",
+    "derogatory": "derog.",
+    "historical": "hist.",
+    "post-classical": "post-class.",
+    "post-Classical": "post-class.",
+    "pre-classical": "pre-class.",
+    "Ecclesiastical Latin": "Eccl. Lat.",
+    "Medieval Latin": "Med. Lat.",
+    "New Latin": "New Lat.",
+    "Late Latin": "Late Lat.",
+    "Classical Latin": "Class. Lat.",
+    "Old Latin": "Old Lat.",
+    "Renaissance Latin": "Ren. Lat.",
+    "Contemporary Latin": "Contemp. Lat.",
+    "Greek mythology": "Gk. myth.",
+    "Roman mythology": "Rom. myth.",
+    "anatomy": "anat.",
+    "astronomy": "astron.",
+    "medicine": "med.",
+    "botany": "bot.",
+    "military": "mil.",
+    "grammar": "gramm.",
+    "mathematics": "math.",
+    "philosophy": "philos.",
+    "nautical": "naut.",
+    "architecture": "archit.",
+    "rhetoric": "rhet.",
+    "chemistry": "chem.",
+    "zoology": "zool.",
+    "geometry": "geom.",
+    "pathology": "pathol.",
+    "religion": "relig.",
+    "hapax legomenon": "hapax",
+}
+SENSE_LABEL_PATTERN = re.compile(
+    r"(?<![\w-])("
+    + "|".join(re.escape(k) for k in sorted(SENSE_LABELS, key=len, reverse=True))
+    + r")(?![\w-])"
+)
+LEADING_LABELS = re.compile(r"^<i>\(([^()<>]*)\) </i>")
+# A construction after the gloss: "<i> [with infinitive]</i>"
+TRAILING_LABELS = re.compile(r"<i> \[([^\[\]<>]*)\]</i>$")
+
+
+def short_sense_labels(gloss):
+    """gloss with the labels around it shortened and out of their brackets:
+    "<i>(transitive, or in absolute use) </i>to love" → "<i>trans., or absol.</i> to love",
+    "to like<i> [with infinitive]</i>" → "to like <i>w. inf.</i>"."""
+
+    def short(labels):
+        return SENSE_LABEL_PATTERN.sub(lambda m: SENSE_LABELS[m.group(1)], labels)
+
+    gloss = LEADING_LABELS.sub(lambda m: f"<i>{short(m.group(1))}</i> ", gloss)
+    return TRAILING_LABELS.sub(lambda m: f" <i>{short(m.group(1))}</i>", gloss)
+
+
+def by_gloss(words):
+    """[(word, gloss)] as [([words], gloss)], words with the same gloss together, so a
+    gloss is given once: "CAES, CAESS: either as a name or title"."""
+    groups = {}
+    for word, gloss in words:
+        groups.setdefault(gloss or object(), ([], gloss))[0].append(word)
+    return list(groups.values())
 
 
 def format_gloss(sense):
@@ -55,7 +178,7 @@ def format_gloss(sense):
             pattern, lambda m: f'<a href="{alt_page}#{alt_id}">{m.group(0)}</a>', gloss
         )
 
-    formatted = highlight_difference(sense.gloss, sense.raw_gloss)
+    formatted = short_sense_labels(highlight_difference(sense.gloss, sense.raw_gloss))
 
     return link_alt(formatted, sense.alt_word, sense.alt_page, sense.alt_id)
 
@@ -66,6 +189,9 @@ class HTMLRenderer:
         {
             "format_gloss": format_gloss,
             "format_etymology": format_etymology,
+            "by_gloss": by_gloss,
+            "headline_tail": headline_tail,
+            "short_language": short_language,
         }
     )
 

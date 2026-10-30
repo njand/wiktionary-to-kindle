@@ -35,6 +35,9 @@ class Header:
         self.head_word = None
         self.prefix = None
         self.remainder = None
+        self.labelled = (
+            None  # the remainder with its labels ("genitive rēgis"), as markup
+        )
 
         self.split_components()
 
@@ -50,6 +53,7 @@ class Header:
             self.head_word = self.full_header_text[start_idx:end_idx].strip()
             self.prefix = self.full_header_text[:start_idx]
             self.remainder = self.full_header_text[end_idx:].strip()
+            self.labelled = sanitize_xhtml(self.remainder)
             self.abbreviate_grammatical_forms()
 
         # The prefix is escaped by the templates; the remainder is inserted as markup

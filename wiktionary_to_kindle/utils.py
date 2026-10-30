@@ -187,6 +187,11 @@ def j_for_i(word: str) -> str:
     return "".join(chars)
 
 
+# What follows the first lemma in a form_of target naming two: " and era", " m or f",
+# " f and novāculum n", " n"
+TWO_LEMMAS = re.compile(r" (?:[mfn] )?(?:and|or) | [mfn]$")
+
+
 def form_of_root(sense: dict) -> str | None:
     """Return the lemma a sense merely points to, or None if the sense defines the word itself.
 
@@ -202,6 +207,18 @@ def form_of_root(sense: dict) -> str | None:
             normalize(root, lowercase=True) in glosses
             or (not glosses and "no-gloss" in sense.get("tags", []))
         ):
+            # A form two lemmas share names both ("erus and era", "pār m or f"): take the
+            # first linked word the target starts with. A phrase (ante diem) stays whole.
+            if " " in root:
+                links = [link[0] for link in sense.get("links", []) if link]
+                root = next(
+                    (
+                        w
+                        for w in links
+                        if root.startswith(w + " ") and TWO_LEMMAS.match(root[len(w) :])
+                    ),
+                    root,
+                )
             return root
         return None
 
