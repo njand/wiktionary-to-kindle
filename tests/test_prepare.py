@@ -209,3 +209,55 @@ def test_prepare_xhtml_reads_words_through_entities():
     assert out.endswith(
         f"<p>Ali\u2019{HAIR}nin &amp; Ali\u2019{HAIR}nin.</p></body></html>"
     )
+
+
+def test_model_request_through_the_sdk(monkeypatch):
+    """The anthropic backend against a local stand-in for the API: the request it sends,
+    and how its answer becomes a split."""
+    pytest.importorskip("anthropic")
+    import threading
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+
+    seen = {}
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_POST(self):
+            seen["body"] = json.loads(
+                self.rfile.read(int(self.headers["content-length"]))
+            )
+            seen["beta"] = self.headers.get("anthropic-beta")
+            answer = {"words": [{"number": 1, "choice": 2, "lemma": "olmak"}]}
+            reply = json.dumps(
+                {
+                    "id": "msg_1",
+                    "type": "message",
+                    "role": "assistant",
+                    "model": seen["body"]["model"],
+                    "content": [{"type": "text", "text": json.dumps(answer)}],
+                    "stop_reason": "end_turn",
+                    "stop_sequence": None,
+                    "usage": {"input_tokens": 300, "output_tokens": 12},
+                }
+            ).encode()
+            self.send_response(200)
+            self.send_header("content-type", "application/json")
+            self.send_header("content-length", str(len(reply)))
+            self.end_headers()
+            self.wfile.write(reply)
+
+        def log_message(self, *args):
+            pass
+
+    server = HTTPServer(("127.0.0.1", 0), Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    monkeypatch.setenv("ANTHROPIC_BASE_URL", f"http://127.0.0.1:{server.server_port}")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test")
+    decide = model.ModelDecider(None)
+    text, _ = segment_text("Olmasını bekledik.", LEXICON, decide)
+    server.shutdown()
+    assert text == f"Ol{HAIR}masını bekledik."
+    assert seen["body"]["model"] == model.DEFAULT_MODEL
+    assert seen["body"]["output_config"]["format"]["schema"] == model.SCHEMA
+    assert seen["body"]["fallbacks"] == "default"
+    assert "server-side-fallback" in seen["beta"]
+    assert decide.usage == {"input_tokens": 300, "output_tokens": 12}
