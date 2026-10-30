@@ -8,7 +8,16 @@ from itertools import product
 from ..render.headline import GENDERS
 from ..utils import BREVE, MACRON, VOWELS, normalize, strip_marks
 from . import Language, unrecognized
-from .la_forms import implied_forms
+from .la_comparison import comparison
+from .la_forms import (
+    feminine_forms,
+    genitives_in_um,
+    greek_accusatives,
+    head_word,
+    name_forms,
+)
+from .la_forms import implied_forms as declined
+from .la_spellings import respellings
 
 
 def generate_vowel_variants(word: str) -> list[str]:
@@ -102,6 +111,27 @@ def j_for_i(word: str) -> str:
     return "".join(chars)
 
 
+ALTERNATIVE_TAGS = frozenset({"alternative", "Medieval-Latin"})
+
+
+def implied_forms(forms, known, entry):
+    """(spelling, tags) of the forms an entry's forms imply (la_forms, la_comparison,
+    la_spellings): declensions of participles and comparatives, comparison and adverbs,
+    Greek accusatives, a name's declension, a noun's feminine, genitives plural in -um,
+    and other spellings of all of these."""
+    implied = declined(forms, known, entry)
+    implied += comparison(forms, known, entry)
+    implied += greek_accusatives(forms, entry) + name_forms(forms, entry)
+    implied += feminine_forms(forms, known, entry)
+    tagged = [{"form": spelling, "tags": tags} for spelling, tags in implied]
+    implied += genitives_in_um(forms + tagged)
+    # Respelled after the rest, so a generated form is respelled too (exūdantis)
+    tagged = [{"form": spelling, "tags": tags} for spelling, tags in implied]
+    return implied + respellings(
+        forms + tagged, known, entry, head_word(entry), ALTERNATIVE_TAGS
+    )
+
+
 PERIPHRASTIC = re.compile(r".* (sum|esse|fuisse|fore|erat|erit|est|sit|esset|iri|īrī)")
 ENCLITICS = ("que", "ne", "ve")
 CONSONANTAL_U = re.compile(r"[uU](?=[aeiouāēīōūAEIOU])")
@@ -145,7 +175,7 @@ LATIN = Language(
     capitalizes=lambda pos, headword: False,
     # Page titles have no macrons (iuro for iūrō), and some targets other ones (acontīzō)
     letters=normalize,
-    alternative_tags=frozenset({"alternative", "Medieval-Latin"}),
+    alternative_tags=ALTERNATIVE_TAGS,
     skips_form=lambda form: (
         unrecognized(form) or bool(PERIPHRASTIC.match(form.get("form", "")))
     ),
@@ -156,4 +186,6 @@ LATIN = Language(
     descendants=("English", "Portuguese", "Spanish", "French", "Italian"),
     homographs="<i>latus</i>, <i>lātus</i>",
     miss_variants=miss_variants,
+    # -que, -ne, -ve: a tap on the half a book splits off (virum que) opens them
+    affix_pos=frozenset({"conj", "particle"}),
 )

@@ -10,7 +10,8 @@ fewer units that weigh nothing (a soft hyphen), and so on.
 With no frequency data, how often an entry is meant is estimated from how much Wiktionary
 says about it (its JSON without the inflection table, which would make any verb dwarf a
 particle), doubled where the spelling is its headword, and a tenth for a proper name or
-an alternative spelling (sī's Old Latin se).
+an alternative spelling (sī's Old Latin se) or a form the build generated (blandior,
+the comparative of blandus, after the verb blandior).
 
 For every spelling without accents that reaches several entries (`se`), the entries are
 ranked by that estimate and each gets the spelling as a label with as many soft hyphens
@@ -30,6 +31,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from ..jsonl import json_dumps
+from ..merge.forms import GENERATED
 from ..utils import kindle_fold
 from .shared_labels import ENTRY_PATTERN, mark
 
@@ -79,7 +81,7 @@ def weigh(entry):
     alternative, other = set(), set(headwords)
     for form in forms:
         spellings = lookup_spellings(form.get("form", ""))
-        if entry.language.alternative_tags & set(form.get("tags", [])):
+        if (entry.language.alternative_tags | {GENERATED}) & set(form.get("tags", [])):
             alternative.update(spellings)
         else:
             other.update(spellings)
