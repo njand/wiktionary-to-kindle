@@ -1,15 +1,19 @@
-"""Ancient Greek. Only what the shared pipeline needs to build it; the spellings a Greek
-text prints come with Stage 9 of the roadmap.
+"""Ancient Greek: the spellings a tap should find, and why a word in a Greek text opens
+nothing.
 
-A Kindle folds no Greek letter: case and accents count, so a label without accents would
-reach nothing. Length marks (ᾱ, ῠ) are another matter: Wiktionary's headwords and table
-forms carry them, its page titles and the texts readers tap do not.
+A Kindle folds no Greek letter: case and accents count, so every spelling a text prints
+must be a label of its own. Wiktionary's headwords and table forms carry length marks (ᾱ,
+ῠ), which texts never print; texts print a grave for a final acute before another word,
+and capitals at the start of a paragraph or a speech.
 """
 
 import unicodedata
 
 from ..utils import BREVE, MACRON
 from . import Language
+
+GRAVE, ACUTE, CIRCUMFLEX = "\u0300", "\u0301", "\u0342"
+VOWELS = set("αεηιουω")
 
 
 def strip_length(text: str) -> str:
@@ -19,16 +23,42 @@ def strip_length(text: str) -> str:
     return unicodedata.normalize("NFC", kept)
 
 
+def with_grave(word: str) -> str:
+    """word with the acute on its last syllable written as a grave, as a text prints it
+    before another word (καλός → καλὸς). Unchanged when the acute is not on the last
+    syllable or there is none."""
+    decomposed = unicodedata.normalize("NFD", word)
+    accent = decomposed.rfind(ACUTE)
+    if accent == -1 or any(c in VOWELS for c in decomposed[accent + 1 :].lower()):
+        return word
+    graved = decomposed[:accent] + GRAVE + decomposed[accent + 1 :]
+    return unicodedata.normalize("NFC", graved)
+
+
 def lookup_spellings(form: str) -> list[str]:
-    """The form as Wiktionary spells it, for now (roadmap, Stage 9)."""
-    return [form]
+    """The spellings of form a Greek text prints: without length marks, and with a grave
+    for a final acute. The spelling with length marks is no label: no text prints it.
+    Capitals are added for some entries only (capitalizes)."""
+    plain = strip_length(form)
+    return list(dict.fromkeys([plain, with_grave(plain)]))
+
+
+# Words that open a sentence or a speech often enough for their capitalized spellings to
+# pay for their labels: the article, pronouns, particles, conjunctions, prepositions
+CAPITALIZED_POS = {"pron", "det", "conj", "particle", "prep", "adv", "intj", "num"}
+
+
+def capitalizes(pos, headword):
+    """Whether a spelling also gets its capitalized form: every headword, and every form
+    of a word in CAPITALIZED_POS. Capitalizing every form doubled the labels for 0.8% of
+    corpus tokens (roadmap, Stage 9)."""
+    return headword or pos in CAPITALIZED_POS
 
 
 def implied_forms(forms, known):
     return []
 
 
-GRAVE, ACUTE, CIRCUMFLEX = "\u0300", "\u0301", "\u0342"
 # Elision marks: the modifier apostrophe Perseus prints, the quotation mark, the koronis
 ELISION_MARKS = "\u02bc\u2019'\u1fbd"
 # Before a rough breathing an elided word's last consonant is aspirated: καθʼ for κατά
@@ -104,6 +134,7 @@ ANCIENT_GREEK = Language(
     name="Ancient Greek",
     index_name="Greek",
     lookup_spellings=lookup_spellings,
+    capitalizes=capitalizes,
     # Accents and breathings belong to the spelling (ὅς, ὡς and ὥς are three words)
     letters=strip_length,
     alternative_tags=frozenset({"alternative"}),

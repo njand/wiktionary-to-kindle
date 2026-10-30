@@ -1,0 +1,46 @@
+# Words that must open an entry in the built Ancient Greek dictionary.
+# Checked by scripts/check_lookups.py with `kindling-cli lookup`.
+# Prefix with `xfail:` for a known gap that should not fail the build yet.
+# A Kindle folds no Greek letter, so each spelling below is a label of its own.
+
+# Lemmas, as page titles spell them
+λόγος
+θεός
+καί
+λύω
+ἀγαθός
+εἰμί
+
+# Graves for a final acute, as texts print them before another word
+καὶ
+καλὸς
+ἀγαθὸν
+αὐτὸν
+
+# Table forms Wiktionary writes with length marks
+ἀπεκρίθη
+εἶπαν
+αἰώνιον
+χώραν
+
+# Capitals: every headword, and every form of a closed-class word
+Λόγος
+Καί
+Καὶ
+Ταῦτα
+Οὐκ
+
+# Elided forms Wiktionary has pages for (U+02BC, as Perseus prints them)
+δʼ
+ἀλλʼ
+
+# Polytonic letters
+ᾄδω
+ῥήτωρ
+ᾠδή
+Ἀχιλλεύς
+
+# Known gaps: a capitalized noun form, an enclitic's second accent, Ionic forms
+xfail: Ἄνδρα
+xfail: ἄνθρωπός
+xfail: τούτοισι

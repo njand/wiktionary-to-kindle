@@ -34,7 +34,7 @@ The first build downloads a large file and takes a while. Later builds reuse the
 
 | Option | Description |
 | --- | --- |
-| `--lang <code>` | Wiktionary language code to build: `la` (default) or `grc`, which is not usable yet. |
+| `--lang <code>` | Wiktionary language code to build: `la` (default) or `grc` (Ancient Greek, in development: see ROADMAP.md). |
 | `--input <path>` | Build from a local `.jsonl` file instead of downloading. |
 | `--no-download` | Use the file already in `downloads/` instead of downloading a new one. |
 | `--resort` | Sort the data again even if a cached sorted file is up to date. |

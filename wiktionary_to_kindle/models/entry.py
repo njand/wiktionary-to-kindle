@@ -3,6 +3,7 @@ import unicodedata
 
 from ..merge.related import MERGED_KEY, related_lines
 from ..utils import (
+    capitalized,
     form_of_root,
     kindle_fold,
     remove_breves,
@@ -212,10 +213,12 @@ class Entry:
         are added; see Language.lookup_spellings for the spellings that are.
         """
         all_forms = set()
-        for form in [header.head_word for header in self.headers] + list(
-            self.inflected_forms.keys()
-        ):
-            all_forms.update(self.language.lookup_spellings(form))
+        headwords = [header.head_word for header in self.headers]
+        for form in headwords + list(self.inflected_forms.keys()):
+            spellings = self.language.lookup_spellings(form)
+            if self.language.capitalizes(self.pos, form in headwords):
+                spellings += [capitalized(spelling) for spelling in spellings]
+            all_forms.update(spellings)
         # A label of punctuation only (the Tironian et, ⁊) weighs nothing: no tap reaches it.
         # A symbol weighs nothing either, so "♃vis" (Iovis written with Jupiter's sign)
         # would be reached by "vis"; such forms are left out.

@@ -137,6 +137,8 @@ LATIN = Language(
     name="Latin",
     index_name="Latin",
     lookup_spellings=lookup_spellings,
+    # The device folds case in Latin letters
+    capitalizes=lambda pos, headword: False,
     # Page titles have no macrons (iuro for iūrō), and some targets other ones (acontīzō)
     letters=normalize,
     alternative_tags=frozenset({"alternative", "Medieval-Latin"}),

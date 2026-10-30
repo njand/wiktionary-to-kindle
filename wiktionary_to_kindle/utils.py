@@ -76,6 +76,12 @@ def _kindle_weighs_nothing(char, code):
     )
 
 
+def capitalized(word: str) -> str:
+    """word with its first letter a capital, accents and breathing kept (ἄνδρα → Ἄνδρα).
+    Titlecase, so an iota subscript stays one letter (ᾠδή → ᾨδή)."""
+    return word[:1].title() + word[1:]
+
+
 def remove_breves(text: str) -> str:
     """Remove breve diacritics from characters in a given string."""
     normalized = unicodedata.normalize("NFD", text)

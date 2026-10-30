@@ -217,22 +217,38 @@ Greek smoke build (same dump): the `grc` filter keeps 69,171 lines (395 MB). `--
 - [ ] **Device test book**: `scripts/make_device_test.py --lang grc` (the script now takes any language, and a `ύ`-style escape in a word list stands for that character) with `tests/device_words_grc.tsv`, 32 words: frequent words, capitals, grave, enclitic and movable-nu accents, oxia and decomposed encodings, four elision marks, length marks, breathings and iota subscripts (do they render?), a final σ. kindling predicts a miss for every capital, grave, oxia, decomposed accent, the koronis and the final σ, and δέ for `δʼ` and `δ’`. Built locally into `outputs/device-test-grc/`, beside the dictionary; to check on a Kindle.
 - [ ] Still to check on the device: whether the selection takes in an elision mark at all, and which dictionary language (`grc` or `el`) Settings offers for a book declared `grc` (needs a second build declared `el`).
 
-## Stage 9: Ancient Greek — lookups
+## Stage 9: Ancient Greek — lookups — done, device check pending
 
 The device folds nothing in Greek, so each kind of spelling a text prints becomes a label kind. Each is measured as coverage gained per label added; a kind that does not pay is dropped or limited to corpus-attested forms (Lemma's approach).
 
-- [ ] **Without length marks.** Every headword and form gets its spelling without macrons and breves (`λῡ́ουσῐν` → `λύουσιν`): precomposed `ᾱ ῑ ῡ ᾰ ῐ ῠ` lose the mark, combining U+0304 and U+0306 are dropped, and the rest is recomposed to NFC. This is the spelling texts print; the marked one stays only as the displayed headword.
-- [ ] **Capitalized.** The first letter of every headword and form capitalized, with the breathing and accent moved onto the capital (`ἄνδρα` → `Ἄνδρα`). Editions capitalize paragraph and speech openings and proper names.
-- [ ] **Grave.** A form with an acute on the last syllable gets the grave spelling (`καλός` → `καλὸς`, `ἀγαθόν` → `ἀγαθὸν`), which a text prints before another word.
-- [ ] **Enclitics.** Before an enclitic, a proparoxytone or properispomenon form gains an acute on its last syllable (`ἄνθρωπός τις`, `δῶρόν τι`), and the enclitics appear with or without an accent (`ἐστι`, `ἐστί`, `ἐστὶ`, `ἔστι`; `τις`, `τὶς`). Add the enclitics' spellings; add the extra-accent spellings only if the corpus shows they pay.
-- [ ] **Movable nu.** Forms in -σι(ν), -ε(ν) and `ἐστί(ν)` get the spelling with or without ν that the table lacks.
-- [ ] **Elision and crasis.** Elided forms (`ἀλλ’`, `δ’`, `ἐπ’`, `κατ’`) are indexed where Wiktionary has a page, plus those the corpus attests; the elision mark is the one the device test shows a tap ignores. Crasis (`κἀγώ`, `τοὔνομα`) only where Wiktionary has a page.
-- [ ] **Participles.** Wiktionary lists only their nominatives; generate the declension, as Stage 3 did for Latin (`-ων -οντος`, `-ουσα -ούσης`; `-μενος -η -ον`; `-σᾱς -σαντος`; `-θείς -θέντος`; `-ώς -ότος`, `-υῖα`), with the accent kept where the nominative has it as far as the ending allows. Tagged `generated`, skipped where Wiktionary has a page. Comparatives and superlatives the same way, from the forms the lemma tags.
-- [ ] **Dialects.** Read the `table-tags` row heading each table, so a form keeps its dialect (Epic, Ionic, Doric, Aeolic, Koine); index all of them.
-- [ ] **Popup order.** The estimate works as in Latin. Accents count, so entries tie only on the same accented spelling, mostly forms shared between lemmas; the likeliest gets the plain label, the rest soft hyphens by rank (`shared_labels.py`).
-- [ ] **Label budget.** Latin's baseline had 2.99M labels in a 98 MB `.mobi`; the length-free, capitalized and grave spellings could triple Greek's. Measure build time, size and the 65,535-record limit after each kind; if the budget is exceeded, index the costly kinds only for corpus-attested forms.
-- [ ] **Book preparation, first use.** If the device test shows oxia or decomposed accents miss and the corpus shows such editions are common, `prepare-book` normalizes the text instead of doubling labels: NFC with oxia as tonos, one elision mark, lunate sigma `ϲ` as `σ`/`ς`. Otherwise this waits for Turkish.
-- Done when: every word in `tests/lookup_words_grc.txt` opens, kindling's lookup agrees on the most frequent corpus words, and the remaining misses are listed by cause.
+Measured kind by kind on the full dump and `corpus/grc.tsv` (72,830 tokens), each build adding one kind to the last (log: `outputs/measure/grc-spelling-kinds.log`):
+
+| Spellings | Labels | `.mobi` | Build | Tokens that open |
+| --- | ---: | ---: | ---: | ---: |
+| Stage 8 baseline (as Wiktionary spells them) | 1,100,786 | 39.9 MB | | 61.9% |
+| without length marks | 1,044,916 | 37.6 MB | 69 s | 68.3% |
+| + movable nu | 1,191,760 | 43.2 MB | 78 s | 68.3% |
+| + grave for a final acute | 1,294,733 | 45.9 MB | 84 s | 91.2% |
+| + capitals, every form | 2,522,527 | 85.2 MB | 126 s | 92.0% |
+| + an enclitic's second accent | 5,248,043 | 178.8 MB | 248 s | 92.8% |
+| **kept: no length marks, grave, capitals for headwords and closed-class words** | **1,172,137** | **41.0 MB** | **74 s** | **91.7%** |
+
+- [x] **Without length marks.** `grc.lookup_spellings` labels every headword and form without macrons and breves (`λῡ́ουσῐν` → `λύουσιν`); the marked spelling is no label, since no text prints it. +6.4 points.
+- [x] **Grave.** A form with an acute on its last syllable also gets the grave (`καλός` → `καλὸς`, `καί` → `καὶ`): +22.9 points for 8% more labels, the best kind by far.
+- [x] **Capitals, for some entries.** Capitalizing every form doubled the labels for 0.8 points. `Language.capitalizes(pos, headword)` now decides: every headword, and every form of a pronoun, article, particle, conjunction, preposition, adverb, interjection or numeral (`Καὶ`, `Ὁ`, `Οὐκ`, `Ταῦτα`), which were most of the capitalized misses. 6% more labels; capitalized misses fall from 551 tokens to 216 (`Κύριε`, `Ἴδε`, `Λέγει`: forms of open-class words). Latin never capitalizes: the device folds its case. `utils.capitalized` uses titlecase, so an iota subscript stays one letter (`ᾨδή`).
+- [x] **Movable nu: dropped.** The spelling with or without ν adds 14% labels and no tokens: the tables already have the spelling texts use, or the form has a page.
+- [x] **An enclitic's second accent: dropped.** `ἄνθρωπός τις` spellings double the labels again for 0.8 points (616 tokens, mostly pronouns: `ταῦτά`, `οὗτός`, `τοῦτό`). Limiting them to closed-class words, like capitals, is the next thing to try; the rule (count syllables, diphthongs as one; an acute on the antepenult or a circumflex on the penult gains an acute on the last) was written for the measurement and not kept.
+- [x] **Elision and crasis.** Nothing to add: Wiktionary has pages for the common elided forms, Perseus's U+02BC weighs nothing, so `δʼ` and `ἀλλʼ` open δέ and ἀλλά already. 65 elided tokens still miss (`εἴτʼ`, `πράγματʼ`). Crasis stays at what Wiktionary has.
+- [ ] **Participles: deferred.** About 1,160 missed tokens (1.6%) look like participles, but many are Ionic (`ἀπικόμενοι`, `καλεομένης`) or verbs whose table is missing; a generated declension of every table participle (with the accent moved by the ultima's length) would about double the labels for under a point.
+- [ ] **Dialects: deferred.** The `table-tags` rows are skipped; reading them changes no label, only what an entry could say about a form.
+- [x] **Popup order.** Nothing to change: a tap reaches only labels spelled the same, and `shared_labels.py` gives the likeliest entry the plain label and the rest soft hyphens by the estimate, which kindling lists in that order (`εἶ`: εἰμί, εἶμι, then the letter's name). `popup_order.rank_spellings` only ranks spellings that fold to ASCII, so it leaves Greek alone.
+- [x] **Label budget.** 1.17M labels and 41 MB, below Latin's 1.66M and 60 MB; the 300 most frequent corpus words agree with kindling's simulator, and no label is hidden.
+- [x] **Book preparation: not needed** for these editions: Perseus prints NFC with tonos, precomposed accents and an elision mark that weighs nothing. The device test will say whether oxia texts need it.
+- [x] Done: every word in `tests/lookup_words_grc.txt` opens (three known gaps marked `xfail`: a capitalized noun form, an enclitic's accent, an Ionic form), kindling's lookup agrees on the 300 most frequent corpus words, and the remaining misses are listed by cause.
+
+A full Latin build after this stage writes pages and an OPF identical to Stage 7's (capitals are never added for Latin).
+
+Remaining misses (8.3% of tokens): unknown 4,358 tokens, mostly Herodotus's Ionic forms (`τούτοισι`, `χρέωνται`, `ἀπίκοντο`; Herodotus opens 87.8%, the rest 93–95%), Koine words (`καθὼς`) and names; capitalized names 795; an enclitic's accent 616; capitalized open-class forms 216; elision 65. Measurements: `outputs/measure/stats-grc-stage9.json`, `coverage-grc-stage9.*`. The device test book is rebuilt against this dictionary (`outputs/device-test-grc/`).
 
 ## Stage 10: Ancient Greek — entries
 

@@ -5,7 +5,7 @@ import json
 import pytest
 
 from wiktionary_to_kindle.compiler import write_opf
-from wiktionary_to_kindle.languages import ANCIENT_GREEK, LANGUAGES, LATIN
+from wiktionary_to_kindle.languages import ANCIENT_GREEK, LANGUAGES, LATIN, grc
 from wiktionary_to_kindle.languages.grc import strip_length
 from wiktionary_to_kindle.merge.sort import merge_dump
 from wiktionary_to_kindle.models.entry import Entry
@@ -126,3 +126,38 @@ def test_front_page_and_package_name_the_language(tmp_path):
 )
 def test_greek_miss_variants(word, causes, variant):
     assert (causes, variant) in ANCIENT_GREEK.miss_variants(word)
+
+
+@pytest.mark.parametrize(
+    "word, graved",
+    [
+        ("καλός", "καλὸς"),
+        ("καί", "καὶ"),
+        ("αὐτόν", "αὐτὸν"),
+        ("λόγου", "λόγου"),  # the acute is not on the last syllable
+        ("θεοῖς", "θεοῖς"),  # a circumflex stays
+    ],
+)
+def test_with_grave(word, graved):
+    assert grc.with_grave(word) == graved
+
+
+def test_greek_lookup_spellings():
+    spellings = ANCIENT_GREEK.lookup_spellings("λῡ́ουσῐν")
+    assert spellings == ["λύουσιν"]  # no text prints the length marks
+    assert ANCIENT_GREEK.lookup_spellings("ᾰ̓γᾰθός") == ["ἀγαθός", "ἀγαθὸς"]
+
+
+def test_greek_capitals_for_headwords_and_closed_classes():
+    def labels(pos, word, forms):
+        entry = greek(lemma(word, pos, word, ["x"], [(f, ["plural"]) for f in forms]))
+        return Entry(entry, ANCIENT_GREEK).all_forms
+
+    noun = labels("noun", "λόγος", ["λόγοι"])
+    assert {"Λόγος", "λόγοι"} <= noun and "Λόγοι" not in noun
+    assert {"Καί", "Καὶ"} <= labels("conj", "καί", [])
+    assert "Ταῦτα" in labels("pron", "οὗτος", ["ταῦτα"])
+    assert not any(
+        w[0].isupper()
+        for w in Entry(lemma("amo", "verb", "amō", ["love"]), LATIN).all_forms
+    )

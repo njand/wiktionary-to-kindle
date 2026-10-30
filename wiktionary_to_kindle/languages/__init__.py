@@ -14,6 +14,9 @@ class Language:
     index_name: str  # the lookup index: idx:entry's name and DefaultLookupIndex
     # Every spelling of a form a tap should find (Entry.get_all_forms)
     lookup_spellings: Callable[[str], list[str]]
+    # Whether a form's spellings also get capitalized ones, by the entry's part of speech
+    # and whether the form is a headword; the device folds case only in Latin letters
+    capitalizes: Callable[[str | None, bool], bool]
     # The letters a form-of target is matched by when no headword is spelled like it
     # (merge.pointers.rekey_plain_roots)
     letters: Callable[[str], str]
