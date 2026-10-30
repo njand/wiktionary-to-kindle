@@ -27,9 +27,13 @@ elision	δ\u2019	elision with a right quotation mark, which weighs nothing
 elision	δ\u1fbd	elision with the koronis U+1FBD, which weighs as itself
 elision	ἀλλ\u02bc	elided ἀλλά
 length	λύω	the headword: its label is the page title, without length marks
-length	ἀπεκρίθη	a form with no page of its own, which Wiktionary writes with ῑ
+length	ἀπεκρίθη	a form with no page of its own, which Wiktionary writes with ῐ (short)
 length	εἶπαν	a form with no page of its own, written with a length mark
 length	αἰώνιον	a form with no page of its own, written with a length mark
+length	λῡ́ω	long vowel marked, as school editions print it (Wiktionary's order: macron, then accent)
+length	λύ\u0304ω	the same with the macron after the accented letter, as polytonic keyboards type it
+length	ῑ̓όν	long ι: only ἰός (arrow, poison)
+length	ἰόν	unmarked: ἰός, and forms of εἶμι and ἐγώ
 letters	ᾄδω	iota subscript with breathing and accent: does it render, in the book and popup?
 letters	ῥήτωρ	rough breathing on rho
 letters	ᾠδή	iota subscript on a capital-less omega

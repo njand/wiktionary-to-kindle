@@ -23,6 +23,12 @@
 αἰώνιον
 χώραν
 
+# The same, with long vowels marked, as school editions print them
+λῡ́ω
+ἀπεκρῑ́νατο
+χώρᾱν
+ῑ̓όν
+
 # Capitals: every headword, and every form of a closed-class word
 Λόγος
 Καί
