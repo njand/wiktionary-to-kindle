@@ -112,7 +112,9 @@ uv run python -m wiktionary_to_kindle.quality coverage-diff old-coverage.json co
 
 ## Releases
 
-A scheduled GitHub Actions workflow builds every language in its matrix (Latin, Ancient Greek and Turkish) every Sunday and publishes them in one pre-release, each with its `.mobi`, StarDict bundle, and statistics and coverage reports. The build fails if a language's coverage drops compared with the latest release. To publish an intentional drop, run the workflow manually with **Allow a coverage drop** checked.
+A scheduled GitHub Actions workflow builds every language in its matrix (Latin, Ancient Greek and Turkish) every Sunday afternoon (UTC, after Kaikki's weekly dump) and publishes them in one pre-release, each with its `.mobi`, StarDict bundle, and statistics and coverage reports. The build fails if a language's coverage drops compared with the latest release. To publish an intentional drop, run the workflow manually with **Allow a coverage drop** checked.
+
+The same run copies the `.mobi` and StarDict files to the `latest-build` pre-release, which it overwrites each week, so the README can link to each language's newest build at an address that doesn't change. The Latin `.mobi` link points at the release marked Latest instead.
 
 Each release's notes open with one table of its dictionaries (entries, how many corpus words open an entry, and the change since the latest release), written by `python -m wiktionary_to_kindle.quality notes`. Below it, folded away, are each language's index and coverage tables and its device checklist ([Latin](device-check-la.md), [Ancient Greek](device-check-grc.md), [Turkish](device-check-tr.md)). Turkish's notes also show how a book prepared with `prepare-book --decide rooted` reads. Once a build has been checked on a Kindle, it is marked as the latest release, and the next build compares its coverage against it. A language's first build has no coverage in the latest release to compare with, so its gate starts with the release after the first one marked as the latest.
 

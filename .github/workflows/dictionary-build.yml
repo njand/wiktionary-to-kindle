@@ -2,8 +2,10 @@ name: Build and Release Dictionaries
 
 on:
   schedule:
-    # Runs at 2:14 AM UTC every Sunday to bypass top-of-the-hour queue bottlenecks
-    - cron: '14 2 * * 0'
+    # Sundays at 14:14 UTC: Kaikki posts its weekly dump on Sunday morning (08:19 UTC on
+    # 2026-10-25), and GitHub starts scheduled runs hours late, so an earlier cron built
+    # from the week before's data. Off the hour to avoid the queue there.
+    - cron: '14 14 * * 0'
   workflow_dispatch: # Allows you to trigger the build manually from the GitHub UI
     inputs:
       allow_coverage_drop:
@@ -173,3 +175,21 @@ jobs:
             dictionaries/**/*-stardict.zip
             dictionaries/stats-*.json
             dictionaries/coverage-*.json
+
+      # The README links to this release's files, so each language's newest build has a
+      # download address that doesn't change from week to week
+      - name: Update the latest-build release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          shopt -s globstar
+          {
+            echo "The newest build of every dictionary, replaced each week. Dated releases keep each build; the one marked Latest has been checked on a Kindle."
+            echo
+            cat notes.md
+          } > latest-notes.md
+          if ! gh release view latest-build > /dev/null 2>&1; then
+            gh release create latest-build --prerelease --title "Latest build (in testing)" --notes-file latest-notes.md
+          fi
+          gh release upload latest-build --clobber dictionaries/**/*.mobi dictionaries/**/*-stardict.zip
+          gh release edit latest-build --notes-file latest-notes.md
