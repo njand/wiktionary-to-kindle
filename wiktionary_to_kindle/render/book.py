@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 
 from ..utils import TEMPLATES
+from .cover import dictionary_cover
 from .html_page import HTMLPage
 from .html_renderer import HTMLRenderer
 from .popup_order import rank_spellings, weigh
@@ -25,9 +26,10 @@ class BookWriter:
         )
 
         os.makedirs(files_dir, exist_ok=True)
-        for name in ("style.css", "cover.png"):
-            data = TEMPLATES.joinpath(name).read_bytes()
-            Path(files_dir, name).write_bytes(data)
+        Path(files_dir, "style.css").write_bytes(
+            TEMPLATES.joinpath("style.css").read_bytes()
+        )
+        Path(files_dir, "cover.png").write_bytes(dictionary_cover(language.name))
 
     def add_entry(self, entry):
         """Render entry, indexed by its headword and all its forms. Return False,

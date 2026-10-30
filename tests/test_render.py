@@ -1,6 +1,9 @@
 """Rendering of entries to Kindle XHTML."""
 
+import io
+
 import pytest
+from PIL import Image, ImageDraw
 
 from wiktionary_to_kindle.languages import LATIN
 from wiktionary_to_kindle.models.entry import Entry
@@ -11,6 +14,11 @@ from wiktionary_to_kindle.render.html_renderer import (
     format_etymology,
     keep_spaces,
 )
+from wiktionary_to_kindle.render.cover import (
+    dictionary_cover,
+    labelled_cover,
+    title_lines,
+)
 from wiktionary_to_kindle.render.shared_labels import mark, unmark
 from wiktionary_to_kindle.utils import TEMPLATES
 
@@ -19,10 +27,44 @@ from .test_sort_merge import lemma
 
 @pytest.mark.parametrize(
     "name",
-    ["style.css", "cover.png", "html_header.txt", "html_footer.txt", "opf_header.txt"],
+    [
+        "style.css",
+        "cover-art.png",
+        "DejaVuSerif.ttf",
+        "DejaVuSerif-LICENSE.txt",
+        "html_header.txt",
+        "html_footer.txt",
+        "opf_header.txt",
+    ],
 )
 def test_templates_ship_inside_the_package(name):
     assert TEMPLATES.joinpath(name).is_file()
+
+
+@pytest.mark.parametrize(
+    "cover", [dictionary_cover("Ancient Greek"), labelled_cover("Device test", ["x"])]
+)
+def test_covers_are_small_kindle_pngs(cover):
+    image = Image.open(io.BytesIO(cover))
+    assert image.format == "PNG" and image.size == (800, 1280)
+    assert len(cover) < 127 * 1024  # kindling warns about larger images
+
+
+def test_each_language_gets_its_own_cover():
+    assert dictionary_cover("Latin") != dictionary_cover("Turkish")
+
+
+@pytest.mark.parametrize(
+    "name, lines",
+    [
+        ("Latin", ["Latin-English"]),
+        ("Turkish", ["Turkish-English"]),
+        ("Ancient Greek", ["Ancient Greek-", "English"]),  # never "Ancient" / "Greek-..."
+    ],
+)
+def test_long_titles_break_after_the_language_name(name, lines):
+    draw = ImageDraw.Draw(Image.new("RGB", (1, 1)))
+    assert [text for text, _ in title_lines(draw, name, 100)] == lines
 
 
 def render(json_entry, descendant_langs=None):
