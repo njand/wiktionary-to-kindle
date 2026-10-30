@@ -9,15 +9,17 @@ Update this file as stages finish. Stages 0–6 are Latin; Stage 7 makes the bui
 | --- | --- |
 | Compiler | **kindling only.** Drop Amazon kindlegen support, including the 200-form entry splitting (its 255-form limit is kindlegen-only; kindling has no per-entry limit). |
 | Homographs (latus / lātus) | **Keep entries separate.** A tap on a macronized word ("lātum") should open only the matching entry. Where a choice is unavoidable, prefer something the reader can swipe or jump between over one long merged entry where the boundary between entries is easy to miss. See Stage 2. |
-| Enclitics (-que, -ne, -ve) | **Not indexed.** Enclitics will be pre-segmented in the e-books with an invisible space instead. Verify on a device first (Stage 0). |
+| Enclitics (-que, -ne, -ve) | **Not indexed.** Enclitics are pre-segmented in the e-books with a hair space (U+200A) instead: the only separator a long press stops at (device test, 2026-10-29; Stage 0). |
 | Examples pipeline | **Remove it.** The CLI never enables `link_examples`. |
 | Disambiguation cards (2026-10-28) | **Drop them.** The device popup lists every entry a tap reaches (see Stage 6, found on the device), and links do not work in the popup, so a card only added a step. Each entry keeps all its own spellings. |
 | Next languages (2026-10-29) | **Ancient Greek, then Turkish.** Greek is closest to Latin: an inflected classical language whose Wiktionary tables list nearly every form, so most of the Latin pipeline carries over. Turkish needs morphology the tables cannot list (Stage 12). |
-| Preparing books (2026-10-29) | **Allowed.** Where the dictionary alone cannot reach a word, a `prepare-book` command may normalize or segment the e-book (Unicode form and elision marks for Greek, an invisible break between stem and suffixes for Turkish, enclitics for Latin). The dictionary comes first: a book change is only for what labels cannot do at a reasonable size. |
+| Preparing books (2026-10-29) | **Allowed.** Where the dictionary alone cannot reach a word, a `prepare-book` command may normalize or segment the e-book (Unicode form and elision marks for Greek, a hair space between stem and suffixes for Turkish and before Latin enclitics). The dictionary comes first: a book change is only for what labels cannot do at a reasonable size. |
 
 ## How Kindle lookup works (what the design must respect)
 
 Amazon documents almost none of this. Sources: the [kindling README](https://github.com/ciscoriordan/kindling) (measured on Kindle 4, Paperwhite 4 and Paperwhite 5), [KDP: Creating Dictionaries](https://kdp.amazon.com/en_US/help/topic/G2HXJS944GL88DNV).
+
+- **Word selection (device test, 2026-10-29): a long press stops at a hair space (U+200A), and at no zero-width or other thin space tried.** `virum` + U+200A + `que` selects `virum` alone, and a tap on `que` selects `que`. With a zero-width space (U+200B) or the other thin spaces tested in its place, the selection runs on through the separator; those characters also weigh nothing in matching, so the tap is looked up as `virumque` and misses. A hair space is a real space character (Unicode Zs): narrow but not invisible, and a place where a line may break.
 
 - A tapped word reaches every label with the same weights. For Latin letters, case and accents (macrons included) do not count; ß/æ/œ count as ss/ae/oe; punctuation weighs nothing; a separate combining mark (the breve in ā̆) counts as itself. `kindle_fold()` in `utils.py` approximates this.
 - Of the labels reached, kindling predicts one opens: the one spelled exactly like the tapped word; else the first equal to it ignoring case (accents still count); else, apart from some prefix rules, the first in stored index order. Nothing matches by prefix.
@@ -36,7 +38,7 @@ Amazon documents almost none of this. Sources: the [kindling README](https://git
 
 Still to do:
 - [x] **Local baseline** (2026-10-28, dump of 2026-10-25, kindling v0.45.6). Stage 0 (`2123d0a`): 80,230 entries, 2,988,049 labels, 310,573 tied folded keys, 98.0 MB `.mobi`, built in 388 s. Corpus: 83.6% of tokens open something, 42.0% by index order. Every word in the lookup list opens. Measurements are kept outside the repo, in `outputs/measure/` (gitignored).
-- [ ] **Check enclitic pre-segmentation on a device.** Insert U+200B between a word and its enclitic in a test book and confirm the Kindle selects only the word when tapped. If the reader does not treat it as a word break, the invisible character weighs nothing and the tap becomes `virumque` again (a miss).
+- [x] **Check enclitic pre-segmentation on a device** (2026-10-29). Only a hair space (U+200A) between a word and its enclitic makes the Kindle select the word alone; U+200B and the other zero-width and thin spaces tried do not, and the tap becomes `virumque` again (a miss). Books are pre-segmented with U+200A. The test book's enclitic section (`tests/device_words_la.tsv`, `{zwsp}`) still inserts U+200B.
 - [x] **Check whether the Kindle popup can show several entries** (the swipe between results). It always does: every entry a tap reaches is listed (Stage 6 device test). Cards were dropped for it.
 
 ## Stage 1: Quick correctness fixes (each with a test) — done
@@ -277,13 +279,14 @@ Measured (same dump; `SORT_VERSION` 10): Greek has 21,383 entries (unchanged), 9
 From the 2026-10-29 plan; to be detailed after Greek.
 
 - What the device does: lookup matches the whole selected word, with no stemming; `ı`, `İ`, `I` and `i` weigh the same, as do ş/s, ğ/g, ç/c, ö/o, ü/u, so no case variants are needed and `popup_order.py` handles the extra ties. A noun's Wiktionary table gives about 100 forms (102 for `ev`, case × number × possessive), but texts add the copula (`evdeydi`), `-ki`, `-le` and derivations, which no table lists.
-- [ ] **Device test (shared with Stage 0's enclitic check):** does a long press stop at U+200B (zero-width space), U+2060 (word joiner), U+200A (hair space) or an apostrophe (`Türkiye'nin`)? Does `white-space: nowrap` keep a word with a zero-width space on one line? Everything in book segmentation depends on this.
+- [x] **Which separator a long press stops at** (device test, 2026-10-29, shared with Stage 0): only the hair space, U+200A. Zero-width spaces and the other thin spaces tried do not split the selection. Book segmentation uses U+200A.
+- [ ] **Still to check on the device:** whether a long press stops at an apostrophe (`Türkiye'nin`); how visible the hair space's gap is inside a word in the default fonts; and line breaks, since a hair space is a break opportunity: whether `white-space: nowrap` around a split word keeps it on one line.
 - [ ] **Baseline from Wiktionary forms**, measuring labels against the budget; stem variants as labels of their lemma (`kitab` → kitap, `ağz` → ağız, `hakk` → hak, `gid` → git), since they are what a split leaves.
 - [ ] **Corpus-attested forms**, lemmatized at build time by an existing analyzer (`zeyrek`, or Zemberek; licences to check), up to the label budget.
-- [ ] **`prepare-book` segmentation:** an invisible break between the stem and the suffix chain, only in words the dictionary cannot reach, after the longest stem the dictionary has (`gözlükçü​ler`), so a split never leaves a stem that cannot be looked up. Suffix-chain entries (`-lerinizden`: *pl. + your (pl.) + abl.*) for a tap on the suffixes. Alternative: a personal dictionary with the book's own analyzed forms (`--forms-from`), which leaves the text alone.
+- [ ] **`prepare-book` segmentation:** a hair space (U+200A) between the stem and the suffix chain, only in words the dictionary cannot reach, after the longest stem the dictionary has (`gözlükçü` + U+200A + `ler`), so a split never leaves a stem that cannot be looked up. Suffix-chain entries (`-lerinizden`: *pl. + your (pl.) + abl.*) for a tap on the suffixes. Alternative: a personal dictionary with the book's own analyzed forms (`--forms-from`), which leaves the text alone.
 - [ ] Releases as in Stage 11.
 
 ## Later
 
-- Latin enclitics through `prepare-book` once the device test settles the separator.
+- Latin enclitics through `prepare-book`, with a hair space (U+200A) before `-que`, `-ne` and `-ve` (the device test settled the separator).
 - Further inflected languages (Finnish, Hungarian) on the Turkish machinery.
