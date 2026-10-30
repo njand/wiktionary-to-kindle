@@ -1,7 +1,7 @@
 # Roadmap
 
 Development plan for the Latin dictionary and the languages after it (Ancient Greek, then Turkish), with the decisions and research it rests on.
-Update this file as stages finish. Stages 0–6 are Latin; Stage 7 makes the build language-neutral; Stages 8–11 are Ancient Greek; Stages 12–17 are Turkish.
+Update this file as stages finish. Stages 0–6 are Latin; Stage 7 makes the build language-neutral; Stages 8–11 are Ancient Greek; Stages 12–19 are Turkish.
 
 ## Decisions (2026-10-27)
 
@@ -12,8 +12,9 @@ Update this file as stages finish. Stages 0–6 are Latin; Stage 7 makes the bui
 | Enclitics (-que, -ne, -ve) | **Not indexed.** Enclitics are pre-segmented in the e-books with a hair space (U+200A) instead: the only separator a long press stops at (device test, 2026-10-29; Stage 0). |
 | Examples pipeline | **Remove it.** The CLI never enables `link_examples`. |
 | Disambiguation cards (2026-10-28) | **Drop them.** The device popup lists every entry a tap reaches (see Stage 6, found on the device), and links do not work in the popup, so a card only added a step. Each entry keeps all its own spellings. |
-| Next languages (2026-10-29) | **Ancient Greek, then Turkish.** Greek is closest to Latin: an inflected classical language whose Wiktionary tables list nearly every form, so most of the Latin pipeline carries over. Turkish needs morphology the tables cannot list (Stages 12–17). |
+| Next languages (2026-10-29) | **Ancient Greek, then Turkish.** Greek is closest to Latin: an inflected classical language whose Wiktionary tables list nearly every form, so most of the Latin pipeline carries over. Turkish needs morphology the tables cannot list (Stages 12–19). |
 | Preparing books (2026-10-29) | **Allowed.** Where the dictionary alone cannot reach a word, a `prepare-book` command may normalize or segment the e-book (Unicode form and elision marks for Greek, a hair space between stem and suffixes for Turkish and before Latin enclitics). The dictionary comes first: a book change is only for what labels cannot do at a reasonable size. |
+| Turkish inflection (2026-10-29) | **Segment the book; stop growing the dictionary.** Storing every inflected form cannot keep up with Turkish suffix chains (the three generated layers of Stage 13 cost 4% more labels each for 0.5–1.6 points). Instead `prepare-book` inserts a hair space (U+200A) between a word's stem and its suffix chain, so a tap opens the stem's entry and the chain's own entry. Only words the dictionary cannot reach whole, or reaches as an ambiguous homograph, are split. The split point is chosen by a language model that reads the sentence (not by the longest stem the dictionary has), among the splits whose stem opens an entry. The dictionary keeps Wiktionary's forms and the Stage 13 layers, and gains stem variants and suffix-chain entries (Stages 14–19). Books with DRM cannot be prepared; for them the dictionary alone serves. |
 
 ## How Kindle lookup works (what the design must respect)
 
@@ -274,7 +275,7 @@ Measured (same dump; `SORT_VERSION` 10): Greek has 21,383 entries (unchanged), 9
 - [x] StarDict needed nothing: `stardict.unaccented` drops every combining mark but abbreviation signs, so each Greek label gets a synonym without accents, breathings or iota subscript (`λογος`, `και`, `απεκριθη`, `ωδη` → ᾠδή and ἀοιδός; `ειμι` → εἰμί and εἶμι). The bundle (`grc-wiktionary-stardict.zip`, 8.3 MB) holds 21,383 words and 1,901,816 synonyms, titled "Ancient Greek-English Dictionary (grc-en)".
 - [x] README: an "Ancient Greek (in testing)" section (pre-releases only until a device check; what a lookup does; coverage), the Greek `.mobi` and StarDict files in the install steps, and that the language Settings lists it under is still being checked. `prepare-book` was not needed (Stage 9). The developer guide's Releases section names both checklists.
 
-## How Kindle lookup works for Turkish (what Stages 12–17 must respect)
+## How Kindle lookup works for Turkish (what Stages 12–19 must respect)
 
 From kindling's README (checked 2026-10-29) and the Stage 12 build; device checks are listed under each stage.
 
@@ -295,47 +296,74 @@ From kindling's README (checked 2026-10-29) and the Stage 12 build; device check
 - [x] **Baseline** (kindling v0.45.6): 27,362 entries, 2,370,771 labels, 2,223,715 folded keys, 53,530 tied keys, at most 3,628 labels per entry, a **61.2 MB** `.mobi` (Latin 60.2 MB, Greek 39.6 MB), built in 134 s; kindling's checks pass. Coverage: **84.6%** of tokens open something (BOUN 81.8–87.1%, the stories 84.4–87.6%), 0.5% are left to index order, and kindling's simulator agrees on the 300 most frequent words. Misses: a stem the dictionary has + 1–2 letters, 6,456 tokens (6.2% of all: `yoktu`, `vardır`, `olması`); + 3–4 letters, 4,515 (`yoktur`, `kendisine`, `diyerek`); + 5 or more, 2,395 (`kendilerini`, `bekleniyor`); unknown capitalized, 1,409 (names: `Magda`, `Füsun`); a name before an apostrophe, 530 (`Ali'yi`, `AB'nin`); unknown, 710. Measurements and the scripts behind them: `outputs/measure/tr-stage12a/`.
 - [x] **Opens the right entry?** BOUN gives each token a lemma. Of its 72,415 word tokens that are not names, numbers or punctuation, 81.1% reach an entry for BOUN's lemma (73.3% list it first), 5.1% reach only other entries, and 13.8% miss. Most of the 5.1% are derived words that BOUN lemmatizes to their root and Wiktionary has as words of their own (`olarak` → ol, `bildirdi` → bil); the wrong ones are homographs a suffix makes (`vardı` → varmak "arrive", not var "existent"; `ise` → is; `alıp` → the name Alıp) and the apostrophe's folding (`Bey'in` → beyin "brain").
 - [x] **What Stage 13 can gain:** the 88,499 dropped converb and copula forms alone open 1,666 more tokens (+1.6 points: `yoktu`, `değildi`, `gidip`, `ederek`, `görünce`) for under 4% more labels.
-- [ ] **Device test book**: `scripts/make_device_test.py --lang tr` with `tests/device_words_tr.tsv`: dotless and dotted i in both cases (`KIZI`, `İyi`), a name with suffixes after `'` and `’`, a homograph pair (`yüz`), a copula form, and a word split with a hair space (`gözlükçü` + U+200A + `ler`), with and without `white-space: nowrap`.
-- [ ] Still to check on the device: whether a long press stops at an apostrophe (`Türkiye'nin`), how visible a hair space is inside a word in the default fonts, and whether `nowrap` keeps a split word on one line.
+- Device checks (the test book, the hair space inside a word, the apostrophe) moved to Stage 14.
 
-## Stage 13: Turkish — lookups from Wiktionary
+## Stage 13: Turkish — lookups from Wiktionary — done
 
-Each kind of form is measured as coverage gained per label added, as in Stage 9.
+Each kind of form was measured as coverage gained per label added, as in Stage 9. Closed on 2026-10-29 by the segmentation decision: no further generated forms. The three layers below stay, since a word they reach needs no split and they still help books that cannot be prepared (store books); revisit them only if the dictionary's size becomes a problem.
 
 - [x] **Converbs and copula forms.** Forms Kaikki tags `error-unrecognized-form` are now left to `Language.skips_form` (`languages.unrecognized`): Latin and Greek skip them as before, Turkish keeps them, except forms with a character no word has (`Çerkez?ik`). They are converbs (`gidip`, `giderken`, `kullanarak`, `-cesine`, `-esiye`) and every adjective's copula forms (`güzeldim`, `sarıdır`). Measured: labels 2,370,771 → 2,460,321 (+3.8%), `.mobi` 61.2 → 63.3 MB, coverage **84.6% → 86.2%** (+0.9 to +2.2 points per source; `yoktu`, `değildi`, `gidip` now open), BOUN tokens reaching their lemma 81.1% → 83.0% and only other entries 5.1% → 4.9%; kindling agrees on the 300 most frequent words. A Greek build after the change has the same 1,181,278 labels. Measurements: `outputs/measure/tr-stage13-converbs/`.
-- [x] **Copula on nouns and pronouns.** `languages/tr_forms.py` generates the copula by vowel harmony (y after a vowel, t after a voiceless consonant; a loanword's nominative takes the harmony of its own dative, `saatti`). Estimated first, kind by kind, as missed corpus tokens a kind's forms would open per label (`outputs/measure/tr-stage13-copula/copula_gain.py`): every kind together opened 0.7% of tokens for 3.9M labels. Kept: past `-(y)DI` and present `-DIr` on nominatives without a possessor (`kadındı`, `yıllardır`) or with a third-person one (`oğluydu`, `konusudur`), and on the headword of an adjective, adverb, postposition or determiner that has no case forms (`vardır`, `gibiydi`, `budur`; adjectives with a table list their copula forms already). Dropped: `-(y)mIş`, `-(y)sA`, `-(y)ken`, the personal endings, the copula on other cases (`evdeydi`: under 0.05% for 150K labels) and on other possessors. `implied_forms` now also gets the entry (`enrich_forms(..., entry)`; `SORT_VERSION` 11). Measured: labels 2,460,321 → 2,554,106 (+3.8%), `.mobi` 63.3 → 65.3 MB, tied keys +8%, coverage **86.2% → 86.7%** (+0.2 to +1.0 points per source), BOUN tokens reaching their lemma 83.0% → 83.6%, only other entries 4.9% → 4.8%; kindling agrees on the 300 most frequent words, and Greek labels are unchanged. Half the converbs' gain per label: whether to keep it depends on the label budget below. Measurements: `outputs/measure/tr-stage13-copula/`.
-- [x] **`-(y)lA` and `-ki`** (2026-10-29: keep growing, no hard budget yet). Estimated the same way (`outputs/measure/tr-stage13-kile/kile_gain.py`): `-(y)lA` on bare nominatives, singular and plural, opened 0.7% for 26K labels (`sesle`, `onlarla`) and on third-person possessives 0.4% for 34K (`nedeniyle`, `eliyle`); `-ki` on bare and third-person locatives 0.5% for 60K (`dünyadaki`, `arasındaki`), and on the headword of an adverb or postposition without case forms (`sonraki`, `oradaki`) 0.15% for 1K. Dropped: other possessors (`arkadaşımla`, `evimdeki`: 0.3% for 136K, mostly words the third person's spelling already reaches) and `-ki` on a genitive (`bizimki`: 5 tokens for 25K labels). `tr_forms` generates them with the copula, on the same bases. Measured: labels 2,554,106 → 2,647,925 (+3.7%), `.mobi` 65.3 → 67.3 MB, coverage **86.7% → 88.3%** (+1.1 to +2.0 points per source), BOUN tokens reaching their lemma 83.6% → 85.3%, only other entries 4.8%; kindling agrees on the 300 most frequent words. `SORT_VERSION` 12.
-- [ ] **What still misses** (11.7% of tokens): names (`Boris`, `Naciye`, `Magda`), verbal nouns with a possessor (`olması`, `olmadığını`), the reflexive `kendi` (`kendini`, `kendisine`, `kendilerini`), postpositional nouns (`ardından`, `karşısına`, `sonrasında`), and verb forms with suffixes the tables omit (`olabilir`, `durmadan`, `bekleniyor`).
-- [ ] **Stem variants** as labels of their lemma (`kitab` → kitap, `ağz` → ağız, `hakk` → hak, `gid` → git): what a book split leaves, so Stage 15 needs them more than taps do.
-- [ ] **Names with an apostrophe.** A name's table spells its forms with the apostrophe, which weighs nothing, so `Ali'nin` reaches `alının`. Measure how often a name's suffixed form folds like a common word, and whether the popup should list the name first for an apostrophe form (`popup_order.py`).
-- [ ] **Homographs a suffix makes** (`vardı`: var with the copula, or varmak's past): the popup lists both; check the estimate orders them sensibly.
-- [ ] **Label budget**: agree a ceiling (Latin is 1.66M labels and 60 MB) before adding generated forms.
-- [ ] Lookup list `tests/lookup_words_tr.txt` via `scripts/check_lookups.py`.
+- [x] **Copula on nouns and pronouns.** `languages/tr_forms.py` generates the copula by vowel harmony (y after a vowel, t after a voiceless consonant; a loanword's nominative takes the harmony of its own dative, `saatti`). Estimated first, kind by kind, as missed corpus tokens a kind's forms would open per label (`outputs/measure/tr-stage13-copula/copula_gain.py`): every kind together opened 0.7% of tokens for 3.9M labels. Kept: past `-(y)DI` and present `-DIr` on nominatives without a possessor (`kadındı`, `yıllardır`) or with a third-person one (`oğluydu`, `konusudur`), and on the headword of an adjective, adverb, postposition or determiner that has no case forms (`vardır`, `gibiydi`, `budur`; adjectives with a table list their copula forms already). Dropped: `-(y)mIş`, `-(y)sA`, `-(y)ken`, the personal endings, the copula on other cases (`evdeydi`: under 0.05% for 150K labels) and on other possessors. `implied_forms` now also gets the entry (`enrich_forms(..., entry)`; `SORT_VERSION` 11). Measured: labels 2,460,321 → 2,554,106 (+3.8%), `.mobi` 63.3 → 65.3 MB, tied keys +8%, coverage **86.2% → 86.7%** (+0.2 to +1.0 points per source), BOUN tokens reaching their lemma 83.0% → 83.6%, only other entries 4.9% → 4.8%; kindling agrees on the 300 most frequent words, and Greek labels are unchanged. Measurements: `outputs/measure/tr-stage13-copula/`.
+- [x] **`-(y)lA` and `-ki`.** Estimated the same way (`outputs/measure/tr-stage13-kile/kile_gain.py`): `-(y)lA` on bare nominatives, singular and plural, opened 0.7% for 26K labels (`sesle`, `onlarla`) and on third-person possessives 0.4% for 34K (`nedeniyle`, `eliyle`); `-ki` on bare and third-person locatives 0.5% for 60K (`dünyadaki`, `arasındaki`), and on the headword of an adverb or postposition without case forms (`sonraki`, `oradaki`) 0.15% for 1K. Dropped: other possessors (`arkadaşımla`, `evimdeki`: 0.3% for 136K, mostly words the third person's spelling already reaches) and `-ki` on a genitive (`bizimki`: 5 tokens for 25K labels). `tr_forms` generates them with the copula, on the same bases. Measured: labels 2,554,106 → 2,647,925 (+3.7%), `.mobi` 65.3 → 67.3 MB, coverage **86.7% → 88.3%** (+1.1 to +2.0 points per source), BOUN tokens reaching their lemma 83.6% → 85.3%, only other entries 4.8%; kindling agrees on the 300 most frequent words. `SORT_VERSION` 12.
+- What the dictionary alone still misses (11.7% of tokens) is left to segmentation: names (`Boris`, `Naciye`), verbal nouns with a possessor (`olması`, `olmadığını`), the reflexive `kendi` (`kendini`, `kendisine`), postpositional nouns (`ardından`, `karşısına`), and verb forms with suffixes the tables omit (`olabilir`, `durmadan`, `bekleniyor`). Of these, 9.7% of all tokens have a stem of three or more letters that opens something.
+- Moved: stem variants to Stage 15; names with an apostrophe and homographs a suffix makes (`vardı`) to Stage 17, where context decides them; the lookup list to Stage 15.
 
-## Stage 14: Turkish — corpus-attested forms
+## Stage 14: Turkish — device check of segmentation
 
-- [ ] Lemmatize the forms a corpus prints with an existing morphological analyzer and add those that open nothing as labels of their lemma, up to the label budget (Lemma's approach for Greek). Candidates: `zeyrek` (a Python port of Zemberek), Zemberek-NLP itself (Java), TRmorph. **Ask before choosing one**: check each licence first, and whether the build may depend on it or only a one-off script.
-- [ ] Which corpus the forms come from (a frequency list or a large text collection) and its licence: **ask before choosing**.
-- [ ] Measure the analyzer's own accuracy on BOUN's gold lemmas.
+Everything after this stage assumes a split word reads and taps well; check that first.
 
-## Stage 15: Turkish — `prepare-book`
+- [ ] **Device test book** (`scripts/make_device_test.py --lang tr`, `tests/device_words_tr.tsv`), against the Stage 13 dictionary:
+  - Split words with a hair space (`gözlükçü` + U+200A + `ler`, `kitab` + U+200A + `ı`, `ol` + U+200A + `ması`): a tap on each half selects that half alone and opens its entry (or nothing, for the suffixes, until Stage 15).
+  - How visible the gap is inside a word in the default fonts (Bookerly, Ember, Caecilia) and sizes.
+  - Line breaks: long split words near the end of a line, with and without `<span style="white-space: nowrap">` around the word (kindling strips `style` from dictionary entries, but this is the book's own markup).
+  - A name with suffixes after `'` and `’` (`Türkiye'nin`): whether the selection stops at the apostrophe, and so whether names need a hair space too.
+  - Dotless and dotted i in both cases (`KIZI`, `İyi`), and a homograph pair (`yüz`).
+- [ ] Decide from the results: the separator markup (`nowrap` or not), and whether names are split.
 
-- [ ] A `prepare-book` command: a hair space (U+200A) between the stem and the suffix chain, only in words the dictionary cannot reach, after the longest stem the dictionary has (`gözlükçü` + U+200A + `ler`), so a split never leaves a stem that cannot be looked up. 12.8% of corpus tokens have such a stem today (Stage 12).
-- [ ] Suffix-chain entries (`-lerinizden`: *pl. + your (pl.) + abl.*) for a tap on the suffixes.
-- [ ] Alternative: a personal dictionary with the book's own analyzed forms (`--forms-from`), which leaves the text alone.
-- [ ] The Stage 12 device checks (how visible a hair space is, line breaks) decide between these.
+## Stage 15: Turkish — the dictionary for split words
 
-## Stage 16: Turkish — entries
+A split leaves a stem and a suffix chain; each must open something useful.
+
+- [ ] **Stem variants** as labels of their lemma, so every stem a split leaves opens it: consonant voicing (`kitab` → kitap, `ağac` → ağaç, `renğ` → renk), a dropped vowel (`ağz` → ağız, `burn` → burun), a doubled consonant (`hakk` → hak), and verb stems (`gid` → gitmek, `de`/`di` → demek, `ye`/`yi` → yemek, `ol` → olmak). Read them off the entry's own table forms where possible (the stem its accusative or possessive is built on), so no rule guesses.
+- [ ] **Verb stems as labels.** A verb's stem (`yaz`, `gel`) is its imperative and so mostly a label already; check every verb stem opens its verb.
+- [ ] **Suffix-chain entries** for a tap on the suffixes: an entry per chain (`lerinizden`: *pl. + your (pl.) + from*; `ması`: *verbal noun + his/her*; `abilir`: *can + aorist*), from a small suffix grammar (morphotactics with harmony), labelled by every harmony variant. Measure how many chains the corpus needs and how many labels the grammar makes; limit the grammar to attested chains if it is large. Each entry glosses the chain morpheme by morpheme.
+- [ ] Lookup list `tests/lookup_words_tr.txt` via `scripts/check_lookups.py`: lemmas, table forms, generated forms, stem variants and suffix chains.
+
+## Stage 16: Turkish — `prepare-book`
+
+The command and everything deterministic around the segmenter; the decisions themselves come in Stage 17.
+
+- [ ] **`prepare-book --lang tr book.epub -o book-prepared.epub`**: reads an EPUB, walks the text of each XHTML file sentence by sentence (keeping markup), and writes a copy with U+200A inserted at the splits it is given, with the markup Stage 14 chose. A report lists every split. Books with DRM (Kindle store purchases) cannot be prepared; the output goes to the Kindle by Send to Kindle or a USB copy.
+- [ ] **Candidates per word**, from the built dictionary's label index (`quality.labels`): whether the whole word opens something and what; every split point whose stem opens an entry (with Stage 15's stem variants) and whose rest is a suffix chain the grammar accepts. A word with no candidate split is left whole.
+- [ ] **Which words are considered**: every word whose whole form opens nothing, and words whose whole form opens a homograph a split would narrow (`vardı`: var + dı, or the past of varmak). A word that opens one entry is left whole.
+- [ ] **A greedy baseline** (longest candidate stem) as the yardstick for Stage 17, and a `--greedy` mode that needs no model.
+- [ ] Coverage of a prepared text: `quality coverage` on a prepared corpus (the Stage 12 sources run through `prepare-book`), counting the halves of a split word as the device will select them.
+
+## Stage 17: Turkish — the context-aware segmenter
+
+Decided 2026-10-29: the split point is chosen by a language model that reads the sentence, not by the longest stem, so a split follows the word's meaning in context (`aslında` is a word, not `asl` + `ında`; `yüzü` is face or hundred by the sentence; `gözlükçüler` splits after `gözlükçü`, not `göz`).
+
+- [ ] **The model's task**: for each word Stage 16 marks, given its sentence (and the one before), choose among the candidate splits, or "leave whole", and name the lemma the stem belongs to. It chooses only among candidates, so every split it makes opens an entry; an answer that names no candidate leaves the word whole. Words are sent in batches per paragraph to keep the cost down.
+- [ ] **Which model and how it is called**: Claude through the Anthropic API (or the Message Batches API for whole books). **Ask before choosing**: the model (cost against accuracy, measured below), whether book text may be sent to the API (the user's own books, often copyrighted), and where the API key comes from.
+- [ ] **Cache and reproducibility**: each decision is stored by (word, sentence) beside the book, so a second run costs nothing and gives the same output; the report names the model and date.
+- [ ] **Accuracy**: on BOUN's test part (held out: the coverage corpus uses its training part), the share of words whose chosen stem belongs to BOUN's lemma, against the greedy baseline; and the share of tokens that open the right entry after preparation (the Stage 12 right-lemma measure). Also a hand-checked sample of a Seyfettin story.
+- [ ] **Names**: split after the apostrophe if Stage 14 shows the selection takes it in, so `Ali'nin` opens Ali, not `alının`.
+- [ ] **Cost and time** per novel (tokens sent, dollars, minutes), measured on one full book.
+- [ ] The same machinery, with its own candidates, then serves Latin enclitics (`-que`, `-ne`, `-ve`; see Later).
+
+## Stage 18: Turkish — entries
 
 - [ ] Head line: `ev (definite accusative evi, plural evler)` shown as a dictionary would (`ev, -i · noun`); verbs with their aorist (`gitmek, gider`).
 - [ ] Sense labels, and which descendants to keep, as Greek's Stage 10 did.
 - [ ] Pointer pages (17,882) merge into their lemmas: check the merged lines.
+- [ ] A stem variant's entry says what it is a stem of only if the popup needs it (`kitab-` opens kitap directly).
 
-## Stage 17: Turkish — releases
+## Stage 19: Turkish — releases
 
-- [ ] `tr` in the workflow matrix, `docs/device-check-tr.md`, a README section, StarDict.
+- [ ] `tr` in the workflow matrix, `docs/device-check-tr.md`, a README section (the dictionary, and `prepare-book` with its model, cost and the DRM limit), StarDict.
+- [ ] Coverage in the release notes for both raw and prepared text.
 
 ## Later
 
-- Latin enclitics through `prepare-book`, with a hair space (U+200A) before `-que`, `-ne` and `-ve` (the device test settled the separator).
+- Latin enclitics through `prepare-book` (Stages 16–17), with a hair space (U+200A) before `-que`, `-ne` and `-ve` (the device test settled the separator); context decides whether `-ne` is an enclitic (`virumne`) or part of the word (`bene`).
 - Further inflected languages (Finnish, Hungarian) on the Turkish machinery.
