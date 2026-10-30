@@ -137,6 +137,19 @@ def test_clean_macron_lines_and_tokenize():
     assert tokenize("ā̆b")["ā̆b"] == 1
 
 
+TEI_EDITION = """<TEI xmlns="http://www.tei-c.org/ns/1.0"><teiHeader><title>Ἰλιάς</title>
+</teiHeader><text><body><div type="edition"><div type="textpart" n="1"><head>Α</head>
+<l n="1"><milestone unit="para"/>μῆνιν ἄειδε θεὰ</l><l n="2">οὐλομένην, ἣ μυρίʼ<note>
+Zenodotus</note> Ἀχαιοῖς</l></div><div type="textpart" n="2"><l>ἄλλοι μέν</l></div>
+</div></body></text></TEI>"""
+
+
+def test_clean_tei_keeps_the_edition_without_notes():
+    assert clean(TEI_EDITION, "tei:1") == "μῆνιν ἄειδε θεὰ οὐλομένην, ἣ μυρίʼ Ἀχαιοῖς"
+    words = tokenize(clean(TEI_EDITION, "tei"))
+    assert "ἄλλοι" in words and "Ἰλιάς" not in words and "Zenodotus" not in words
+
+
 def test_extract_sample_follows_pointer_chains(tmp_path):
     src = tmp_path / "dump.jsonl"
     src.write_text(

@@ -9,8 +9,10 @@ on the Kindle and report the numbers whose popup differs.
 Usage:
     python scripts/make_device_test.py outputs/KindleDictionary-la \
         tests/device_words_la.tsv -o outputs/device-test [--kindling kindling-cli]
+    python scripts/make_device_test.py outputs/KindleDictionary-grc \
+        tests/device_words_grc.tsv --lang grc -o outputs/device-test-grc
 
-Writes OUT/la-device-test.azw3 (copy it to the Kindle's documents/ folder) and
+Writes OUT/<lang>-device-test.azw3 (copy it to the Kindle's documents/ folder) and
 OUT/predictions.md (the same list, to compare the report against). --dry-run prints the
 predictions and corpus frequencies without building the book.
 """
@@ -18,11 +20,13 @@ predictions and corpus frequencies without building the book.
 import argparse
 import datetime
 import html
+import re
 import subprocess
 import sys
 from collections import Counter
 from pathlib import Path
 
+from wiktionary_to_kindle.languages import LANGUAGES, get_language
 from wiktionary_to_kindle.quality.corpus import tokenize
 from wiktionary_to_kindle.quality.kindling import default_binary, lookup
 from wiktionary_to_kindle.quality.labels import build_index, read_entries
@@ -39,7 +43,16 @@ SECTIONS = {
     "unmacronized": "Homographs only without macrons",
     "ambiguous": "Inflected forms of several words",
     "enclitics": "Enclitics after a zero-width space",
+    # Ancient Greek
+    "capitals": "Capitals",
+    "accents": "Grave, enclitic and other accents",
+    "encodings": "Accents encoded another way",
+    "elision": "Elision marks",
+    "length": "Words Wiktionary writes with length marks",
+    "letters": "Breathings, iota subscripts and other letters",
 }
+# ύ in a word of the list stands for that character: oxia and tonos look alike
+ESCAPE = re.compile(r"\\u([0-9a-fA-F]{4})")
 
 
 def read_words(path):
@@ -47,6 +60,7 @@ def read_words(path):
     for line in Path(path).read_text(encoding="utf-8").splitlines():
         if line.strip() and not line.startswith("#"):
             section, word, note = line.split("\t")
+            word = ESCAPE.sub(lambda m: chr(int(m.group(1), 16)), word)
             words.append((section, word.replace("{zwsp}", ZWSP), note))
     return sorted(words, key=lambda w: list(SECTIONS).index(w[0]))
 
@@ -76,26 +90,28 @@ def corpus_counts(cache_dir):
     return counts
 
 
-def write_book(out_dir, rows, built):
+def write_book(out_dir, rows, built, language):
     """Write the book's XHTML and OPF, with the dictionary's cover, into out_dir.
 
     The build time is in the title and identifier, so the Kindle files each build as a
     new book and a stale copy is easy to tell apart."""
+    name, code = language.name, language.code
     out_dir.mkdir(parents=True, exist_ok=True)
     Path(out_dir, "cover.png").write_bytes(TEMPLATES.joinpath("cover.png").read_bytes())
     body = [
-        "<h1>Latin dictionary: device test</h1>",
+        f"<h1>{name} dictionary: device test</h1>",
         f"<p><small>Built {built}.</small></p>",
         (
-            "<p>Set the Wiktionary Latin dictionary as the Latin dictionary, then press and "
-            "hold each word in bold. Under it are the entries the popup should list "
+            f"<p>Set the Wiktionary {name} dictionary as the {name} dictionary, then "
+            "press and hold each word in bold. Under it are the entries the popup should list "
             "(headword and part of speech), in the order it should list them. Write "
             "down the number of every word whose popup differs, and what it showed.</p>"
         ),
         (
-            "<p>Layout: in the popup of any word (rēx at 77 is a good one), is the "
-            "headword larger than the text after it? Are the etymology and descendants "
-            "smaller than the definitions, and are they grey?</p>"
+            "<p>Layout: in the popup of any word, is the headword larger than the text "
+            "after it? Are the etymology and descendants smaller than the definitions, "
+            "and are they grey? Does every letter show, in the book and in the popup, "
+            "with no empty boxes?</p>"
         ),
         (
             "<p>Report: the Kindle model and firmware (Settings, Device Info), then each "
@@ -108,15 +124,15 @@ def write_book(out_dir, rows, built):
             section = sec
             body.append(f"<h2>{html.escape(SECTIONS[sec])}</h2>")
         body.append(
-            f'<p id="w{number}">{number}. <b><span lang="la">{html.escape(word)}</span></b>'
+            f'<p id="w{number}">{number}. <b><span lang="{code}">{html.escape(word)}</span></b>'
             f"<br/><small>{html.escape(note)}</small>"
             f"<br/><small>Expect: {html.escape(expected)}</small></p>"
         )
     Path(out_dir, "test.xhtml").write_text(
         '<?xml version="1.0" encoding="UTF-8"?>\n'
-        '<html xmlns="http://www.w3.org/1999/xhtml" lang="la" xml:lang="la">\n'
+        f'<html xmlns="http://www.w3.org/1999/xhtml" lang="{code}" xml:lang="{code}">\n'
         '<head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>'
-        f"<title>Latin dictionary device test {built}</title></head>\n<body>\n"
+        f"<title>{name} dictionary device test {built}</title></head>\n<body>\n"
         + "\n".join(body)
         + "\n</body>\n</html>\n",
         encoding="utf-8",
@@ -126,10 +142,10 @@ def write_book(out_dir, rows, built):
         f"""<?xml version="1.0" encoding="UTF-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" version="2.0" unique-identifier="bookid">
 <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
-<dc:title>Latin dictionary device test {built}</dc:title>
-<dc:language>la</dc:language>
+<dc:title>{name} dictionary device test {built}</dc:title>
+<dc:language>{code}</dc:language>
 <dc:creator>wiktionary-to-kindle</dc:creator>
-<dc:identifier id="bookid">latin-dictionary-device-test-{stamp}</dc:identifier>
+<dc:identifier id="bookid">{code}-dictionary-device-test-{stamp}</dc:identifier>
 <meta name="cover" content="cover-image"/>
 </metadata>
 <manifest>
@@ -162,9 +178,11 @@ def main():
         "-o", "--output", type=Path, default=Path("outputs/device-test")
     )
     parser.add_argument("--kindling", default=default_binary())
+    parser.add_argument("--lang", default="la", choices=sorted(LANGUAGES))
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
     sys.stdout.reconfigure(encoding="utf-8")
+    language = get_language(args.lang)
 
     index = build_index(read_entries(args.dict_dir / "files"))
     mobi = next(args.dict_dir.glob("*.mobi"))
@@ -181,15 +199,15 @@ def main():
         return 0
 
     built = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-    write_book(args.output / "book", rows, built)
+    write_book(args.output / "book", rows, built, language)
     write_predictions(args.output / "predictions.md", rows)
-    book = (args.output / "la-device-test.azw3").resolve()
+    book = (args.output / f"{language.code}-device-test.azw3").resolve()
     subprocess.run(
         [args.kindling, "build", "test.opf", "-o", str(book)],
         cwd=args.output / "book",
         check=True,
     )
-    print(f"Wrote {args.output / 'la-device-test.azw3'} ({len(rows)} words)")
+    print(f"Wrote {args.output / book.name} ({len(rows)} words)")
     return 0
 
 

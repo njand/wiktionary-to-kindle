@@ -1,0 +1,10 @@
+# Ancient Greek texts for lookup coverage: name<TAB>format<TAB>url (see wiktionary_to_kindle/quality/corpus.py)
+# Downloads are cached in corpus/cache/. Perseus's canonical-greekLit editions, CC BY-SA 4.0:
+# epic, Ionic and Attic prose, oratory, and Koine. They print elision with U+02BC (δʼ).
+iliad-1	tei:1	https://raw.githubusercontent.com/PerseusDL/canonical-greekLit/master/data/tlg0012/tlg001/tlg0012.tlg001.perseus-grc2.xml
+odyssey-1	tei:1	https://raw.githubusercontent.com/PerseusDL/canonical-greekLit/master/data/tlg0012/tlg002/tlg0012.tlg002.perseus-grc2.xml
+herodotus-1	tei:1	https://raw.githubusercontent.com/PerseusDL/canonical-greekLit/master/data/tlg0016/tlg001/tlg0016.tlg001.perseus-grc2.xml
+anabasis-1	tei:1	https://raw.githubusercontent.com/PerseusDL/canonical-greekLit/master/data/tlg0032/tlg006/tlg0032.tlg006.perseus-grc2.xml
+plato-apology	tei	https://raw.githubusercontent.com/PerseusDL/canonical-greekLit/master/data/tlg0059/tlg002/tlg0059.tlg002.perseus-grc2.xml
+lysias-1	tei	https://raw.githubusercontent.com/PerseusDL/canonical-greekLit/master/data/tlg0540/tlg001/tlg0540.tlg001.perseus-grc2.xml
+john	tei	https://raw.githubusercontent.com/PerseusDL/canonical-greekLit/master/data/tlg0031/tlg004/tlg0031.tlg004.perseus-grc2.xml

@@ -107,3 +107,22 @@ def test_front_page_and_package_name_the_language(tmp_path):
     assert "<DictionaryInLanguage>grc</DictionaryInLanguage>" in opf
     assert "<DefaultLookupIndex>Greek</DefaultLookupIndex>" in opf
     assert "ancient-greek-dictionary" in opf
+
+
+@pytest.mark.parametrize(
+    "word, causes, variant",
+    [
+        ("καλὸς", ("grave for acute",), "καλός"),
+        ("Ἄνδρα", ("capitalized",), "ἄνδρα"),
+        ("ἄνθρωπός", ("enclitic's accent",), "ἄνθρωπος"),
+        ("ἐστίν", ("movable nu",), "ἐστί"),
+        ("ἔλυσε", ("movable nu",), "ἔλυσεν"),
+        ("δʼ", ("elision",), "δέ"),
+        ("καθʼ", ("elision",), "κατά"),
+        ("ἔφατʼ", ("elision",), "ἔφατο"),
+        ("λ\u1f7bω", ("oxia or decomposed",), "λύω"),
+        ("Καὶ", ("capitalized", "grave for acute"), "καί"),
+    ],
+)
+def test_greek_miss_variants(word, causes, variant):
+    assert (causes, variant) in ANCIENT_GREEK.miss_variants(word)

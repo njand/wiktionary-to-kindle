@@ -1,0 +1,37 @@
+# Words for the Ancient Greek on-device lookup test (scripts/make_device_test.py --lang grc).
+# section<TAB>word<TAB>what it tests. Sections print in this order; words keep their order.
+# \uXXXX in a word stands for that character (oxia and tonos look alike on the page).
+# The Expect line is kindling's prediction; kindling's README says the device folds no Greek
+# letter, so capitals, graves, oxia and decomposed accents are expected to open nothing.
+frequent	καί	the most frequent word, as a dictionary spells it
+frequent	λόγος	frequent noun
+frequent	θεός	frequent noun
+frequent	ἐν	short preposition with a breathing
+frequent	οὐκ	negation before a vowel
+frequent	εἶ	homograph: you are (εἰμί) and you will go (εἶμι)
+capitals	Ἄνδρα	capital with breathing and accent (Odyssey 1.1); expected to open nothing
+capitals	ἄνδρα	the same word in lowercase
+capitals	Καί	capitalized καί; expected to open nothing
+capitals	ΛΟΓΟΣ	all capitals, no accents; expected to open nothing
+accents	καὶ	grave for acute, as texts print καί before a word; expected to open nothing
+accents	καλὸς	grave on an adjective; expected to open nothing
+accents	καλός	the same with its acute
+accents	ἄνθρωπός	second accent before an enclitic (ἄνθρωπός τις); expected to open nothing
+accents	ἐστίν	movable nu
+accents	ἐστί	without movable nu
+encodings	λ\u1f7bω	oxia (U+1F7B) instead of tonos; expected to open nothing
+encodings	λ\u03cdω	tonos (U+03CD), as NFC writes it
+encodings	λυ\u0301ω	decomposed: υ and a combining acute; expected to open nothing
+elision	δ\u02bc	elision with U+02BC, as Perseus prints it; that mark weighs nothing
+elision	δ\u2019	elision with a right quotation mark, which weighs nothing
+elision	δ\u1fbd	elision with the koronis U+1FBD, which weighs as itself; expected to open nothing
+elision	ἀλλ\u02bc	elided ἀλλά
+length	λύω	the headword: its label is the page title, without length marks
+length	ἀπεκρίθη	a form with no page of its own; Wiktionary writes it with ῑ, so nothing opens yet
+length	εἶπαν	a form with no page of its own, written with a length mark; nothing opens yet
+length	αἰώνιον	a form with no page of its own, written with a length mark; nothing opens yet
+letters	ᾄδω	iota subscript with breathing and accent: does it render, in the book and popup?
+letters	ῥήτωρ	rough breathing on rho
+letters	ᾠδή	iota subscript on a capital-less omega
+letters	Ἀχιλλεύς	capitalized name
+letters	λόγοσ	σ at the end of a word instead of ς; expected to open nothing
