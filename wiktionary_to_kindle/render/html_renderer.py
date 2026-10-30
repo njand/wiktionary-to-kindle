@@ -55,6 +55,8 @@ LANGUAGES = {
     "Portuguese": "Pt.",
     "French": "Fr.",
     "English": "Eng.",
+    "Latin": "Lat.",
+    "Greek": "Mod. Gk.",  # in a Greek entry, Modern Greek
 }
 
 
@@ -103,6 +105,14 @@ SENSE_LABELS = {
     "Renaissance Latin": "Ren. Lat.",
     "Contemporary Latin": "Contemp. Lat.",
     "Greek mythology": "Gk. myth.",
+    # Greek dialects
+    "Epic": "Ep.",
+    "chiefly Epic": "chiefly Ep.",
+    "Homeric": "Hom.",
+    "Attic": "Att.",
+    "Ionic": "Ion.",
+    "Doric": "Dor.",
+    "Aeolic": "Aeol.",
     "Roman mythology": "Rom. myth.",
     "anatomy": "anat.",
     "astronomy": "astron.",
@@ -225,10 +235,13 @@ class HTMLRenderer:
         return keep_spaces(html_str).strip().split("\n")
 
     @classmethod
-    def render_front(cls, dump_date, build_date, version):
+    def render_front(cls, language, dump_date, build_date, version):
         """Render the page before the entries: what the dictionary is, its sources and
         license (Wiktionary's CC BY-SA asks for attribution), and its version."""
         html_str = cls.front_tmpl.render(
-            dump_date=dump_date, build_date=build_date, version=version
+            language=language,
+            dump_date=dump_date,
+            build_date=build_date,
+            version=version,
         )
         return html_str.strip().split("\n")

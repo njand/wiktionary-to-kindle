@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from wiktionary_to_kindle import pipeline
+from wiktionary_to_kindle.languages import LATIN
 from wiktionary_to_kindle.quality.labels import read_entries
 
 from .test_sort_merge import lemma
@@ -17,7 +18,7 @@ def run_build(tmp_path, monkeypatch, entries):
         "".join(json.dumps(e, ensure_ascii=False) + "\n" for e in entries),
         encoding="utf-8",
     )
-    build = pipeline.build_dictionary(str(src), "la", "kindling", ["English"])
+    build = pipeline.build_dictionary(str(src), LATIN, "kindling", ["English"])
     return build, Path(build.files_dir)
 
 

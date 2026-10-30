@@ -25,7 +25,7 @@ from .stardict import export_stardict
 
 # The .ifo has no license field; by convention it goes in the description
 STARDICT_DESCRIPTION = (
-    "Latin-English dictionary from Wiktionary data of {dump_date}, built with "
+    "{name}-English dictionary from Wiktionary data of {dump_date}, built with "
     "wiktionary-to-kindle {version}.<br>Text by Wiktionary contributors "
     "(https://en.wiktionary.org/), extracted by Kaikki.org and wiktextract; licensed "
     "under CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/)."
@@ -53,7 +53,7 @@ def unique_directory(path):
 
 def build_dictionary(
     dump,
-    lang_code,
+    language,
     kindling,
     descendant_langs=None,
     resort=False,
@@ -61,11 +61,14 @@ def build_dictionary(
     max_page_len=5000,
     stardict=False,
 ):
-    """Build outputs/KindleDictionary-<lang_code> (or a free name beside it) from dump, a
-    filtered dump or one merge_dump already sorted. limit caps the number of entries;
-    stardict also writes <lang_code>-wiktionary-stardict.zip."""
+    """Build outputs/KindleDictionary-<code> (or a free name beside it) from dump, a
+    filtered dump or one merge_dump already sorted, for language (a Language). limit caps
+    the number of entries; descendant_langs defaults to the language's; stardict also
+    writes <code>-wiktionary-stardict.zip."""
+    if descendant_langs is None:
+        descendant_langs = list(language.descendants)
     build = Build(
-        output_dir=unique_directory(f"outputs/KindleDictionary-{lang_code}"),
+        output_dir=unique_directory(f"outputs/KindleDictionary-{language.code}"),
         files_dir="",
         dump_date=dump_date(dump),  # read before dump becomes the sorted file
         build_date=datetime.date.today().isoformat(),
@@ -73,33 +76,39 @@ def build_dictionary(
     build.files_dir = os.path.join(build.output_dir, "files")
 
     if not is_sorted(dump):
-        dump = merge_dump(dump, lang_code, force=resort).path
+        dump = merge_dump(dump, language, force=resort).path
     total = count_lines(dump)
 
-    writer = BookWriter(build.files_dir, max_page_len, descendant_langs)
-    for entry in read_entries(dump, limit, "Building", total):
+    writer = BookWriter(build.files_dir, language, max_page_len, descendant_langs)
+    for entry in read_entries(dump, language, limit, "Building", total):
         writer.add_entry(entry)
     writer.finish(build.dump_date, build.build_date, __version__)
     build.entry_pages = writer.entry_pages
 
     write_opf(
         build.files_dir,
+        language,
         writer.page_count,
         build.dump_date,
         build.build_date,
         __version__,
     )
     compile_mobi(
-        kindling, build.files_dir, build.output_dir, f"{lang_code}-wiktionary.mobi"
+        kindling,
+        build.files_dir,
+        build.output_dir,
+        f"{language.code}-wiktionary.mobi",
     )
     if stardict:
         build.stardict_zip = str(
             export_stardict(
                 kindling,
                 build.files_dir,
-                os.path.join(build.output_dir, "stardict", f"{lang_code}-wiktionary"),
+                os.path.join(
+                    build.output_dir, "stardict", f"{language.code}-wiktionary"
+                ),
                 STARDICT_DESCRIPTION.format(
-                    dump_date=build.dump_date, version=__version__
+                    name=language.name, dump_date=build.dump_date, version=__version__
                 ),
             )
         )

@@ -32,13 +32,19 @@ In the texts the project tests against, the dictionary opens an entry for 98.6% 
 
 The dictionary is rebuilt every week from the latest Wiktionary data.
 
+## Ancient Greek (in testing)
+
+An Ancient Greek–English dictionary is built the same way, from Wiktionary's Ancient Greek entries. Until it has been checked on a Kindle, it is published only in the weekly [pre-releases](https://github.com/njand/wiktionary-to-kindle/releases) as `grc-wiktionary.mobi`.
+
+A Kindle matches Greek accents, breathings and capitals exactly, so the dictionary lists every spelling a Greek text prints: without the length marks Wiktionary adds (ἀπεκρίθη opens **ἀποκρίνω**), with a grave for a final acute (καὶ opens **καί**), and capitalized for headwords and small words that start sentences (Καὶ, Οὐκ, Ταῦτα). In Perseus's editions of Homer, Herodotus, Xenophon, Plato, Lysias and the Gospel of John, it opens an entry for 91.7% of the words: 93–95% in most of them, 87.8% in Herodotus, whose Ionic forms Wiktionary often lacks.
+
 ## Install on a Kindle
 
-1. Download `la-wiktionary.mobi` from the [latest release](https://github.com/njand/wiktionary-to-kindle/releases/latest).
+1. Download `la-wiktionary.mobi` from the [latest release](https://github.com/njand/wiktionary-to-kindle/releases/latest) (or `grc-wiktionary.mobi` from a pre-release, for Ancient Greek).
 2. Connect your Kindle to your computer with a USB cable.
 3. Open the Kindle drive and copy the file into `documents/dictionaries/`. If that folder doesn't exist, create it.
 4. Eject the Kindle.
-5. On the Kindle, go to **Settings → Device Options → Language and Dictionaries → Dictionaries**, tap **Latin**, and choose the Wiktionary dictionary.
+5. On the Kindle, go to **Settings → Device Options → Language and Dictionaries → Dictionaries**, tap **Latin**, and choose the Wiktionary dictionary. Under which language a Kindle lists the Ancient Greek dictionary is still being checked.
 
 Send to Kindle no longer accepts `.mobi` files, so the dictionary has to be copied over USB.
 
@@ -46,7 +52,7 @@ If another dictionary opens when you press a word, tap its name at the bottom of
 
 ## KOReader and GoldenDict
 
-Each release also includes `la-wiktionary-stardict.zip`. Unzip it and copy the `la-wiktionary` folder into `koreader/data/dict/` for KOReader, or add it to your dictionary sources in GoldenDict.
+Each release also includes `la-wiktionary-stardict.zip` (and `grc-wiktionary-stardict.zip` for Ancient Greek). Unzip it and copy the `la-wiktionary` folder into `koreader/data/dict/` for KOReader, or add it to your dictionary sources in GoldenDict. Words also match without macrons, and Greek words without accents or breathings.
 
 ## Build it yourself
 
@@ -60,13 +66,13 @@ uv sync --all-extras
 uv run wiktionary-to-kindle --lang la
 ```
 
-The dictionary is written to `outputs/KindleDictionary-la/`. See the [developer guide](docs/DEVELOPING.md) for all build options, how the pipeline works, and the tools that measure lookup quality.
+The dictionary is written to `outputs/KindleDictionary-la/`; `--lang grc` builds the Ancient Greek one. See the [developer guide](docs/DEVELOPING.md) for all build options, how the pipeline works, and the tools that measure lookup quality.
 
 ## Contributing
 
 Bug reports are welcome, especially words that don't open the entry you expected. Include the word as it appears in your book.
 
-Only Latin is built so far, but the pipeline is meant to work for other languages. The [developer guide](docs/DEVELOPING.md#adding-a-language) explains how to add one.
+Latin and Ancient Greek are built so far, and the pipeline is meant to work for other languages. The [developer guide](docs/DEVELOPING.md#adding-a-language) explains how to add one.
 
 ## License and credits
 

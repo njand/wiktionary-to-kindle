@@ -1,18 +1,20 @@
-"""Fetch, clean and tokenize the Latin texts used to measure lookup coverage.
+"""Fetch, clean and tokenize the texts used to measure lookup coverage.
 
 A manifest is a TSV of `name<TAB>format<TAB>url` lines (`#` comments). Formats:
   latinlibrary  an HTML page from thelatinlibrary.com (navigation and footer removed)
   latinlibrary-u  the same, with lowercase v written u, as editions such as the OCT print it
   macron-lines  plain text mixing Latin and English; keeps only lines with a macron
+  tei           a TEI edition, such as Perseus's: the text of its edition, without notes
+  tei:N         the same, only its top-level part numbered N (a book: tei:1)
   text          plain text, used as is
 """
 
 import html
 import re
-import unicodedata
 import urllib.request
 from collections import Counter
 from pathlib import Path
+from xml.etree import ElementTree
 
 HEADERS = {"User-Agent": "wiktionary-to-kindle coverage check"}
 MACRONS = "āēīōūȳĀĒĪŌŪȲ"
@@ -63,10 +65,48 @@ def clean(raw, fmt):
         return "\n".join(
             line for line in raw.splitlines() if any(c in line for c in MACRONS)
         )
+    if fmt == "tei" or fmt.startswith("tei:"):
+        return tei_text(raw, fmt.partition(":")[2] or None)
     if fmt == "text":
         return raw
     raise ValueError(f"unknown corpus format: {fmt}")
 
 
+TEI = "{http://www.tei-c.org/ns/1.0}"
+# Text in a TEI edition that is no part of the work: notes, references, editors' headings
+TEI_SKIPPED = {f"{TEI}{tag}" for tag in ("note", "bibl", "head", "label", "ref")}
+
+
+def tei_text(raw, part=None):
+    """The words of a TEI edition (its div type="edition"), or of its top-level part
+    numbered part, separated by single spaces. Every element starts a new word: Perseus
+    puts milestones and verses between words, not inside them."""
+    edition = next(
+        div
+        for div in ElementTree.fromstring(raw).iter(f"{TEI}div")
+        if div.get("type") == "edition"
+    )
+    if part is not None:
+        edition = next(
+            div for div in edition.findall(f"{TEI}div") if div.get("n") == part
+        )
+    lines = []
+
+    def walk(element):
+        if element.tag in TEI_SKIPPED:
+            return
+        if element.text:
+            lines.append(element.text)
+        for child in element:
+            walk(child)
+            if child.tail:
+                lines.append(child.tail)
+
+    walk(edition)
+    return " ".join(" ".join(lines).split())
+
+
 def tokenize(text):
-    return Counter(TOKEN.findall(unicodedata.normalize("NFC", text)))
+    """The words of text as it prints them: not normalized, since a Kindle weighs a
+    decomposed accent or a Greek oxia as written (utils.kindle_fold)."""
+    return Counter(TOKEN.findall(text))

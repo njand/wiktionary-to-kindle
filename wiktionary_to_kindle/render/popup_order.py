@@ -30,8 +30,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from ..jsonl import json_dumps
-from ..merge.forms import ALTERNATIVE_TAGS
-from ..utils import kindle_fold, lookup_spellings
+from ..utils import kindle_fold
 from .shared_labels import ENTRY_PATTERN, mark
 
 VALUE_PATTERN = re.compile(r'<idx:(?:orth|iform)\b[^>]*?\bvalue="([^"]*)"')
@@ -67,6 +66,7 @@ class Weight:
 
 def weigh(entry):
     json_entry = entry.json_entry
+    lookup_spellings = entry.language.lookup_spellings
     forms = json_entry.get("forms", [])
     size = len(json_dumps(json_entry)) - len(json_dumps(forms))
     if entry.pos == "name":
@@ -79,7 +79,7 @@ def weigh(entry):
     alternative, other = set(), set(headwords)
     for form in forms:
         spellings = lookup_spellings(form.get("form", ""))
-        if ALTERNATIVE_TAGS & set(form.get("tags", [])):
+        if entry.language.alternative_tags & set(form.get("tags", [])):
             alternative.update(spellings)
         else:
             other.update(spellings)

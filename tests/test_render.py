@@ -2,6 +2,7 @@
 
 import pytest
 
+from wiktionary_to_kindle.languages import LATIN
 from wiktionary_to_kindle.models.entry import Entry
 from wiktionary_to_kindle.models.etymology import Etymology
 from wiktionary_to_kindle.render.html_renderer import (
@@ -25,7 +26,9 @@ def test_templates_ship_inside_the_package(name):
 
 
 def render(json_entry, descendant_langs=None):
-    return "\n".join(HTMLRenderer.render_entry(Entry(json_entry), descendant_langs))
+    return "\n".join(
+        HTMLRenderer.render_entry(Entry(json_entry, LATIN), descendant_langs)
+    )
 
 
 def test_descendants_filtered_and_shown_by_language_name():

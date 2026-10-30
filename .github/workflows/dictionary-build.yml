@@ -23,8 +23,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # To add languages, simply expand this array: ["la", "fr", "gr"]
-        language: ["la"]
+        # Wiktionary language codes with a profile in wiktionary_to_kindle/languages/; each
+        # finds its corpus, lookup list and device checklist by its code
+        language: ["la", "grc"]
 
     steps:
       - name: Checkout repository
@@ -72,6 +73,7 @@ jobs:
           uv run python -m wiktionary_to_kindle.quality coverage
           outputs/KindleDictionary-${{ matrix.language }} corpus/${{ matrix.language }}.tsv
           -o outputs/coverage-${{ matrix.language }}
+          --lang ${{ matrix.language }}
           --kindling kindling-cli
           --mobi outputs/KindleDictionary-${{ matrix.language }}/${{ matrix.language }}-wiktionary.mobi
 

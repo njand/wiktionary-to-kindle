@@ -29,7 +29,7 @@ from .pointers import (
 from .related import MERGED_KEY
 
 # Bump when merge_dump's output changes, so cached sorted files are rebuilt
-SORT_VERSION = 8
+SORT_VERSION = 10
 
 SORTED_SUFFIX = "(sorted)"
 
@@ -73,9 +73,9 @@ def sort_key(header):
     return normalize(header, lowercase=True), normalize(header, lowercase=False)
 
 
-def merge_dump(path, lang_code, chunk_size=200000, force=False):
+def merge_dump(path, language, chunk_size=200000, force=False):
     """Sort the JSONL file at path with an external merge sort, to prevent disk I/O
-    thrashing, merging pointer pages into their lemmas on the way.
+    thrashing, merging pointer pages of language (a Language) into their lemmas on the way.
 
     The result is cached beside the input; it is reused while the input file and
     SORT_VERSION are unchanged, unless force is set.
@@ -134,7 +134,7 @@ def merge_dump(path, lang_code, chunk_size=200000, force=False):
                     pbar.update(f.tell() - pos)
                     obj = json_loads(line)
 
-                    if obj.get("lang_code") != lang_code:
+                    if obj.get("lang_code") != language.code:
                         continue
 
                     word = normalize(obj["word"], lowercase=False)
@@ -145,8 +145,8 @@ def merge_dump(path, lang_code, chunk_size=200000, force=False):
                         and not word.startswith("-")
                         and not word.endswith("-")
                     ):
-                        header = get_header(obj)
-                        root = root_form(obj.get("senses", []))
+                        header = get_header(obj, language)
+                        root = root_form(obj.get("senses", []), language)
                         known[remove_breves(header)].add(part_of_speech)
 
                         if root is None:
@@ -164,7 +164,7 @@ def merge_dump(path, lang_code, chunk_size=200000, force=False):
                                 (part_of_speech, header, obj)
                             )
 
-        rekey_plain_roots(pointers, known)
+        rekey_plain_roots(pointers, known, language.letters)
         orphans = promote_orphans(pointers, lemma_pos)
         promoted = {id(obj) for _, _, obj in orphans}
         if orphans:
@@ -179,7 +179,7 @@ def merge_dump(path, lang_code, chunk_size=200000, force=False):
         def read_lines(file_obj):
             for fl in file_obj:
                 obj = json_loads(fl)
-                header = get_header(obj)
+                header = get_header(obj, language)
                 # Compute exact sort keys once per line to match write_chunk logic
                 yield (*sort_key(header), header, obj.get("pos"), obj)
 
@@ -211,10 +211,11 @@ def merge_dump(path, lang_code, chunk_size=200000, force=False):
                         pos,
                         lemma_pos,
                         promoted,
+                        language,
                     )
                     if "forms" in obj or addl_forms:
                         obj["forms"] = enrich_forms(
-                            obj.get("forms", []), known, addl_forms
+                            obj.get("forms", []), known, language, addl_forms
                         )
                     if merged:
                         obj[MERGED_KEY] = merged

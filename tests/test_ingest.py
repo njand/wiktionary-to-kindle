@@ -134,7 +134,7 @@ def test_input_is_used_without_no_download(dump, run_cli):
 
 
 def test_lang_defaults_to_latin(dump, run_cli):
-    assert run_cli("--input", str(dump))[1] == "la"
+    assert run_cli("--input", str(dump))[1].code == "la"
 
 
 def test_kindling_path_is_made_absolute(tmp_path, dump, run_cli):

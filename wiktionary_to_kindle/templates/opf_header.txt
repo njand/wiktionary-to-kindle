@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" version="2.0" unique-identifier="bookid">
 <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
-<dc:title>Latin-English Dictionary</dc:title>
+<dc:title>$name-English Dictionary</dc:title>
 <dc:language>en</dc:language>
 <dc:creator>Wiktionary contributors</dc:creator>
 <dc:source>https://en.wiktionary.org/</dc:source>
 <dc:rights>CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/)</dc:rights>
 <dc:date>$build_date</dc:date>
-<dc:description>Latin-English dictionary from Wiktionary data of $dump_date, built with wiktionary-to-kindle $version.</dc:description>
-<dc:identifier id="bookid">latin-dictionary</dc:identifier>
+<dc:description>$name-English dictionary from Wiktionary data of $dump_date, built with wiktionary-to-kindle $version.</dc:description>
+<dc:identifier id="bookid">$identifier</dc:identifier>
 <meta name="cover" content="cover-image" />
 <x-metadata>
-<DictionaryInLanguage>la</DictionaryInLanguage>
+<DictionaryInLanguage>$code</DictionaryInLanguage>
 <DictionaryOutLanguage>en</DictionaryOutLanguage>
-<DefaultLookupIndex>Latin</DefaultLookupIndex>
+<DefaultLookupIndex>$index_name</DefaultLookupIndex>
 </x-metadata>
 </metadata>
 <manifest>

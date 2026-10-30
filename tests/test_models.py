@@ -2,16 +2,13 @@
 
 import pytest
 
+from wiktionary_to_kindle.languages import LATIN
+from wiktionary_to_kindle.languages.la import generate_vowel_variants, lookup_spellings
 from wiktionary_to_kindle.models.entry import Entry
 from wiktionary_to_kindle.models.header import Header
 from wiktionary_to_kindle.models.inflection import Inflection
 from wiktionary_to_kindle.models.morph_tag import MorphTag
-from wiktionary_to_kindle.utils import (
-    generate_vowel_variants,
-    kindle_fold,
-    lookup_spellings,
-    sanitize_xhtml,
-)
+from wiktionary_to_kindle.utils import kindle_fold, sanitize_xhtml
 
 
 @pytest.mark.parametrize(
@@ -72,7 +69,8 @@ def test_entry_leaves_glosses_alone():
             "word": "amo",
             "pos": "verb",
             "senses": [{"glosses": list(raw_glosses), "raw_glosses": raw_glosses}],
-        }
+        },
+        LATIN,
     )
     assert raw_glosses == ["to love", "to be fond of"]
     sense = entry.senses_blocks[0].senses["to love"]
@@ -143,7 +141,8 @@ def test_entry_is_found_by_u_and_j_spellings():
             "head_templates": [{"name": "la-noun", "expansion": "iuvenis m"}],
             "forms": [{"form": "iuvenem", "tags": ["accusative", "singular"]}],
             "senses": [{"glosses": ["young man"]}],
-        }
+        },
+        LATIN,
     )
     assert {"iuuenis", "juvenis", "iuuenem", "juvenem"} <= entry.all_forms
 
@@ -156,7 +155,8 @@ def test_labels_that_weigh_nothing_are_not_indexed():
             "head_templates": [{"name": "la-conj", "expansion": "et"}],
             "forms": [{"form": "⁊", "tags": ["Medieval-Latin", "alternative"]}],
             "senses": [{"glosses": ["and"]}],
-        }
+        },
+        LATIN,
     )
     assert entry.all_forms == {"et"}
 
@@ -173,7 +173,8 @@ def test_forms_written_with_a_symbol_are_not_indexed():
                 {"form": "♃vis", "tags": ["genitive"]},
             ],
             "senses": [{"glosses": ["Jupiter"]}],
-        }
+        },
+        LATIN,
     )
     assert not any("2643" in form for form in entry.all_forms)
     assert "Iovis" in entry.all_forms
@@ -191,6 +192,7 @@ def test_participles_and_gerunds_are_named_as_such(template, pos):
             "pos": "verb",
             "head_templates": [{"name": template, "expansion": "amāns"}],
             "senses": [{"glosses": ["loving"]}],
-        }
+        },
+        LATIN,
     )
     assert entry.pos == pos

@@ -2,6 +2,7 @@ import argparse
 from pathlib import Path
 
 from .ingest import download_kaikki_dump
+from .languages import LANGUAGES, get_language
 from .pipeline import build_dictionary
 from .utils import find_kindling
 
@@ -13,7 +14,10 @@ def parse_args(argv=None):
         description="Build a Kindle Dictionary from Wiktionary JSONL Dumps."
     )
     parser.add_argument(
-        "--lang", default="la", help="Language code (default: %(default)s)"
+        "--lang",
+        default="la",
+        choices=sorted(LANGUAGES),
+        help="Wiktionary language code (default: %(default)s)",
     )
     parser.add_argument(
         "--input",
@@ -57,8 +61,8 @@ def parse_args(argv=None):
     parser.add_argument(
         "--descendants",
         nargs="+",
-        default=["English", "Portuguese", "Spanish", "French", "Italian"],
-        help="Descendant languages to retain",
+        default=None,
+        help="Descendant languages to retain (default: chosen for each language)",
     )
     return parser, parser.parse_args(argv)
 
@@ -100,7 +104,7 @@ def main(argv=None):
     print(f"Building dictionary for language: {args.lang}")
     build_dictionary(
         str(input_file),
-        args.lang,
+        get_language(args.lang),
         str(kindling),
         descendant_langs=args.descendants,
         resort=args.resort,

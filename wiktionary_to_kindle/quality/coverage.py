@@ -1,4 +1,4 @@
-"""Corpus lookup coverage: how many words in real Latin texts open an entry, and why not.
+"""Corpus lookup coverage: how many words in real texts open an entry, and why not.
 
 Each token is resolved against the dictionary's own labels with the Kindle's matching rules
 (see utils.kindle_fold and the kindling README):
@@ -14,7 +14,8 @@ The popup lists every entry a tap reaches, so "spelling" and "ambiguous" differ 
 which entry comes first.
 
 Misses are retried with variants a reader's text often has but Wiktionary's headwords do not
-(enclitics, u for consonantal v, j for consonantal i) to name the likely cause.
+(Language.miss_variants: for Latin, enclitics, u for consonantal v, j for consonantal i) to
+name the likely cause.
 Optionally, the most frequent words are also checked with kindling's simulator, which models
 the real index order, to confirm the static prediction.
 """
@@ -26,9 +27,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from .kindling import lookup
 
-ENCLITICS = ("que", "ne", "ve")
 ROMAN_NUMERAL = re.compile(r"[IVXLCDM]+")
-CONSONANTAL_U = re.compile(r"[uU](?=[aeiouāēīōūAEIOU])")
 OUTCOMES = ("unique", "spelling", "ambiguous", "miss")
 
 
@@ -50,8 +49,8 @@ def resolve(index, word):
     return "ambiguous", run
 
 
-def miss_cause(index, word):
-    for causes, candidate in _variants(word):
+def miss_cause(index, word, language):
+    for causes, candidate in language.miss_variants(word):
         if index.run(candidate):
             return " + ".join(causes)
     if ROMAN_NUMERAL.fullmatch(word):
@@ -61,32 +60,7 @@ def miss_cause(index, word):
     return "unknown"
 
 
-def _variants(word):
-    bases = [((), word)]
-    for enclitic in ENCLITICS:
-        if word.lower().endswith(enclitic) and len(word) > len(enclitic) + 1:
-            bases.append(((f"enclitic -{enclitic}",), word[: -len(enclitic)]))
-
-    for causes, base in bases:
-        spellings = [(causes, base)]
-        if "j" in base.lower():
-            spellings.append(
-                (causes + ("j for i",), base.replace("j", "i").replace("J", "I"))
-            )
-        if CONSONANTAL_U.search(base):
-            spellings += [
-                (
-                    c + ("u for v",),
-                    CONSONANTAL_U.sub(lambda m: "vV"[m.group().isupper()], w),
-                )
-                for c, w in list(spellings)
-            ]
-        for variant in spellings:
-            if variant[0]:
-                yield variant
-
-
-def measure(index, counts, top=30):
+def measure(index, counts, language, top=30):
     """Summarize one Counter of tokens."""
     tokens, types = Counter(), Counter()
     misses = defaultdict(Counter)
@@ -97,7 +71,7 @@ def measure(index, counts, top=30):
         tokens[outcome] += n
         types[outcome] += 1
         if outcome == "miss":
-            misses[miss_cause(index, word)][word] += n
+            misses[miss_cause(index, word, language)][word] += n
         elif outcome == "ambiguous":
             ambiguous[word] += n
             heads[word] = list(dict.fromkeys(entry.headword for _, entry in run))[:6]

@@ -2,6 +2,7 @@ import json
 
 import pytest
 
+from wiktionary_to_kindle.languages import LATIN
 from wiktionary_to_kindle.quality import coverage, stats
 from wiktionary_to_kindle.quality.corpus import clean, tokenize
 from wiktionary_to_kindle.quality.labels import build_index, read_entries
@@ -83,7 +84,7 @@ def test_resolve(index, word, outcome):
     ],
 )
 def test_miss_cause(index, word, cause):
-    assert coverage.miss_cause(index, word) == cause
+    assert coverage.miss_cause(index, word, LATIN) == cause
 
 
 def test_miss_cause_spelling_variants(dict_dir):
@@ -92,13 +93,13 @@ def test_miss_cause_spelling_variants(dict_dir):
         entry(10, "vir", ["virum"]) + entry(11, "iam"), encoding="utf-8"
     )
     idx = build_index(read_entries(files))
-    assert coverage.miss_cause(idx, "uir") == "u for v"
-    assert coverage.miss_cause(idx, "jam") == "j for i"
-    assert coverage.miss_cause(idx, "uirumque") == "enclitic -que + u for v"
+    assert coverage.miss_cause(idx, "uir", LATIN) == "u for v"
+    assert coverage.miss_cause(idx, "jam", LATIN) == "j for i"
+    assert coverage.miss_cause(idx, "uirumque", LATIN) == "enclitic -que + u for v"
 
 
 def test_measure_shares(index):
-    report = coverage.measure(index, {"lateris": 3, "latus": 1, "virum": 4})
+    report = coverage.measure(index, {"lateris": 3, "latus": 1, "virum": 4}, LATIN)
     assert report["tokens"] == 8
     assert report["token_share"]["miss"] == 0.5
     assert report["ambiguous_top"][0][:2] == ["latus", 1]
@@ -136,6 +137,19 @@ def test_clean_macron_lines_and_tokenize():
     assert tokenize("ā̆b")["ā̆b"] == 1
 
 
+TEI_EDITION = """<TEI xmlns="http://www.tei-c.org/ns/1.0"><teiHeader><title>Ἰλιάς</title>
+</teiHeader><text><body><div type="edition"><div type="textpart" n="1"><head>Α</head>
+<l n="1"><milestone unit="para"/>μῆνιν ἄειδε θεὰ</l><l n="2">οὐλομένην, ἣ μυρίʼ<note>
+Zenodotus</note> Ἀχαιοῖς</l></div><div type="textpart" n="2"><l>ἄλλοι μέν</l></div>
+</div></body></text></TEI>"""
+
+
+def test_clean_tei_keeps_the_edition_without_notes():
+    assert clean(TEI_EDITION, "tei:1") == "μῆνιν ἄειδε θεὰ οὐλομένην, ἣ μυρίʼ Ἀχαιοῖς"
+    words = tokenize(clean(TEI_EDITION, "tei"))
+    assert "ἄλλοι" in words and "Ἰλιάς" not in words and "Zenodotus" not in words
+
+
 def test_extract_sample_follows_pointer_chains(tmp_path):
     src = tmp_path / "dump.jsonl"
     src.write_text(
@@ -143,7 +157,7 @@ def test_extract_sample_follows_pointer_chains(tmp_path):
         encoding="utf-8",
     )
     dst = tmp_path / "sample.jsonl"
-    extract_sample(src, dst, lemmas=0, include=["caussis"])
+    extract_sample(src, dst, LATIN, lemmas=0, include=["caussis"])
     with dst.open(encoding="utf-8") as f:
         words = {(e["word"], e["pos"]) for e in map(json.loads, f)}
     # caussis -> caussa -> causa: the lemma and every pointer to it come along

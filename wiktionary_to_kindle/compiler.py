@@ -9,11 +9,17 @@ from subprocess import CalledProcessError
 from .utils import TEMPLATES
 
 
-def write_opf(files_dir, page_count, dump_date, build_date, version):
+def write_opf(files_dir, language, page_count, dump_date, build_date, version):
     """Write dictionary.opf: the front page, then page_count entry pages."""
     opf_header = Template(TEMPLATES.joinpath("opf_header.txt").read_text("utf-8"))
     html_lines = opf_header.substitute(
-        dump_date=dump_date, build_date=build_date, version=version
+        name=language.name,
+        code=language.code,
+        index_name=language.index_name,
+        identifier=language.name.lower().replace(" ", "-") + "-dictionary",
+        dump_date=dump_date,
+        build_date=build_date,
+        version=version,
     ).split("\n")
 
     for page_num in range(page_count):

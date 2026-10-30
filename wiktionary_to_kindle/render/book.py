@@ -14,8 +14,9 @@ class BookWriter:
     """Write the dictionary's pages into files_dir: entries (0000.xhtml, ...) and the
     front page."""
 
-    def __init__(self, files_dir, max_page_len=5000, descendant_langs=None):
+    def __init__(self, files_dir, language, max_page_len=5000, descendant_langs=None):
         self.files_dir = files_dir
+        self.language = language
         self.descendant_langs = descendant_langs
         self.entry_pages = {}  # entry id -> its page's filename
         self.weights = {}  # entry id -> estimated frequency (popup_order)
@@ -54,7 +55,7 @@ class BookWriter:
     def write_front(self, dump_date, build_date, version):
         header = TEMPLATES.joinpath("html_header.txt").read_text("utf-8").split("\n")
         footer = TEMPLATES.joinpath("html_footer.txt").read_text("utf-8").split("\n")
-        body = HTMLRenderer.render_front(dump_date, build_date, version)
+        body = HTMLRenderer.render_front(self.language, dump_date, build_date, version)
         Path(self.files_dir, "front.xhtml").write_text(
             "\n".join(header + body + footer), encoding="utf-8"
         )
