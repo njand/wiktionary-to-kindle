@@ -2,8 +2,10 @@ name: Build and Release Dictionaries
 
 on:
   schedule:
-    # Runs at 2:14 AM UTC every Sunday to bypass top-of-the-hour queue bottlenecks
-    - cron: '14 2 * * 0'
+    # Sundays at 14:14 UTC: Kaikki posts its weekly dump on Sunday morning (08:19 UTC on
+    # 2026-10-25), and GitHub starts scheduled runs hours late, so an earlier cron built
+    # from the week before's data. Off the hour to avoid the queue there.
+    - cron: '14 14 * * 0'
   workflow_dispatch: # Allows you to trigger the build manually from the GitHub UI
     inputs:
       allow_coverage_drop:
@@ -146,33 +148,14 @@ jobs:
           gh release download --repo "$GITHUB_REPOSITORY" --pattern 'stats-*.json' --pattern 'coverage-*.json' --dir previous
           || echo "No statistics in the latest release"
 
+      - name: Setup environment
+        uses: astral-sh/setup-uv@v5
+
+      # A table of every dictionary, with each one's details and device check folded away
       - name: Write release notes
         run: |
-          for stats in dictionaries/stats-*.json; do
-            lang=$(basename "$stats" .json | sed 's/^stats-//')
-            printf '## %s\n\n### Index compared with the latest release\n\n' "$lang" >> notes.md
-            if [ -f "previous/stats-$lang.json" ]; then
-              python3 -m wiktionary_to_kindle.quality diff "previous/stats-$lang.json" "$stats" >> notes.md
-            else
-              echo "No statistics in the latest release to compare with." >> notes.md
-            fi
-            if [ -f "dictionaries/coverage-$lang.md" ]; then
-              printf '\n### Corpus lookup coverage\n\n' >> notes.md
-              cat "dictionaries/coverage-$lang.md" >> notes.md
-            fi
-            if [ -f "dictionaries/prepared-$lang.md" ]; then
-              printf '\n### Coverage of a book prepared with prepare-book (--decide rooted)\n\n' >> notes.md
-              cat "dictionaries/prepared-$lang.md" >> notes.md
-            fi
-            if [ -f "previous/coverage-$lang.json" ] && [ -f "dictionaries/coverage-$lang.json" ]; then
-              printf '\n### Coverage compared with the latest release\n\n' >> notes.md
-              python3 -m wiktionary_to_kindle.quality coverage-diff "previous/coverage-$lang.json" "dictionaries/coverage-$lang.json" >> notes.md
-            fi
-            if [ -f "docs/device-check-$lang.md" ]; then
-              printf '\n### Device check\n\n' >> notes.md
-              cat "docs/device-check-$lang.md" >> notes.md
-            fi
-          done
+          echo "Built by GitHub Actions from ${GITHUB_SHA::7}. A pre-release until it is checked on a Kindle (each dictionary's device check is below)." > intro.md
+          uv run python -m wiktionary_to_kindle.quality notes dictionaries --previous previous --intro intro.md > notes.md
 
       - name: Get current date
         id: date
@@ -192,3 +175,21 @@ jobs:
             dictionaries/**/*-stardict.zip
             dictionaries/stats-*.json
             dictionaries/coverage-*.json
+
+      # The README links to this release's files, so each language's newest build has a
+      # download address that doesn't change from week to week
+      - name: Update the latest-build release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          shopt -s globstar
+          {
+            echo "The newest build of every dictionary, replaced each week. Dated releases keep each build; the one marked Latest has been checked on a Kindle."
+            echo
+            cat notes.md
+          } > latest-notes.md
+          if ! gh release view latest-build > /dev/null 2>&1; then
+            gh release create latest-build --prerelease --title "Latest build (in testing)" --notes-file latest-notes.md
+          fi
+          gh release upload latest-build --clobber dictionaries/**/*.mobi dictionaries/**/*-stardict.zip
+          gh release edit latest-build --notes-file latest-notes.md

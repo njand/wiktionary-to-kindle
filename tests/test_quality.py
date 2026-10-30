@@ -6,6 +6,7 @@ from wiktionary_to_kindle.languages import LATIN
 from wiktionary_to_kindle.quality import coverage, stats
 from wiktionary_to_kindle.quality.corpus import clean, tokenize
 from wiktionary_to_kindle.quality.labels import build_index, read_entries
+from wiktionary_to_kindle.quality.notes import release_notes
 from wiktionary_to_kindle.quality.sample import extract_sample
 from wiktionary_to_kindle.utils import kindle_fold
 
@@ -233,3 +234,28 @@ def test_coverage_diff_new_source_is_not_compared():
     assert regressions == []
     assert "| gate | | | new | | |" in markdown
     assert "| all | | | sources differ | | |" in markdown
+
+
+def test_release_notes_lead_with_one_row_per_dictionary(tmp_path):
+    def write(folder, entries, opens):
+        folder.mkdir()
+        figures = {"entries": entries, "mobi_bytes": 60_000_000}
+        (folder / "stats-la.json").write_text(json.dumps(figures), encoding="utf-8")
+        report = coverage_report(caesar=(100, opens, 0.0), all=(100, opens, 0.0))
+        (folder / "coverage-la.json").write_text(json.dumps(report), encoding="utf-8")
+
+    write(tmp_path / "old", 100, 0.9)
+    write(tmp_path / "new", 120, 0.92)
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "device-check-la.md").write_text("- [ ] `et`", encoding="utf-8")
+
+    notes = release_notes(tmp_path / "new", tmp_path / "old", docs, intro="Built.")
+    assert notes.startswith("Built.\n\n| Dictionary |")
+    assert "| Latin | 120 | 92.0% | +2.0 pp | `la-wiktionary.mobi`, 60 MB |" in notes
+    # The rest is folded away
+    assert "<details><summary>Latin: index and coverage</summary>" in notes
+    assert "<details><summary>Latin: device check</summary>\n\n- [ ] `et`" in notes
+
+    first = release_notes(tmp_path / "new", None, docs)
+    assert "| Latin | 120 | 92.0% | – |" in first

@@ -42,7 +42,7 @@ def dictionary_cover(name):
 
 
 def title_lines(draw, name, size):
-    """"name-English" as fitted lines: one if it fits at 80% of size or more, else
+    """ "name-English" as fitted lines: one if it fits at 80% of size or more, else
     "name-" and "English", both in the size the longer fits, so a name is never split."""
     line = fit(draw, f"{name}-English", size, serif)
     if line[1].size >= size * 0.8:
@@ -94,7 +94,9 @@ def place(draw, line, top, fill):
     the y its ink ends at."""
     text, font = line
     left, ink_top, right, bottom = font.getbbox(text)
-    draw.text(((WIDTH - (right - left)) / 2 - left, top - ink_top), text, font=font, fill=fill)
+    draw.text(
+        ((WIDTH - (right - left)) / 2 - left, top - ink_top), text, font=font, fill=fill
+    )
     return top + bottom - ink_top
 
 
