@@ -36,8 +36,9 @@ class Language:
     implied_forms: Callable[
         [list[dict], set[str], dict], Iterable[tuple[str, list[str]]]
     ]
-    # The head line after the headword, made ready for render.headline: (text, pos) -> text
-    head_line: Callable[[str, str | None], str]
+    # The head line after the headword, made ready for render.headline:
+    # (text, pos, headword) -> text
+    head_line: Callable[[str, str | None, str], str]
     # How the head line's genders are shown: m -> m. (Latin), m -> ὁ (Greek)
     genders: dict[str, str]
     descendants: tuple[str, ...]  # descendant languages kept unless --descendants

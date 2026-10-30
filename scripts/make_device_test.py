@@ -32,7 +32,7 @@ from wiktionary_to_kindle.languages import LANGUAGES, get_language
 from wiktionary_to_kindle.quality.corpus import tokenize
 from wiktionary_to_kindle.quality.kindling import default_binary, lookup
 from wiktionary_to_kindle.quality.labels import build_index, read_entries
-from wiktionary_to_kindle.utils import TEMPLATES
+from wiktionary_to_kindle.render.cover import labelled_cover
 
 ZWSP = "\u200b"
 # A hair space: the only separator a long press stops at (device test, 2026-10-29), which
@@ -112,13 +112,15 @@ def corpus_counts(cache_dir):
 
 
 def write_book(out_dir, rows, built, language):
-    """Write the book's XHTML and OPF, with the dictionary's cover, into out_dir.
+    """Write the book's XHTML, OPF and cover into out_dir.
 
-    The build time is in the title and identifier, so the Kindle files each build as a
-    new book and a stale copy is easy to tell apart."""
+    The build time is in the title, identifier and cover, so the Kindle files each build
+    as a new book and a stale copy is easy to tell apart."""
     name, code = language.name, language.code
     out_dir.mkdir(parents=True, exist_ok=True)
-    Path(out_dir, "cover.png").write_bytes(TEMPLATES.joinpath("cover.png").read_bytes())
+    Path(out_dir, "cover.png").write_bytes(
+        labelled_cover("Device test", [f"{name} dictionary", built])
+    )
     body = [
         f"<h1>{name} dictionary: device test</h1>",
         f"<p><small>Built {built}.</small></p>",

@@ -271,6 +271,102 @@ def test_turkish_miss_variants():
     ]  # longest first, at least 3 letters
 
 
+def turkish(entry):
+    entry["lang_code"] = "tr"
+    # The descendants the build keeps for Turkish: none
+    entry = Entry(entry, TURKISH)
+    return " ".join(HTMLRenderer.render_entry(entry, list(TURKISH.descendants)))
+
+
+@pytest.mark.parametrize(
+    "pos, word, expansion, shown",
+    [
+        # The accusative where the stem changes, as TDK gives it; never the plural
+        (
+            "noun",
+            "kitap",
+            "kitap (definite accusative kitabı, plural kitaplar or (obsolete) kütüp)",
+            "</idx:orth>, -bı &#183; <i>noun</i></p>",
+        ),
+        (
+            "noun",
+            "ev",
+            "ev (definite accusative evi, plural evler)",
+            "</idx:orth> &#183; <i>noun</i></p>",
+        ),
+        (
+            "noun",
+            "saat",
+            "saat (definite accusative saati, plural saatler)",
+            "</idx:orth>, -ti &#183;",
+        ),
+        (
+            "noun",
+            "burun",
+            "burun (definite accusative burnu, plural burunlar)",
+            "</idx:orth>, -rnu &#183;",
+        ),
+        (
+            "noun",
+            "hak",
+            "hak (definite accusative hakkı, plural haklar)",
+            "</idx:orth>, -kkı &#183;",
+        ),
+        (
+            "noun",
+            "su",
+            "su (definite accusative suyu, plural sular)",
+            "</idx:orth> &#183;",
+        ),
+        (
+            "noun",
+            "CD",
+            "CD (definite accusative CD'yi, plural CD'ler)",
+            "</idx:orth>, -'yi &#183;",
+        ),
+        # Wiktionary's slip for esirliği is left out
+        (
+            "noun",
+            "esirlik",
+            "esirlik (definite accusative esirli, plural esirlikler)",
+            "</idx:orth> &#183;",
+        ),
+        (
+            "noun",
+            "propolis",
+            "propolis (definite accusative propolisi, uncountable)",
+            "</idx:orth> &#183; <i>noun, uncountable</i></p>",
+        ),
+        # A verb's aorist, always
+        (
+            "verb",
+            "gitmek",
+            "gitmek (third-person singular simple present gider)",
+            "</idx:orth>, -der &#183; <i>verb</i></p>",
+        ),
+        (
+            "verb",
+            "almak",
+            "almak (third-person singular simple present alır)",
+            "</idx:orth>, -ır &#183;",
+        ),
+    ],
+)
+def test_turkish_head_line(pos, word, expansion, shown):
+    html = turkish(lemma(word, pos, expansion, ["x"]))
+    assert shown in html
+    assert "pl." not in html and "<br/>" not in html
+
+
+def test_turkish_sense_notes_and_no_descendants():
+    entry = lemma("gitmek", "verb", "gitmek", [])
+    entry["senses"] = [{"glosses": ["to lead"], "raw_glosses": ["(for roads) to lead"]}]
+    entry["descendants"] = [{"lang": "Swedish", "lang_code": "sv", "word": "gitta"}]
+    html = turkish(entry)
+    assert "<li><i>(for roads)</i> to lead</li>" in html
+    assert "Descendants" not in html
+
+
 @pytest.mark.parametrize(
     "base, front, implied",
     [

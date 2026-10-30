@@ -34,10 +34,69 @@ def skips_form(form):
 INNER_LABEL = re.compile(r"\((obsolete|archaic|dialectal|colloquial|rare)\)\s*")
 
 
-def head_line(text, pos):
-    """The head line after the headword, "(definite accusative evi, plural evler)", with
-    a label in nested parentheses unwrapped ("or obsolete kütüp")."""
-    return INNER_LABEL.sub(r"\1 ", text)
+VOWELS = "aeıioöuüâîû"
+# The vowel of a suffix with four forms (-ı, -i, -u, -ü), by the stem's last vowel
+HARMONY = dict(zip(VOWELS, "ıiıiuüuüıiu"))
+ACCUSATIVE = "definite accusative "
+AORIST = "third-person singular simple present "
+
+
+def head_line(text, pos, word):
+    """The head line after the headword as Turkish dictionaries give it (TDK, Redhouse):
+    a verb's aorist and a noun's accusative as the ending after what they share with the
+    headword, the accusative only where it is not the regular one, and no plural, which
+    is always regular. "(definite accusative kitabı, plural kitaplar)" → "(definite
+    accusative -bı)"; "(definite accusative evi, plural evler)" → ""; "(third-person
+    singular simple present gider)" → "(third-person singular simple present -der)"."""
+    text = INNER_LABEL.sub(r"\1 ", text)
+    match = re.search(r"\((.*)\)", text)
+    if not match:
+        return text
+    kept = []
+    for part in match.group(1).split(", "):
+        if part.startswith(ACCUSATIVE):
+            # Not "[please provide]", nor one cut short (esirlik, esirli)
+            endings = [
+                _ending(word, form, noun=True)
+                for form in part[len(ACCUSATIVE) :].split(" or ")
+                if not form.startswith("[")
+                and form != _accusative(word)
+                and not word.startswith(form)
+            ]
+            if endings:
+                kept.append(ACCUSATIVE + " or ".join(endings))
+        elif part.startswith(AORIST) and word.endswith(("mek", "mak")):
+            forms = part[len(AORIST) :].split(" or ")
+            kept.append(AORIST + " or ".join(_ending(word[:-3], f) for f in forms))
+        elif not part.startswith("plural "):
+            kept.append(part)
+    rest = text[: match.start()] + text[match.end() :]
+    return " ".join(
+        filter(None, [rest.strip(), f"({', '.join(kept)})" if kept else ""])
+    )
+
+
+def _accusative(word):
+    """The regular accusative: evi, kapıyı, saatı (saat's is saati, so it is shown)."""
+    vowels = [char for char in word.lower() if char in VOWELS]
+    if not vowels:
+        return None
+    return word + ("y" if word[-1] in VOWELS else "") + HARMONY[vowels[-1]]
+
+
+def _ending(stem, form, noun=False):
+    """form as the ending after what it shares with stem: gider after git is -der.
+    A noun's ending starts at the consonant before it, as TDK writes it (burun, -rnu;
+    hak, -kkı; saat, -ti), unless that is a vowel (kitap, -bı) or the ending follows an
+    apostrophe (CD, -'yi)."""
+    shared = 0
+    while shared < min(len(stem), len(form)) and stem[shared] == form[shared]:
+        shared += 1
+    if not shared:
+        return form
+    if noun and form[shared - 1] not in VOWELS and form[shared] not in APOSTROPHES:
+        shared -= 1
+    return "-" + form[shared:]
 
 
 def miss_variants(word):
@@ -73,7 +132,7 @@ TURKISH = Language(
     implied_forms=implied_forms,
     head_line=head_line,
     genders={},
-    descendants=(),
+    descendants=(),  # none: what Turkish gave other languages is no help to a reader
     homographs="<i>yüz</i>, face and hundred",
     miss_variants=miss_variants,
     extra_entries=suffix_entries,

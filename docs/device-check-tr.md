@@ -6,7 +6,7 @@ Before marking this release as the latest, load `tr-wiktionary.mobi` on a Kindle
 - [ ] `evlerimizden` (a table form) opens ev; `gidip` and `yoktu` open gitmek and yok; `nedeniyle` and `dünyadaki` (generated) open neden and dünya.
 - [ ] `yüz` lists yüz (face), yüz (hundred) and yüzmek.
 - [ ] `Türkiye'nin` opens Türkiye: note whether the selection takes in the apostrophe (it should; the apostrophe weighs nothing).
-- [ ] In the popup for `ev`, the head line reads `ev, evi · noun` with `pl. evler` on a smaller line; `gitmek` reads `gitmek, gider · verb`.
+- [ ] In the popup for `ev`, the head line reads `ev · noun`, with no plural line; `kitap` reads `kitap, -bı · noun` and `gitmek` reads `gitmek, -der · verb`. Sense notes are in parentheses (`(for roads) to lead`), and there are no descendants.
 
 Then the hair space, the check everything in `prepare-book` depends on. Build the test book (35 items: dotted and dotless i, homographs, generated forms, names with apostrophes, split words, and a passage of Ömer Seyfettin's "Aleko" with its split words, once free to break and once in `white-space: nowrap`):
 
