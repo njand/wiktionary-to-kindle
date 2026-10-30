@@ -7,6 +7,7 @@ must be a label of its own. Wiktionary's headwords and table forms carry length 
 and capitals at the start of a paragraph or a speech.
 """
 
+import re
 import unicodedata
 
 from ..utils import BREVE, MACRON
@@ -38,9 +39,31 @@ def with_grave(word: str) -> str:
 def lookup_spellings(form: str) -> list[str]:
     """The spellings of form a Greek text prints: without length marks, and with a grave
     for a final acute. The spelling with length marks is no label: no text prints it.
-    Capitals are added for some entries only (capitalizes)."""
-    plain = strip_length(form)
+    Capitals are added for some entries only (capitalizes). A final σ, which some table
+    forms have (ἀγαπήσῃσ), is written ς."""
+    plain = FINAL_SIGMA.sub("ς", strip_length(form))
     return list(dict.fromkeys([plain, with_grave(plain)]))
+
+
+FINAL_SIGMA = re.compile(r"σ$")
+# εἰμί's forms that the tables of a perfect's periphrastic optative split off as forms of
+# their own ("λελυμένοι εἶεν" gives εἶεν, linked to λελυμένοι): 1,700 verbs had them
+AUXILIARY_FORMS = {"εἶτον", "εἶτε", "εἶεν", "εἴτην", "εἶμεν"}
+
+
+def skips_form(form):
+    """Whether a table form is no spelling of its entry: one of εἰμί's, split off a
+    periphrastic form (it links to the participle it goes with, not to itself), or one
+    with Latin letters, a romanization or a table note ("tēîsĭnĭ", "third declension")."""
+    word = form.get("form", "")
+    links = form.get("links") or []
+    split_off = (
+        word in AUXILIARY_FORMS
+        and bool(links)
+        and links[0][0] == word
+        and links[0][1].split("#")[0] != word
+    )
+    return split_off or any(char.isascii() and char.isalpha() for char in word)
 
 
 # Words that open a sentence or a speech often enough for their capitalized spellings to
@@ -53,6 +76,24 @@ def capitalizes(pos, headword):
     of a word in CAPITALIZED_POS. Capitalizing every form doubled the labels for 0.8% of
     corpus tokens (roadmap, Stage 9)."""
     return headword or pos in CAPITALIZED_POS
+
+
+# The romanization after the headword: "λόγος • (lógos) m (genitive λόγου)"
+ROMANIZATION = re.compile(r"^•\s*\([^()]*\)\s*")
+# Head lines of these parts of speech name a gender for the masculine they start with
+GENDERED_FORMS = {"adj", "participle", "det", "pron", "num"}
+# Genders as dictionaries of Greek give them, by the article: λόγος, λόγου, ὁ
+GENDERS = {"m": "ὁ", "f": "ἡ", "n": "τό", "or": "or", "sg": "sg.", "pl": "pl."}
+
+
+def head_line(text, pos):
+    """The head line after the headword, without its romanization, and without the
+    gender of an adjective's masculine: "• (lógos) m (genitive λόγου); second
+    declension" → "m (genitive λόγου); second declension"."""
+    text = ROMANIZATION.sub("", text)
+    if pos in GENDERED_FORMS:
+        text = re.sub(r"^(?:[mfn](?: or [mfn])*)\s*(?=\(|$)", "", text)
+    return text
 
 
 def implied_forms(forms, known):
@@ -133,16 +174,21 @@ ANCIENT_GREEK = Language(
     code="grc",
     name="Ancient Greek",
     index_name="Greek",
+    # The page title: what texts print and form-of links name. The head line is shown,
+    # with its length marks, but it is less reliable (ᾱ́ζω for ἄζω, without its breathing)
+    headword=lambda header: header.plain_word,
     lookup_spellings=lookup_spellings,
     capitalizes=capitalizes,
     # Accents and breathings belong to the spelling (ὅς, ὡς and ὥς are three words)
     letters=strip_length,
     alternative_tags=frozenset({"alternative"}),
-    periphrastic=None,
+    skips_form=skips_form,
     pos_by_head_template={},
     implied_forms=implied_forms,
-    # To be chosen with a sample (roadmap, Stage 10)
-    descendants=("Latin", "English"),
+    head_line=head_line,
+    genders=GENDERS,
+    # The languages Greek entries cite most: Modern Greek (6,833 entries), Latin (5,600)
+    descendants=("Greek", "Latin", "English"),
     homographs="<i>εἶ</i>, of <i>εἰμί</i> and of <i>εἶμι</i>",
     miss_variants=miss_variants,
 )

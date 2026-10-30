@@ -55,6 +55,8 @@ LANGUAGES = {
     "Portuguese": "Pt.",
     "French": "Fr.",
     "English": "Eng.",
+    "Latin": "Lat.",
+    "Greek": "Mod. Gk.",  # in a Greek entry, Modern Greek
 }
 
 
@@ -103,6 +105,14 @@ SENSE_LABELS = {
     "Renaissance Latin": "Ren. Lat.",
     "Contemporary Latin": "Contemp. Lat.",
     "Greek mythology": "Gk. myth.",
+    # Greek dialects
+    "Epic": "Ep.",
+    "chiefly Epic": "chiefly Ep.",
+    "Homeric": "Hom.",
+    "Attic": "Att.",
+    "Ionic": "Ion.",
+    "Doric": "Dor.",
+    "Aeolic": "Aeol.",
     "Roman mythology": "Rom. myth.",
     "anatomy": "anat.",
     "astronomy": "astron.",

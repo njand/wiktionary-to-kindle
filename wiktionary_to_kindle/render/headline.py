@@ -79,7 +79,7 @@ def compact_grammar(remainder, pos):
     return text.strip()
 
 
-def headline(remainder, pos):
+def headline(remainder, pos, genders=GENDERS):
     """(forms, gender, grammar, others) for the text after the headword, as markup:
     ", amāre, amāvī, amātum", "<i>m.</i>", "1st conj.", "<i>fem.</i> rēgīna". None when
     the line does not have the usual shape."""
@@ -89,7 +89,7 @@ def headline(remainder, pos):
     if not match:
         return None
     before, inside, after = match.groups()
-    gender = " ".join(GENDERS.get(token, token) for token in before.split())
+    gender = " ".join(genders.get(token, token) for token in before.split())
 
     if pos == "verb":
         principal = VERB_PARTS
@@ -119,15 +119,16 @@ def headline(remainder, pos):
     )
 
 
-def headline_tail(header, pos):
+def headline_tail(header, pos, language):
     """Markup for what follows the headword on its line: the principal parts, gender,
     then part of speech and class in italics, and the other forms on a smaller line."""
     shown = POS_NAMES.get(pos, pos)
     parts = None
     if header.labelled is not None and "<br/>" not in header.remainder:
-        parts = headline(header.labelled, pos)
+        labelled = language.head_line(header.labelled, pos)
+        parts = headline(labelled, pos, language.genders)
     if parts is None:
-        grammar = compact_grammar(header.remainder or "", pos)
+        grammar = compact_grammar(language.head_line(header.remainder or "", pos), pos)
         return (f" {grammar}" if grammar else "") + (
             f" &#183; <i>{shown}</i>" if shown else ""
         )

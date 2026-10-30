@@ -250,13 +250,18 @@ A full Latin build after this stage writes pages and an OPF identical to Stage 7
 
 Remaining misses (8.3% of tokens): unknown 4,358 tokens, mostly Herodotus's Ionic forms (`τούτοισι`, `χρέωνται`, `ἀπίκοντο`; Herodotus opens 87.8%, the rest 93–95%), Koine words (`καθὼς`) and names; capitalized names 795; an enclitic's accent 616; capitalized open-class forms 216; elision 65. Measurements: `outputs/measure/stats-grc-stage9.json`, `coverage-grc-stage9.*`. The device test book is rebuilt against this dictionary (`outputs/device-test-grc/`).
 
-## Stage 10: Ancient Greek — entries
+## Stage 10: Ancient Greek — entries — done, device check pending
 
-- [ ] Headline in the style of LSJ: `λόγος, -ου, ὁ · noun, 2nd decl.` (the article for the gender: ὁ, ἡ, τό); adjectives `-ος, -η, -ον`; verbs with principal parts taken from the tables where they exist (`λύω, λύσω, ἔλυσα, λέλυκα, λέλυμαι, ἐλύθην`). The headword keeps its length marks.
-- [ ] Sense labels shortened: Ep., Att., Ion., Dor., Aeol., Koine, Byz., poet.
-- [ ] Default descendant languages for Greek (Latin borrowings are the interesting ones): decide with a sample.
-- [ ] Wiktionary's romanization is not shown: the reader is reading Greek script.
-- [ ] Merged pointer pages keep their line by kind (`alt.`, `Ep.`, `dim.`), as in Stage 4.
+- [x] **Head line.** Greek head lines (`λόγος • (lógos) m (genitive λόγου); second declension`) now parse like Latin's: `models/header.py` finds a headword with accents of its own in the head line (it compared the page title's accents with the line stripped of them, so no Greek headword was found and the whole line was shown). `Language.head_line` drops the romanization, and an adjective's leading gender; `Language.genders` shows the gender by the article. Result: `λόγος, λόγου ὁ · noun, 2nd decl.`, `ᾰ̓γᾰθός, ᾰ̓γᾰθή, ᾰ̓γᾰθόν · adjective, 1st/2nd decl.`, `χώρᾱ, χώρᾱς ἡ · noun, 1st decl.`; the headword is shown as the head line spells it, with its length marks. The genitive is given whole, not as LSJ's ending (`-ου`).
+- [ ] **Verbs' principal parts: deferred.** Greek verb head lines name none, and the tables tag no tense (Stage 8), so the parts would have to come from the `table-tags` rows; verbs show `λῡ̆́ω · verb`.
+- [x] **Filed by page title.** `Language.headword` gives the spelling an entry is filed and labelled under: Latin's head line (macronized, which form-of targets name), Greek's page title (what texts print and form-of links name; the head line is less reliable: `ᾱ́ζω` for ἄζω, without its breathing, `ἀθρᾰ́γένη` with two accents). Filing Greek by the head line instead broke merges (ἀνάσσω's forms became entries).
+- [x] **Sense labels.** Ep., chiefly Ep., Hom., Att., Ion., Dor., Aeol. (no Latin gloss uses these). Koine stays as it is.
+- [x] **Descendants.** Greek entries keep Modern Greek (cited by 6,833 entries), Latin (5,600) and English (2,671), shown as `Mod. Gk.`, `Lat.`, `Eng.`.
+- [x] **Romanization** is not shown (`head_line` drops it).
+- [x] **Merged pages.** A page reached through an inflected form is no spelling of the lemma and gets no line: εἰμί's `alt. ἔῃ` came from ἔῃ, "alternative form of ᾖ", the subjunctive. `collect_forms` now gives a line only to pages reached through the lemma or another page with a line. Greek merged pages are mostly `alt.` (544), `comp.`, `superl.`; dialect forms ("Epic form of") are forms, with no line, as in Latin.
+- [x] **Found on the way, in the Greek tables:** 1,713 verbs listed εἰμί's optatives (`εἶεν`, `εἶτε`, `εἴτην`, `εἶτον`, `εἶμεν`), which Kaikki splits off the periphrastic perfect optative (`λελυμένοι εἶεν`); 24,516 forms are romanizations or table notes (`tēîsĭnĭ`, `third declension`, `first`, which 638 entries shared); some forms end in σ for ς (`ἀγαπήσῃσ`). `Language.skips_form` (Latin: its periphrastic forms) now drops the first two, and Greek labels write a final σ as ς.
+
+Measured (same dump; `SORT_VERSION` 10): Greek has 21,383 entries (unchanged), 998,072 labels (from 1,172,137), a 34.2 MB `.mobi`, and still opens 91.7% of corpus tokens; every word in `tests/lookup_words_grc.txt` opens. Latin: 192 entries change, all by losing `alt.` lines for spellings of participles and other forms (`adhaereō` loses `adhēsūrus`, `adnotō` loses `annotandus`, `annotātūrus`, `annotāns`); nine of them change labels without changing what a tap reaches (three pages now take their headword from the head line, `m͛cātor` for `m͛cator`; six only swap soft-hyphen ranks, their size estimates having changed). Latin coverage is unchanged in every source. The device test book is rebuilt (`outputs/device-test-grc/`).
 
 ## Stage 11: Ancient Greek — releases
 

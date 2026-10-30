@@ -29,7 +29,7 @@ from .pointers import (
 from .related import MERGED_KEY
 
 # Bump when merge_dump's output changes, so cached sorted files are rebuilt
-SORT_VERSION = 8
+SORT_VERSION = 10
 
 SORTED_SUFFIX = "(sorted)"
 
@@ -145,7 +145,7 @@ def merge_dump(path, language, chunk_size=200000, force=False):
                         and not word.startswith("-")
                         and not word.endswith("-")
                     ):
-                        header = get_header(obj)
+                        header = get_header(obj, language)
                         root = root_form(obj.get("senses", []), language)
                         known[remove_breves(header)].add(part_of_speech)
 
@@ -179,7 +179,7 @@ def merge_dump(path, language, chunk_size=200000, force=False):
         def read_lines(file_obj):
             for fl in file_obj:
                 obj = json_loads(fl)
-                header = get_header(obj)
+                header = get_header(obj, language)
                 # Compute exact sort keys once per line to match write_chunk logic
                 yield (*sort_key(header), header, obj.get("pos"), obj)
 
@@ -211,6 +211,7 @@ def merge_dump(path, language, chunk_size=200000, force=False):
                         pos,
                         lemma_pos,
                         promoted,
+                        language,
                     )
                     if "forms" in obj or addl_forms:
                         obj["forms"] = enrich_forms(

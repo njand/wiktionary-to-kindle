@@ -10,14 +10,19 @@ _ABBREVIATION_PATTERN = re.compile(
 
 def find_unaccented(text, word):
     """Return the (start, end) span of text that reads as word once accents are stripped,
-    including the combining marks after its last letter (the breve of ā̆), or None."""
+    including the combining marks after its last letter (the breve of ā̆), or None. A
+    word with accents of its own (a Greek page title, λόγος) is stripped too."""
     if not word:
         return None
     # offsets[k] is the index in text of the k-th character of the accent-stripped text
     offsets = []
     for i, char in enumerate(text):
         offsets.extend([i] * len(normalize(char)))
-    start = "".join(normalize(char) for char in text).find(word)
+    stripped = "".join(normalize(char) for char in text)
+    start = stripped.find(word)
+    if start == -1:
+        word = normalize(word)
+        start = stripped.find(word) if word else -1
     if start == -1:
         return None
     end = offsets[start + len(word) - 1] + 1

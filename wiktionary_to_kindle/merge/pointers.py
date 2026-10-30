@@ -22,14 +22,15 @@ def root_form(senses, language):
     return roots[0]
 
 
-def get_header(json_entry):
+def get_header(json_entry, language):
+    """The headword an entry is filed under (Language.headword), with breves."""
     plain_word = json_entry.get("word", "")
     head_template = json_entry.get("head_templates", [{}])
     expansion = head_template[0].get("expansion", "")
-    return Header(plain_word, expansion, num_headers=1).head_word
+    return language.headword(Header(plain_word, expansion, num_headers=1))
 
 
-def pointer_forms(json_entry):
+def pointer_forms(json_entry, language):
     sense = json_entry.get("senses", [{}])[0]
     tags = sense.get("tags", [])
     processed_forms = []
@@ -38,17 +39,21 @@ def pointer_forms(json_entry):
             form["tags"] = tags
         processed_forms.append(form)
     # Many pointer pages (innocentum, CON) list no forms: their headword is the only one
-    header = get_header(json_entry)
+    header = get_header(json_entry, language)
     if all(form.get("form") != header for form in processed_forms):
         processed_forms.insert(0, {"form": header, "tags": tags})
     return processed_forms
 
 
-def collect_forms(pointers, head_key, part_of_speech, lemma_pos, promoted):
+def collect_forms(pointers, head_key, part_of_speech, lemma_pos, promoted, language):
     """Collect forms of entries that only point at head_key (inflections, comparatives,
     alternative spellings), following chains such as a form of an alternative form.
     Return them with the merged pages that are words of their own (see related)."""
     seen_keys = {head_key}
+    # Keys of words of their own: the lemma, and the pages merged as lines. A page that
+    # points to an inflected form (ἔῃ, alternative form of the subjunctive ᾖ) is no
+    # spelling of the lemma, so it gets no line
+    own_words = {head_key}
     addl_forms = []
     merged = []
     stack = [head_key]
@@ -65,11 +70,12 @@ def collect_forms(pointers, head_key, part_of_speech, lemma_pos, promoted):
                 and alt_pos in lemma_pos[head_key]
             ):
                 continue
-            addl_forms.extend(pointer_forms(json_entry))
-            if page := merged_page(json_entry, alt_header):
-                merged.append(page)
-
+            addl_forms.extend(pointer_forms(json_entry, language))
             sub_key = remove_breves(alt_header)
+            if curr_key in own_words and (page := merged_page(json_entry, alt_header)):
+                merged.append(page)
+                own_words.add(sub_key)
+
             # A form spelled like another lemma (ferō, dative of ferus) leads to that
             # lemma's own pointers (lātum, supine of the verb ferō): not this entry's
             if (

@@ -5,6 +5,7 @@ import re
 import unicodedata
 from itertools import product
 
+from ..render.headline import GENDERS
 from ..utils import BREVE, MACRON, VOWELS, normalize, strip_marks
 from . import Language
 from .la_forms import implied_forms
@@ -101,6 +102,7 @@ def j_for_i(word: str) -> str:
     return "".join(chars)
 
 
+PERIPHRASTIC = re.compile(r".* (sum|esse|fuisse|fore|erat|erit|est|sit|esset|iri|īrī)")
 ENCLITICS = ("que", "ne", "ve")
 CONSONANTAL_U = re.compile(r"[uU](?=[aeiouāēīōūAEIOU])")
 
@@ -136,15 +138,19 @@ LATIN = Language(
     code="la",
     name="Latin",
     index_name="Latin",
+    # The head line's, with macrons: form-of targets name it, and the device folds them
+    headword=lambda header: header.head_word,
     lookup_spellings=lookup_spellings,
     # The device folds case in Latin letters
     capitalizes=lambda pos, headword: False,
     # Page titles have no macrons (iuro for iūrō), and some targets other ones (acontīzō)
     letters=normalize,
     alternative_tags=frozenset({"alternative", "Medieval-Latin"}),
-    periphrastic=r".* (sum|esse|fuisse|fore|erat|erit|est|sit|esset|iri|īrī)",
+    skips_form=lambda form: bool(PERIPHRASTIC.match(form.get("form", ""))),
     pos_by_head_template={"la-part": "participle", "la-gerund": "gerund"},
     implied_forms=implied_forms,
+    head_line=lambda text, pos: text,
+    genders=GENDERS,
     descendants=("English", "Portuguese", "Spanish", "French", "Italian"),
     homographs="<i>latus</i>, <i>lātus</i>",
     miss_variants=miss_variants,

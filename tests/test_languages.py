@@ -85,6 +85,7 @@ def test_greek_pointer_finds_its_lemma_by_letters_with_accents(tmp_path, monkeyp
     with open(merge_dump(str(src), ANCIENT_GREEK).path, encoding="utf-8") as f:
         merged = {e["word"]: e for e in map(json.loads, f)}
     assert "λύσω" not in merged  # merged into λύω, not an entry of its own
+    # Greek pages are filed under their titles, which form-of links name
     assert "λύσω" in {f["form"] for f in merged["λύω"]["forms"]}
     assert "ως" not in {f["form"] for f in merged["ὡς"].get("forms", [])}
 
@@ -161,3 +162,51 @@ def test_greek_capitals_for_headwords_and_closed_classes():
         w[0].isupper()
         for w in Entry(lemma("amo", "verb", "amō", ["love"]), LATIN).all_forms
     )
+
+
+@pytest.mark.parametrize(
+    "pos, word, expansion, shown",
+    [
+        (
+            "noun",
+            "λόγος",
+            "λόγος • (lógos) m (genitive λόγου); second declension",
+            "</idx:orth>, λόγου <i>ὁ</i> &#183; <i>noun, 2nd decl.</i>",
+        ),
+        (
+            "adj",
+            "ἀγαθός",
+            "ᾰ̓γᾰθός • (ăgăthós) m (feminine ᾰ̓γᾰθή, neuter ᾰ̓γᾰθόν); first/second declension",
+            "</idx:orth>, ᾰ̓γᾰθή, ᾰ̓γᾰθόν &#183; <i>adjective, 1st/2nd decl.</i>",
+        ),
+        ("verb", "λύω", "λῡ̆́ω • (lū̆́ō)", "</idx:orth> &#183; <i>verb</i>"),
+    ],
+)
+def test_greek_head_line(pos, word, expansion, shown):
+    entry = greek(lemma(word, pos, expansion, ["x"]))
+    html = " ".join(HTMLRenderer.render_entry(Entry(entry, ANCIENT_GREEK)))
+    assert f"<b>{entry_headword(expansion)}</b>" in html  # length marks shown
+    assert shown in html
+    assert f'<idx:orth value="{strip_length(entry_headword(expansion))}">' in html
+
+
+def entry_headword(expansion):
+    return expansion.split(" • ")[0]
+
+
+def test_greek_auxiliary_forms_and_final_sigma():
+    forms = [
+        ("ἀγαπήσῃσ", ["second-person", "subjunctive"]),  # σ for ς in the table
+        ("εἶεν", ["optative", "plural"]),
+        ("third declension", ["participle"]),  # a table note filed as a form
+    ]
+    entry = greek(lemma("ἀγαπάω", "verb", "ἀγαπάω", ["to love"], forms))
+    entry["forms"][1]["links"] = [["εἶεν", "ἠγαπημένοι#Ancient_Greek"]]
+    labels = Entry(entry, ANCIENT_GREEK).all_forms
+    assert "ἀγαπήσῃς" in labels and "ἀγαπήσῃσ" not in labels
+    assert "εἶεν" not in labels  # εἰμί's, split off "ἠγαπημένοι εἶεν"
+    assert "third declension" not in labels and "third" not in labels
+
+    eimi = greek(lemma("εἰμί", "verb", "εἰμί", ["to be"], [("εἶεν", ["optative"])]))
+    eimi["forms"][0]["links"] = [["εἶεν", "εἶεν#Ancient_Greek"]]
+    assert "εἶεν" in Entry(eimi, ANCIENT_GREEK).all_forms

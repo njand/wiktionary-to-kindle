@@ -26,12 +26,8 @@ PATTERN_INVALID_FORMS = r"^(?:" + "|".join(map(re.escape, INVALID_FORMS)) + r")"
 PATTERN_CONTAINS_PLUS = r".*\+.*"
 
 
-def invalid_pattern(language):
-    """Forms that are no words: table notes, sums, and forms made with an auxiliary."""
-    patterns = [PATTERN_INVALID_FORMS, PATTERN_CONTAINS_PLUS]
-    if language.periphrastic:
-        patterns.append(language.periphrastic)
-    return re.compile("|".join(patterns))
+# Forms that are no words: table notes and sums
+INVALID_PATTERN = re.compile(f"{PATTERN_INVALID_FORMS}|{PATTERN_CONTAINS_PLUS}")
 
 
 class Entry:
@@ -53,7 +49,7 @@ class Entry:
         self.head_word = None
         self.headers = self.get_headers()
         if len(self.headers) > 0:
-            self.head_word = remove_breves(self.headers[0].head_word)
+            self.head_word = remove_breves(language.headword(self.headers[0]))
 
         self.pos = json_entry.get("pos", None)
         head_templates = json_entry.get("head_templates") or [{}]
@@ -173,7 +169,6 @@ class Entry:
         return _parse(raw_descendants)
 
     def get_inflected_forms(self):
-        invalid = invalid_pattern(self.language)
         forms = {}
         for form_obj in self.json_entry.get("forms", []):
             form = form_obj.get("form")
@@ -182,7 +177,8 @@ class Entry:
                 or form == self.head_word
                 or "<" in form
                 or ">" in form
-                or invalid.match(form)
+                or INVALID_PATTERN.match(form)
+                or self.language.skips_form(form_obj)
             ):
                 continue
 
@@ -213,7 +209,7 @@ class Entry:
         are added; see Language.lookup_spellings for the spellings that are.
         """
         all_forms = set()
-        headwords = [header.head_word for header in self.headers]
+        headwords = [self.language.headword(header) for header in self.headers]
         for form in headwords + list(self.inflected_forms.keys()):
             spellings = self.language.lookup_spellings(form)
             if self.language.capitalizes(self.pos, form in headwords):

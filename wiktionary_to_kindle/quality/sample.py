@@ -23,7 +23,7 @@ def extract_sample(src, dst, language, lemmas=2000, include=()):
         if root is None:
             lemma_count += 1
             if obj["word"] in include:
-                keys.add(remove_breves(get_header(obj)))
+                keys.add(remove_breves(get_header(obj, language)))
         elif obj["word"] in include:
             keys.add(remove_breves(root))
     modulus = max(1, lemma_count // max(1, lemmas))
@@ -34,7 +34,7 @@ def extract_sample(src, dst, language, lemmas=2000, include=()):
         for line_no, obj in _entries(src, language.code, json_loads):
             if line_no in picked:
                 continue
-            key = remove_breves(get_header(obj))
+            key = remove_breves(get_header(obj, language))
             root = root_form(obj.get("senses", []), language)
             if root is None:
                 # lemmas=0 keeps only the included words

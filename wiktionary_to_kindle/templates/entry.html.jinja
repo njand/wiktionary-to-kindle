@@ -13,13 +13,13 @@
             </idx:infl>
             {%- endif -%}
         </idx:orth>
-        {{- headline_tail(main_header, entry.pos) | safe -}}
+        {{- headline_tail(main_header, entry.pos, entry.language) | safe -}}
     </p>
 
     {%- for block, header in valid_pairs -%}
         {%- if loop.index0 > 0 -%}
             <p><font size="+1"><b>{{ header.prefix | e }}{{ header.head_word | e }}</b></font>
-            {{- headline_tail(header, entry.pos) | safe -}}</p>
+            {{- headline_tail(header, entry.pos, entry.language) | safe -}}</p>
         {%- endif -%}
         
         {{- macros.render_senses(block, recursive_senses) -}}

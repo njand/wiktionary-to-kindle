@@ -12,6 +12,9 @@ class Language:
     # Wiktionary's name: the dictionary's title, and the section links point to
     name: str
     index_name: str  # the lookup index: idx:entry's name and DefaultLookupIndex
+    # The spelling an entry is filed and labelled under, from its first models.Header: the
+    # head line's (Latin: macronized, which form-of targets name) or the page title's
+    headword: Callable[[object], str]
     # Every spelling of a form a tap should find (Entry.get_all_forms)
     lookup_spellings: Callable[[str], list[str]]
     # Whether a form's spellings also get capitalized ones, by the entry's part of speech
@@ -22,12 +25,17 @@ class Language:
     letters: Callable[[str], str]
     # Form tags marking an alternative spelling: indexed, but listed late in the popup
     alternative_tags: frozenset[str]
-    # Forms made with an auxiliary ("amātus sum"), which no tap reaches; None if none
-    periphrastic: str | None
+    # Whether a table form (Kaikki's form dict) is no spelling of its entry: made with an
+    # auxiliary ("amātus sum", the εἶεν of "λελυμένοι εἶεν"), or a romanization
+    skips_form: Callable[[dict], bool]
     # Kaikki files participles and gerunds under "verb"; their head template says which
     pos_by_head_template: dict[str, str]
     # (spelling, tags) of the regular forms an entry's forms imply (merge.forms)
     implied_forms: Callable[[list[dict], set[str]], Iterable[tuple[str, list[str]]]]
+    # The head line after the headword, made ready for render.headline: (text, pos) -> text
+    head_line: Callable[[str, str | None], str]
+    # How the head line's genders are shown: m -> m. (Latin), m -> ὁ (Greek)
+    genders: dict[str, str]
     descendants: tuple[str, ...]  # descendant languages kept unless --descendants
     homographs: str  # words spelled alike, as markup, for the front page
     # (causes, variant) a word that opens nothing is retried with, to name why
