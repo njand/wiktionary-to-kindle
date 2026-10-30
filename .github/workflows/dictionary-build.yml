@@ -25,7 +25,7 @@ jobs:
       matrix:
         # Wiktionary language codes with a profile in wiktionary_to_kindle/languages/; each
         # finds its corpus, lookup list and device checklist by its code
-        language: ["la", "grc"]
+        language: ["la", "grc", "tr"]
 
     steps:
       - name: Checkout repository
@@ -77,6 +77,15 @@ jobs:
           --kindling kindling-cli
           --mobi outputs/KindleDictionary-${{ matrix.language }}/${{ matrix.language }}-wiktionary.mobi
 
+      # Turkish books are prepared (prepare-book) before reading; measure how such a book
+      # reads, splitting by the stem of each word's lemma, since CI calls no model
+      - name: Measure ${{ matrix.language }} prepared-book coverage
+        if: matrix.language == 'tr'
+        run: >
+          uv run python scripts/measure_prepared.py
+          outputs/KindleDictionary-tr corpus/tr.tsv --decide rooted
+          > outputs/prepared-tr.md
+
       # Uploaded before the lookup check so a failing build can still be inspected
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -88,6 +97,7 @@ jobs:
             outputs/stats-${{ matrix.language }}.json
             outputs/coverage-${{ matrix.language }}.json
             outputs/coverage-${{ matrix.language }}.md
+            outputs/prepared-${{ matrix.language }}.md
 
       - name: Check ${{ matrix.language }} lookups
         if: hashFiles(format('tests/lookup_words_{0}.txt', matrix.language)) != ''
@@ -149,6 +159,10 @@ jobs:
             if [ -f "dictionaries/coverage-$lang.md" ]; then
               printf '\n### Corpus lookup coverage\n\n' >> notes.md
               cat "dictionaries/coverage-$lang.md" >> notes.md
+            fi
+            if [ -f "dictionaries/prepared-$lang.md" ]; then
+              printf '\n### Coverage of a book prepared with prepare-book (--decide rooted)\n\n' >> notes.md
+              cat "dictionaries/prepared-$lang.md" >> notes.md
             fi
             if [ -f "previous/coverage-$lang.json" ] && [ -f "dictionaries/coverage-$lang.json" ]; then
               printf '\n### Coverage compared with the latest release\n\n' >> notes.md

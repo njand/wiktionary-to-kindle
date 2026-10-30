@@ -34,3 +34,13 @@ While carrying out ROADMAP Stages 14–19 (2026-10-29), the user asked for the T
 12. **Evaluation by subagents.** No model could be called from a script here (decision 2), so Claude subagents answered the exported requests for BOUN's held-out test part (460 requests, 732 words) under the same system prompt, and the answers were imported into the cache (`outputs/measure/tr-stage17/`). Scored against BOUN's gold lemmas, a decision being right when it splits after a stem of the gold lemma, or leaves the word whole when no option has it: greedy 77.6%, rooted 78.1%, the model 78.7%. The model leaves 47 words whole (names, look-alike stems such as `Şener`, `Boca`, `bardacıkları`) and makes 113 misleading splits where greedy and rooted make 134. The gain is smaller than hoped: the candidates (a stem that opens, a chain the grammar accepts) already exclude most wrong splits, and BOUN lemmatizes derived words to their roots (`kullanılması` → kullan), so it marks some good derived stems wrong.
 13. **Cost estimate** (not measured against the API): an 80,000-word novel has about 6,000 words to decide in about 4,000 sentences, so about 1 million uncached input tokens ($4 at Opus 5.5 prices), the system prompt cached, and 0.2–1.5 million output tokens depending on how much the model thinks ($4–30). Roughly $10 a novel at effort `low`; Claude Sonnet 5.5 (`--model claude-sonnet-5-5`) would halve it. Run it once per book: the cache makes reruns free.
 14. **Book text goes to the Anthropic API** when a model is used. That is the user's own book, sent under their own API account; `--decide rooted` sends nothing.
+
+## Stage 18: entries
+
+15. **Principal parts on the head line**: a noun's definite accusative (`ev, evi`) and a verb's aorist (`gitmek, gider`), since they show the stem the suffixes go on (`kitab-ı`, `gid-er`). Wiktionary gives no other principal parts for Turkish.
+16. **The popup order is left to the existing estimate** (how much Wiktionary says about an entry), so where a stem folds onto another word the larger entry comes first (`ol`: ölmek, then olmak). A frequency list would fix it; none with a clear licence was at hand, and the user asked to be consulted on corpus licences.
+
+## Stage 19: release
+
+17. **The release is the local build**, not pushed: GitHub Actions has no minutes left, and pushing or opening a pull request waits for the user. The workflow's Turkish step was not run on GitHub; its command was run locally.
+18. **Turkish ships as "in testing"** in the pre-releases, like Ancient Greek, until the device check; the README says so.

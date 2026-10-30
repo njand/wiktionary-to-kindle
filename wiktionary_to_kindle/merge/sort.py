@@ -29,7 +29,7 @@ from .pointers import (
 from .related import MERGED_KEY
 
 # Bump when merge_dump's output changes, so cached sorted files are rebuilt
-SORT_VERSION = 13
+SORT_VERSION = 14
 
 SORTED_SUFFIX = "(sorted)"
 

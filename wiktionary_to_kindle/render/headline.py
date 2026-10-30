@@ -19,9 +19,16 @@ ORDINALS = {
 ORDINAL_PATTERN = re.compile(r"\b(" + "|".join(ORDINALS) + r")\b")
 
 # Labels of the forms a dictionary lists after the headword, by part of speech
-VERB_PARTS = ("present infinitive", "perfect active", "supine")
+# Turkish adds its own: a verb's aorist (gitmek, gider) and a noun's accusative (ev, evi),
+# which show the stem suffixes go on
+VERB_PARTS = (
+    "present infinitive",
+    "perfect active",
+    "supine",
+    "third-person singular simple present",
+)
 ADJECTIVE_PARTS = ("genitive", "feminine", "neuter", "masculine")
-NOUN_PARTS = ("genitive",)
+NOUN_PARTS = ("genitive", "definite accusative")
 ADJECTIVES = {"adj", "participle", "det", "pron", "num", "gerund"}
 # Labels of the other forms, shortened
 OTHER_FORMS = {

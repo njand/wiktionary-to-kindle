@@ -329,7 +329,7 @@ A split leaves a stem and a suffix chain; each must open something useful. Decis
 - [x] **Verb stems as labels**: a verb's stem is its imperative, which the tables list (`ol`, `gel`, `git`), so every verb stem already opened its verb; the narrowed and voiced stems above complete them.
 - [x] **Suffix-chain entries** (`languages/tr_suffixes.py`, `Language.extra_entries`): a small morphotactic grammar with vowel harmony, consonant assimilation, buffer letters, k → ğ and the narrowing before `-Iyor`, spelled after each kind of stem (its last vowel, and whether it ends in a vowel, an l, another voiced or a voiceless consonant). Nouns: plural, possessive, case, `-ki` with a plural and case after it, the copula with persons. Verbs: passive, negation, ability, the tenses with persons and a copula, imperatives, verbal nouns and participles with possessive and case, infinitives, converbs. Six derivational suffixes with a short tail (`bulut-suz`, `gözlük-çü-ler`). 114,013 chain spellings, an entry each, filed as `-lerimizden` (the hyphen weighs nothing; a word spelled like a chain, `de`, is listed first), each sense one analysis: `-lerimizden` *plural + our + from (abl.)*, `-leri` *their / plural + definite object (acc.) / plural + his/her/its*. The same grammar decides which splits are candidates (Stage 16).
 - [x] Measured with the first 58,000 chains (before the passive and derivations): 85,321 entries, 2,713,421 labels (+2.5%), a 72.6 MB `.mobi` (+8%); corpus coverage of whole words unchanged, as expected. The final numbers are under Stage 19.
-- [ ] Lookup list `tests/lookup_words_tr.txt`: moved to Stage 19, against the release build.
+- [x] Lookup list `tests/lookup_words_tr.txt`: checked against the release build (Stage 19).
 
 ## Stage 16: Turkish — `prepare-book` — done
 
@@ -353,17 +353,24 @@ Decided 2026-10-29: the split point is chosen by a language model that reads the
 - [ ] A hand-checked sample of a Seyfettin story, against the model's decisions.
 - [ ] The same machinery, with its own candidates, then serves Latin enclitics (`-que`, `-ne`, `-ve`; see Later).
 
-## Stage 18: Turkish — entries
+## Stage 18: Turkish — entries — done
 
-- [ ] Head line: `ev (definite accusative evi, plural evler)` shown as a dictionary would (`ev, -i · noun`); verbs with their aorist (`gitmek, gider`).
-- [ ] Sense labels, and which descendants to keep, as Greek's Stage 10 did.
-- [ ] Pointer pages (17,882) merge into their lemmas: check the merged lines.
-- [ ] A stem variant's entry says what it is a stem of only if the popup needs it (`kitab-` opens kitap directly).
+- [x] **Head line**: a noun's accusative and a verb's aorist are principal parts (`render/headline.py`, labels Latin and Greek never use), so `ev, evi · noun` with `pl. evler` on the smaller line, and `gitmek, gider · verb`. `tr.head_line` unwraps a label in nested parentheses, which kept the line from parsing (`kitap, kitabı · noun`, `pl. kitaplar or obsolete kütüp`).
+- [x] **Sense labels** read well as Wiktionary gives them (`archit.`, `fig., by ext.`, `dialect`); none added.
+- [x] **Descendants**: kept in every language (`docs/decisions-tr.md`, 6): they close the entry.
+- [x] **Pointer pages** merge into their lemmas: 358 entries gain an `alt.` line, 190 `syn.`, 74 `abbr.`, 14 `archaic`, 8 `dim.` (`dim. babacık: daddy`).
+- [x] **Stem variants** need no entry of their own: `kitab` opens kitap directly. **Suffix-chain entries** show the chain as headword (`-lerimizden · suffix`) and one analysis per sense; where a chain is spelled like a word, the popup ranks the word first (`ması`: maş, then `-ması`).
+- [ ] Known: a stem the device folds onto another word lists the larger entry first (`ol`: ölmek, then olmak), since the popup order estimates by how much Wiktionary says, not by frequency.
 
-## Stage 19: Turkish — releases
+## Stage 19: Turkish — releases — ready, device check pending
 
-- [ ] `tr` in the workflow matrix, `docs/device-check-tr.md`, a README section (the dictionary, and `prepare-book` with its model, cost and the DRM limit), StarDict.
-- [ ] Coverage in the release notes for both raw and prepared text.
+- [x] `tr` in the workflow matrix, with a step measuring how a book prepared with `--decide rooted` reads (`scripts/measure_prepared.py`, in the release notes under the coverage table); `docs/device-check-tr.md` (the dictionary, then the hair-space test book, then a prepared book); a README section (the dictionary, `prepare-book`, its model, cost and the DRM limit) and install steps; the developer guide's "Preparing books (Turkish)". Not run on GitHub (Actions quota): checked locally.
+- [x] **Release build** (raw dump of 2026-10-25, kindling v0.45.6, `SORT_VERSION` 14; `outputs/measure/tr-release/`): 141,375 entries (27,362 words and 114,013 suffix chains), 2,782,005 labels, a **78.1 MB** `.mobi`, built in 4.5 minutes; kindling's checks pass (18 P0, no P1 warning). StarDict: 141,375 headwords and 2,640,272 synonyms (`tr-wiktionary-stardict.zip`).
+- [x] **Lookups**: every word in `tests/lookup_words_tr.txt` opens (lemmas, folded case, table forms, converbs, generated forms, names with apostrophes, stem variants, suffix chains); kindling agrees on the 300 most frequent corpus words; no label is hidden.
+- [x] **Coverage**: 88.4% of corpus tokens open something whole (BOUN 85.0–91.0%, the stories 88.0–92.0%); a prepared book 95.5% (`--decide rooted`; 7.4% of words split). On BOUN's held-out gold lemmas: 84.2% reach their lemma whole, 89.9% prepared; the model's decisions are right 78.7% of the time (rooted 78.1%, greedy 77.6%).
+- [x] The device test book is rebuilt against the release build (`outputs/device-test-tr/`).
+- [ ] **Device check** (`docs/device-check-tr.md`), including Stage 14's hair-space checks; then mark a release with Turkish as the latest.
+- [ ] **A real book**: run `prepare-book` with a model on a Turkish EPUB, measure its cost and time (Stage 17), and read it on the Kindle.
 
 ## Later
 

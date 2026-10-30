@@ -4,7 +4,7 @@
 [![Downloads](https://img.shields.io/github/downloads/njand/wiktionary-to-kindle/total)](https://github.com/njand/wiktionary-to-kindle/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Free Kindle dictionaries built from Wiktionary. Press and hold a word in a Latin or Ancient Greek book, and the dictionary opens the entry it belongs to, whatever its form or spelling.
+Free Kindle dictionaries built from Wiktionary. Press and hold a word in a Latin, Ancient Greek or Turkish book, and the dictionary opens the entry it belongs to, whatever its form or spelling.
 
 <!--
   Screenshot of the lookup popup goes here, for example:
@@ -17,7 +17,7 @@ Free Kindle dictionaries built from Wiktionary. Press and hold a word in a Latin
 | --- | --- | --- |
 | Latin–English | Released | `la-wiktionary.mobi` |
 | Ancient Greek–English | In testing, in the weekly [pre-releases](https://github.com/njand/wiktionary-to-kindle/releases) | `grc-wiktionary.mobi` |
-| Turkish–English | In development | |
+| Turkish–English | In testing, in the weekly [pre-releases](https://github.com/njand/wiktionary-to-kindle/releases) | `tr-wiktionary.mobi` |
 
 More languages will follow. The build is meant to work for any language Wiktionary covers well; see [Contributing](#contributing).
 
@@ -38,17 +38,28 @@ The Ancient Greek–English dictionary is built the same way, from Wiktionary's 
 
 A Kindle matches Greek accents, breathings and capitals exactly, so the dictionary lists every spelling a Greek text prints: without the length marks Wiktionary adds (ἀπεκρίθη opens **ἀποκρίνω**) and with the long vowels marked, as school editions print them (λῡ́ω opens **λύω**), with a grave for a final acute (καὶ opens **καί**), and capitalized for headwords and small words that start sentences (Καὶ, Οὐκ, Ταῦτα). In Perseus's editions of Homer, Herodotus, Xenophon, Plato, Lysias and the Gospel of John, it opens an entry for 91.7% of the words: 93–95% in most of them, 87.8% in Herodotus, whose Ionic forms Wiktionary often lacks.
 
-## Turkish (in development)
+## Turkish (in testing)
 
-Turkish builds words by stacking suffixes (*evlerimizdeydi*, "it was in our houses"), so most of the forms in a Turkish book appear in no inflection table. The work under way teaches the dictionary to reach them; the [roadmap](ROADMAP.md) has the plan and the measurements so far.
+The Turkish–English dictionary is built from Wiktionary's Turkish entries. Until it has been checked on a Kindle, it is published only in the weekly [pre-releases](https://github.com/njand/wiktionary-to-kindle/releases).
+
+A Kindle ignores case and the Turkish letters' marks when it looks a word up (*KIZI* and *kizi* open **kız**), so the dictionary only has to reach the forms themselves. It lists every form in Wiktionary's tables (*evlerimizden* opens **ev**), the converbs (*gidip*, *giderken*) and the copula, *-(y)lA* and *-ki* forms texts use most (*vardır*, *nedeniyle*, *dünyadaki*). On its own it opens an entry for 88.4% of the words in a set of modern Turkish prose and Ömer Seyfettin's stories.
+
+Turkish stacks suffixes beyond what any table lists (*evlerimizdekilerden*, "from those in our houses"), so a Turkish book reads best **prepared**: `prepare-book` puts a hair space between the stem and the suffixes of each word the dictionary cannot reach whole. A press on *ev* then opens **ev**, and a press on *lerimizdekilerden* opens an entry that explains the suffixes: *plural + our + in + the one that is + plural + from*. In the same texts, a prepared book opens an entry for 95.5% of the words, and splits 7% of them. Claude reads each sentence to choose where to split (so *gözlükçüler* splits after **gözlükçü**, not **göz**), or `--decide rooted` splits without it.
+
+```bash
+uv sync --extra segment
+uv run prepare-book book.epub --kindling kindling-cli   # writes book-prepared.epub and .azw3
+```
+
+The model needs an [Anthropic API key](https://platform.claude.com/) (`ANTHROPIC_API_KEY`) and sends the book's sentences to it; a novel costs roughly $10, once, since every decision is cached beside the book. Books bought from the Kindle store have DRM and can't be prepared. The [developer guide](docs/DEVELOPING.md#preparing-books-turkish) has the options.
 
 ## Install on a Kindle
 
-1. Download `la-wiktionary.mobi` from the [latest release](https://github.com/njand/wiktionary-to-kindle/releases/latest) (or `grc-wiktionary.mobi` from a pre-release, for Ancient Greek).
+1. Download `la-wiktionary.mobi` from the [latest release](https://github.com/njand/wiktionary-to-kindle/releases/latest) (or `grc-wiktionary.mobi` or `tr-wiktionary.mobi` from a pre-release, for Ancient Greek or Turkish).
 2. Connect your Kindle to your computer with a USB cable.
 3. Open the Kindle drive and copy the file into `documents/dictionaries/`. If that folder doesn't exist, create it.
 4. Eject the Kindle.
-5. On the Kindle, go to **Settings → Device Options → Language and Dictionaries → Dictionaries**, tap **Latin**, and choose the Wiktionary dictionary. Under which language a Kindle lists the Ancient Greek dictionary is still being checked.
+5. On the Kindle, go to **Settings → Device Options → Language and Dictionaries → Dictionaries**, tap **Latin**, and choose the Wiktionary dictionary. Under which language a Kindle lists the Ancient Greek and Turkish dictionaries is still being checked.
 
 Send to Kindle no longer accepts `.mobi` files, so the dictionary has to be copied over USB.
 
@@ -63,7 +74,7 @@ Copy the new file over the old one in `documents/dictionaries/`. The Kindle ofte
 
 ## KOReader and GoldenDict
 
-Each release also includes `la-wiktionary-stardict.zip` (and `grc-wiktionary-stardict.zip` for Ancient Greek). Unzip it and copy the `la-wiktionary` folder into `koreader/data/dict/` for KOReader, or add it to your dictionary sources in GoldenDict. Words also match without macrons, and Greek words without accents or breathings.
+Each release also includes `la-wiktionary-stardict.zip` (and `grc-wiktionary-stardict.zip` and `tr-wiktionary-stardict.zip` for Ancient Greek and Turkish). Unzip it and copy the `la-wiktionary` folder into `koreader/data/dict/` for KOReader, or add it to your dictionary sources in GoldenDict. Words also match without macrons, and Greek words without accents or breathings.
 
 ## Build it yourself
 
@@ -77,13 +88,13 @@ uv sync --all-extras
 uv run wiktionary-to-kindle --lang la
 ```
 
-The dictionary is written to `outputs/KindleDictionary-la/`; `--lang grc` builds the Ancient Greek one. See the [developer guide](docs/DEVELOPING.md) for all build options, how the pipeline works, and the tools that measure lookup quality.
+The dictionary is written to `outputs/KindleDictionary-la/`; `--lang grc` builds the Ancient Greek one and `--lang tr` the Turkish one. See the [developer guide](docs/DEVELOPING.md) for all build options, how the pipeline works, and the tools that measure lookup quality.
 
 ## Found a mistake in an entry?
 
 Every definition, inflection and etymology in these dictionaries comes from Wiktionary. If an entry has a wrong gloss, a missing sense or a wrong principal part, please fix it on Wiktionary itself rather than reporting it here. Anyone can edit Wiktionary, and a fix there helps everyone who uses it, not only readers of this dictionary.
 
-1. Open the word's page on [Wiktionary](https://en.wiktionary.org/) and edit the section for your language. Page titles have no macrons or length marks: **amō** is on the page `amo`. If you're new to editing, Wiktionary's guides for [Latin](https://en.wiktionary.org/wiki/Wiktionary:About_Latin) and [Ancient Greek](https://en.wiktionary.org/wiki/Wiktionary:About_Ancient_Greek) explain how entries are laid out.
+1. Open the word's page on [Wiktionary](https://en.wiktionary.org/) and edit the section for your language. Page titles have no macrons or length marks: **amō** is on the page `amo`. If you're new to editing, Wiktionary's guides for [Latin](https://en.wiktionary.org/wiki/Wiktionary:About_Latin) , [Ancient Greek](https://en.wiktionary.org/wiki/Wiktionary:About_Ancient_Greek) and [Turkish](https://en.wiktionary.org/wiki/Wiktionary:About_Turkish) explain how entries are laid out.
 2. Wait for the next release. Wiktionary's data is published every couple of weeks and the dictionary is rebuilt from it weekly, so an edit usually reaches the dictionary within two to three weeks. The dictionary's first page gives the date of the Wiktionary data it was built from.
 3. Download the new release and copy it over the old file on your Kindle (see [Updating to a newer release](#updating-to-a-newer-release) if lookups stop working).
 
@@ -93,7 +104,7 @@ If the entry is right on Wiktionary but wrong in the dictionary, such as missing
 
 Bug reports are welcome, especially words that don't open the entry you expected. Include the word as it appears in your book.
 
-Latin and Ancient Greek are built so far, Turkish is under way, and the pipeline is meant to work for other languages. The [developer guide](docs/DEVELOPING.md#adding-a-language) explains how to add one.
+Latin, Ancient Greek and Turkish are built so far, and the pipeline is meant to work for other languages. The [developer guide](docs/DEVELOPING.md#adding-a-language) explains how to add one.
 
 ## License and credits
 
