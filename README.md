@@ -54,6 +54,13 @@ Send to Kindle no longer accepts `.mobi` files, so the dictionary has to be copi
 
 If another dictionary opens when you press a word, tap its name at the bottom of the popup to switch.
 
+### Updating to a newer release
+
+Copy the new file over the old one in `documents/dictionaries/`. The Kindle often keeps using the old copy in books where you have already looked words up, so lookups there may fail or show nothing. Either of these fixes it:
+
+- Restart the Kindle (hold the power button and choose **Restart**).
+- Open a book in another language and look up a word there with that language's dictionary. Once that entry opens, go back to your book; the updated dictionary works again.
+
 ## KOReader and GoldenDict
 
 Each release also includes `la-wiktionary-stardict.zip` (and `grc-wiktionary-stardict.zip` for Ancient Greek). Unzip it and copy the `la-wiktionary` folder into `koreader/data/dict/` for KOReader, or add it to your dictionary sources in GoldenDict. Words also match without macrons, and Greek words without accents or breathings.
@@ -78,7 +85,7 @@ Every definition, inflection and etymology in these dictionaries comes from Wikt
 
 1. Open the word's page on [Wiktionary](https://en.wiktionary.org/) and edit the section for your language. Page titles have no macrons or length marks: **amō** is on the page `amo`. If you're new to editing, Wiktionary's guides for [Latin](https://en.wiktionary.org/wiki/Wiktionary:About_Latin) and [Ancient Greek](https://en.wiktionary.org/wiki/Wiktionary:About_Ancient_Greek) explain how entries are laid out.
 2. Wait for the next release. Wiktionary's data is published every couple of weeks and the dictionary is rebuilt from it weekly, so an edit usually reaches the dictionary within two to three weeks. The dictionary's first page gives the date of the Wiktionary data it was built from.
-3. Download the new release and copy it over the old file on your Kindle.
+3. Download the new release and copy it over the old file on your Kindle (see [Updating to a newer release](#updating-to-a-newer-release) if lookups stop working).
 
 If the entry is right on Wiktionary but wrong in the dictionary, such as missing text, a garbled layout, or a word that opens the wrong entry, that's a bug here: please report it (see below).
 
