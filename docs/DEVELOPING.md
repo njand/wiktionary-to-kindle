@@ -112,7 +112,7 @@ uv run python -m wiktionary_to_kindle.quality coverage-diff old-coverage.json co
 
 ## Releases
 
-A scheduled GitHub Actions workflow builds every language in its matrix (Latin, Ancient Greek and Turkish) every Sunday afternoon (UTC, after Kaikki's weekly dump) and publishes them in one pre-release, each with its `.mobi`, StarDict bundle, and statistics and coverage reports. The build fails if a language's coverage drops compared with the latest release. To publish an intentional drop, run the workflow manually with **Allow a coverage drop** checked.
+A scheduled GitHub Actions workflow builds every language in its matrix (Latin, Ancient Greek and Turkish) every Sunday afternoon (UTC, after Kaikki's weekly dump) and publishes them in one pre-release, each with its `.mobi`, StarDict bundle, and statistics and coverage reports. If Kaikki's dump is the one the `latest-build` release was made from (its `dump-date.txt`), the scheduled run stops before building, since the build would only repeat it; a manual run always builds. The build fails if a language's coverage drops compared with the latest release. To publish an intentional drop, run the workflow manually with **Allow a coverage drop** checked.
 
 The same run copies the `.mobi` and StarDict files to the `latest-build` pre-release, which it overwrites each week, so the README can link to each language's newest build at an address that doesn't change. The Latin `.mobi` link points at the release marked Latest instead.
 

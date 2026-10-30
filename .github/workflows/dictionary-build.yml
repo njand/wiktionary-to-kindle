@@ -20,7 +20,37 @@ env:
   KINDLING_STRICT_ENTRIES: "1"
 
 jobs:
+  # Kaikki usually posts a new dump weekly but not always, and a build from the same dump
+  # only adds a release that differs in its date, so a scheduled run stops here when the
+  # dump is the one latest-build was made from. A manual run always builds.
+  check-dump:
+    runs-on: ubuntu-latest
+    outputs:
+      date: ${{ steps.dump.outputs.date }}
+      build: ${{ steps.dump.outputs.build }}
+    steps:
+      - name: Compare Kaikki's dump with the latest build's
+        id: dump
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          url=https://kaikki.org/dictionary/raw-wiktextract-data.jsonl.gz
+          modified=$(curl -fsSI -A "Mozilla/5.0" "$url" | tr -d "\r" | sed -n "s/^[Ll]ast-[Mm]odified: //p")
+          date=$(date -u -d "$modified" +%F)
+          built=$(gh release download latest-build --repo "$GITHUB_REPOSITORY" --pattern dump-date.txt --output - 2>/dev/null || true)
+          echo "Kaikki's dump: $date; latest build's: ${built:-none}"
+          echo "date=$date" >> "$GITHUB_OUTPUT"
+          if [ "$EVENT" = workflow_dispatch ] || [ "$date" != "$built" ]; then
+            echo "build=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "build=false" >> "$GITHUB_OUTPUT"
+            echo "Kaikki's dump of $date was built already; nothing to do" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
   build-dictionaries:
+    needs: check-dump
+    if: needs.check-dump.outputs.build == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -126,7 +156,7 @@ jobs:
           fi
 
   create-release:
-    needs: build-dictionaries
+    needs: [check-dump, build-dictionaries]
     runs-on: ubuntu-latest
     permissions:
       contents: write # Required to publish a GitHub Release
@@ -191,5 +221,6 @@ jobs:
           if ! gh release view latest-build > /dev/null 2>&1; then
             gh release create latest-build --prerelease --title "Latest build (in testing)" --notes-file latest-notes.md
           fi
-          gh release upload latest-build --clobber dictionaries/**/*.mobi dictionaries/**/*-stardict.zip
+          echo "${{ needs.check-dump.outputs.date }}" > dump-date.txt
+          gh release upload latest-build --clobber dictionaries/**/*.mobi dictionaries/**/*-stardict.zip dump-date.txt
           gh release edit latest-build --notes-file latest-notes.md
