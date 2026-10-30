@@ -11,6 +11,8 @@ Usage:
         tests/device_words_la.tsv -o outputs/device-test [--kindling kindling-cli]
     python scripts/make_device_test.py outputs/KindleDictionary-grc \
         tests/device_words_grc.tsv --lang grc -o outputs/device-test-grc
+    python scripts/make_device_test.py outputs/KindleDictionary-tr \
+        tests/device_words_tr.tsv --lang tr -o outputs/device-test-tr
 
 Writes OUT/<lang>-device-test.azw3 (copy it to the Kindle's documents/ folder) and
 OUT/predictions.md (the same list, to compare the report against). --dry-run prints the
@@ -33,6 +35,9 @@ from wiktionary_to_kindle.quality.labels import build_index, read_entries
 from wiktionary_to_kindle.utils import TEMPLATES
 
 ZWSP = "\u200b"
+# A hair space: the only separator a long press stops at (device test, 2026-10-29), which
+# prepare-book puts between a Turkish stem and its suffixes
+HAIR = "\u200a"
 SECTIONS = {
     "frequent": "Short, frequent words",
     "rare": "Long and rare words",
@@ -43,6 +48,13 @@ SECTIONS = {
     "unmacronized": "Homographs only without macrons",
     "ambiguous": "Inflected forms of several words",
     "enclitics": "Enclitics after a zero-width space",
+    # Turkish
+    "dotted": "Dotted and dotless i",
+    "generated": "Forms the dictionary generates",
+    "names": "Names with an apostrophe",
+    "splits": "Words split with a hair space",
+    "passage": "Running text, split words free to break",
+    "passage-nowrap": "The same text, split words kept on one line",
     # Ancient Greek
     "capitals": "Capitals",
     "accents": "Grave, enclitic and other accents",
@@ -61,15 +73,24 @@ def read_words(path):
         if line.strip() and not line.startswith("#"):
             section, word, note = line.split("\t")
             word = ESCAPE.sub(lambda m: chr(int(m.group(1), 16)), word)
-            words.append((section, word.replace("{zwsp}", ZWSP), note))
+            word = word.replace("{zwsp}", ZWSP).replace("{hair}", HAIR)
+            words.append((section, word, note))
     return sorted(words, key=lambda w: list(SECTIONS).index(w[0]))
 
 
-def predict(index, kindling, mobi, word):
+def predict(index, kindling, mobi, word, section):
     """The entries the popup lists for a tapped word: 'fēmina (noun) / femur (noun)'.
 
     The one kindling resolves comes first, then the rest in the order kindling's index
-    search returns their labels (the device lists them so: nōnae's Non. before nōn)."""
+    search returns their labels (the device lists them so: nōnae's Non. before nōn). A word
+    split with hair spaces gets a prediction for each part; a passage gets none."""
+    if section.startswith("passage"):
+        return ""
+    if HAIR in word:
+        return "; ".join(
+            f"tap “{part}”: {predict(index, kindling, mobi, part, section)}"
+            for part in word.split(HAIR)
+        )
     tapped = word.split(ZWSP)[0]  # what a zero-width space should leave selected
     run = index.run(tapped)
     if not run:
@@ -123,6 +144,12 @@ def write_book(out_dir, rows, built, language):
         if sec != section:
             section = sec
             body.append(f"<h2>{html.escape(SECTIONS[sec])}</h2>")
+        if sec.startswith("passage"):
+            body.append(
+                f'<p id="w{number}">{number}. <small>{html.escape(note)}</small></p>'
+                f'<p lang="{code}">{passage(word, sec == "passage-nowrap")}</p>'
+            )
+            continue
         body.append(
             f'<p id="w{number}">{number}. <b><span lang="{code}">{html.escape(word)}</span></b>'
             f"<br/><small>{html.escape(note)}</small>"
@@ -159,13 +186,25 @@ def write_book(out_dir, rows, built, language):
     )
 
 
+def passage(text, nowrap):
+    """A passage as markup: with nowrap, each word with a hair space in a span that keeps
+    it on one line (the book's own style; kindling strips it only from dictionaries)."""
+    words = []
+    for word in text.split(" "):
+        word = html.escape(word)
+        if nowrap and HAIR in word:
+            word = f'<span style="white-space: nowrap">{word}</span>'
+        words.append(word)
+    return " ".join(words)
+
+
 def write_predictions(path, rows):
     lines = [
         "| # | Word | Tests | Expect | On device |",
         "| ---: | --- | --- | --- | --- |",
     ]
     for number, (_sec, word, note, expected) in enumerate(rows, 1):
-        shown = word.replace(ZWSP, "{zwsp}")
+        shown = word.replace(ZWSP, "{zwsp}").replace(HAIR, "{hair}")
         lines.append(f"| {number} | {shown} | {note} | {expected} | |")
     Path(path).write_text("\n".join(lines) + "\n", encoding="utf-8")
 
@@ -187,14 +226,14 @@ def main():
     index = build_index(read_entries(args.dict_dir / "files"))
     mobi = next(args.dict_dir.glob("*.mobi"))
     rows = [
-        (section, word, note, predict(index, args.kindling, mobi, word))
+        (section, word, note, predict(index, args.kindling, mobi, word, section))
         for section, word, note in read_words(args.words)
     ]
 
     if args.dry_run:
         counts = corpus_counts("corpus/cache")
         for number, (section, word, _note, expected) in enumerate(rows, 1):
-            tapped = word.split(ZWSP)[0]
+            tapped = word.split(ZWSP)[0].replace(HAIR, "|")[:40]
             print(f"{number:3} {section:12} {tapped:20} {counts[tapped]:6}  {expected}")
         return 0
 

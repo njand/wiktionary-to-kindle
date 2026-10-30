@@ -1,0 +1,41 @@
+# Words for the Turkish on-device lookup test (scripts/make_device_test.py --lang tr).
+# section<TAB>word<TAB>what it tests. Sections print in this order; words keep their order.
+# {hair} in a word stands for U+200A, the hair space prepare-book puts between a stem and
+# its suffixes (roadmap, Stages 14-17). The Expect line is kindling's prediction for each
+# part of a split word. A passage is running text from Ömer Seyfettin's "Aleko" (public
+# domain), with the words the dictionary misses split by hand.
+frequent	ve	the most frequent word
+frequent	bir	one, a
+frequent	ev	a short noun
+frequent	gitmek	a verb's dictionary form
+inflections	evlerimizden	a long table form: from our houses
+inflections	kitabı	a table form with a voiced stem (kitap)
+inflections	gidiyorum	a verb form from the table
+inflections	gidip	a converb, kept since Stage 13
+dotted	kızı	dotless ı
+dotted	KIZI	capital I for ı
+dotted	kizi	dotted i for ı: weighs the same
+dotted	İyi	capital İ
+dotted	İYİ	all capitals with İ
+dotted	ırmak	dotless ı at the start
+dotted	IRMAK	all capitals
+homographs	yüz	face, and hundred
+homographs	vardı	var with the copula, or the past of varmak
+homographs	katlı	folds like katli, accusative of katil
+generated	kadındı	the copula, generated
+generated	nedeniyle	-(y)lA on a third-person possessive, generated
+generated	dünyadaki	-ki on a locative, generated
+generated	sonraki	-ki on a postposition, generated
+names	Türkiye'nin	a name's suffixes after an ASCII apostrophe: does the selection stop at it?
+names	Türkiye’nin	the same after a curly apostrophe
+names	Ali'nin	the name's form folds like alının (from al)
+names	Ali'{hair}nin	a hair space after the apostrophe: should select Ali' alone
+splits	gözlükçü{hair}ler	opticians: the stem gözlükçü, then -ler
+splits	ev{hair}lerimizdekilerden	from those in our houses: a long suffix chain
+splits	ol{hair}ması	its being: a verbal noun with a possessor
+splits	ol{hair}abilir	may be: the stem, then -abilir
+splits	kendi{hair}sine	to himself: the reflexive with its suffixes
+splits	kitab{hair}ı	a voiced stem, which some table spells as a label already
+splits	Boris{hair}'in	a name the dictionary does not have
+passage	Küçük Ali, yorgun uykusundan uyanınca kalktı. Gece yattığı toz{hair}lu funda{hair}lıklardan çıktı. Ilık, parlak bir güneş her tarafı ısıtıyordu. Bulut{hair}suz hava bembeyazdı. Çalılar{hair}ın üstünde kuşlar cıvılda{hair}yarak uçuşuyordu. Kalktı. Bir av arıyormuş gibi tereddüt{hair}lü adımlar{hair}la bodur böğürtlen dallarını hışırdat{hair}arak şose{hair}ye indi. Bir ileri, bir geri baktı. Her taraf tenha idi. Uzun, kıvırcık kirpik{hair}li iri siyah gözlerini yırt{hair}ık çarıkların{hair}a dikti. Düşündü. Sırtındaki toz{hair}lu deri torbada yarım ekmekle bir soğandan başka bir şeysi yoktu. Altı aydır Gelibolu'da, bir Rum fırıncının yanında çalışıyordu. Birkaç gün evvel hükümet, "muharebe olacak" diye ustasını diğer Hristiyanlarla Anadolu'ya geçirmişti. Gelibolu'da akrabası filan yoktu. Barın{hair}acak bir yer bulamadı. Köyüne dönmüştü, ama köyünde de kimseyi bulamamıştı. Evler kapanmış, ahırlar boşalmış, küçük cami meydanı at, araba, asker, çadır dolmuştu. "Buralarda muharebe olacak, devlet ahaliyi geri çekti." diyorlardı. Küçük Ali, işte köyünün geri çekilen ahalisini, anasını, ihtiyar babasını bulmak için iki gündür yürüyordu. Gece açıkta yatmak, gündüz güneşin altında yürümek onu zayıflatmıştı. Zaten esmer olan yüzü şimdi daha siyahtı. Karnı öyle açtı ki! "Ne olur, ne olmaz" diye dün gece yemeyip sakladığı ekmek parçasını torbadan çıkardı. Şose{hair}nin kenarına çöktü. Kocaman bir altın parçasına bakıyormuş gibi bu kaba mısır ekmeğini evirdi, çevirdi, ucundan ısırdı. Ağzında lokmayı birdenbire yutmaya kıyamıyor, dilinin üstünde eziyordu.	Change the font and size (Aa) and look for the gaps the hair spaces leave inside split words (toz lu, Bulut suz). Do any split words break across two lines, with the stem on one line and the suffix on the next?
+passage-nowrap	Küçük Ali, yorgun uykusundan uyanınca kalktı. Gece yattığı toz{hair}lu funda{hair}lıklardan çıktı. Ilık, parlak bir güneş her tarafı ısıtıyordu. Bulut{hair}suz hava bembeyazdı. Çalılar{hair}ın üstünde kuşlar cıvılda{hair}yarak uçuşuyordu. Kalktı. Bir av arıyormuş gibi tereddüt{hair}lü adımlar{hair}la bodur böğürtlen dallarını hışırdat{hair}arak şose{hair}ye indi. Bir ileri, bir geri baktı. Her taraf tenha idi. Uzun, kıvırcık kirpik{hair}li iri siyah gözlerini yırt{hair}ık çarıkların{hair}a dikti. Düşündü. Sırtındaki toz{hair}lu deri torbada yarım ekmekle bir soğandan başka bir şeysi yoktu. Altı aydır Gelibolu'da, bir Rum fırıncının yanında çalışıyordu. Birkaç gün evvel hükümet, "muharebe olacak" diye ustasını diğer Hristiyanlarla Anadolu'ya geçirmişti. Gelibolu'da akrabası filan yoktu. Barın{hair}acak bir yer bulamadı. Köyüne dönmüştü, ama köyünde de kimseyi bulamamıştı. Evler kapanmış, ahırlar boşalmış, küçük cami meydanı at, araba, asker, çadır dolmuştu. "Buralarda muharebe olacak, devlet ahaliyi geri çekti." diyorlardı. Küçük Ali, işte köyünün geri çekilen ahalisini, anasını, ihtiyar babasını bulmak için iki gündür yürüyordu. Gece açıkta yatmak, gündüz güneşin altında yürümek onu zayıflatmıştı. Zaten esmer olan yüzü şimdi daha siyahtı. Karnı öyle açtı ki! "Ne olur, ne olmaz" diye dün gece yemeyip sakladığı ekmek parçasını torbadan çıkardı. Şose{hair}nin kenarına çöktü. Kocaman bir altın parçasına bakıyormuş gibi bu kaba mısır ekmeğini evirdi, çevirdi, ucundan ısırdı. Ağzında lokmayı birdenbire yutmaya kıyamıyor, dilinin üstünde eziyordu.	The same text with each split word in white-space: nowrap. Does any split word still break across two lines? Tap both halves of a few split words (Bulut, suz): does each select alone?

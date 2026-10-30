@@ -312,7 +312,8 @@ Each kind of form was measured as coverage gained per label added, as in Stage 9
 
 Everything after this stage assumes a split word reads and taps well; check that first.
 
-- [ ] **Device test book** (`scripts/make_device_test.py --lang tr`, `tests/device_words_tr.tsv`), against the Stage 13 dictionary:
+- [x] **Built** (2026-10-29) into `outputs/device-test-tr/` (`tr-device-test.azw3`, `predictions.md`), against the Stage 13 dictionary (`outputs/KindleDictionary-tr/tr-wiktionary.mobi`, 67.3 MB). The script now reads `{hair}` as U+200A, predicts each part of a split word, and prints passages: the opening of Seyfettin's "Aleko" with 16 words split by hand, once plain and once with each split word in `nowrap`. kindling's predictions already show what Stage 15 is for: a suffix half opens unrelated words (`ması` → maş, `sine` → sine, `'in` → inmek), and `ol` lists ölmek before olmak (ö folds to o). Greedy splitting of that passage chose `Bulutsu|z`, `cıvı|ldayarak`, `hış|ırdatarak` and `yap|yalnız`, the errors Stage 17 is for.
+- [ ] **Check the test book on a device**, against the Stage 13 dictionary:
   - Split words with a hair space (`gözlükçü` + U+200A + `ler`, `kitab` + U+200A + `ı`, `ol` + U+200A + `ması`): a tap on each half selects that half alone and opens its entry (or nothing, for the suffixes, until Stage 15).
   - How visible the gap is inside a word in the default fonts (Bookerly, Ember, Caecilia) and sizes.
   - Line breaks: long split words near the end of a line, with and without `<span style="white-space: nowrap">` around the word (kindling strips `style` from dictionary entries, but this is the book's own markup).
