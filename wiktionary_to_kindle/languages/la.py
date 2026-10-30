@@ -151,7 +151,7 @@ LATIN = Language(
     ),
     pos_by_head_template={"la-part": "participle", "la-gerund": "gerund"},
     implied_forms=implied_forms,
-    head_line=lambda text, pos: text,
+    head_line=lambda text, pos, word: text,
     genders=GENDERS,
     descendants=("English", "Portuguese", "Spanish", "French", "Italian"),
     homographs="<i>latus</i>, <i>lātus</i>",

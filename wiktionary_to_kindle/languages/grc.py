@@ -130,7 +130,7 @@ GENDERED_FORMS = {"adj", "participle", "det", "pron", "num"}
 GENDERS = {"m": "ὁ", "f": "ἡ", "n": "τό", "or": "or", "sg": "sg.", "pl": "pl."}
 
 
-def head_line(text, pos):
+def head_line(text, pos, word):
     """The head line after the headword, without its romanization, and without the
     gender of an adjective's masculine: "• (lógos) m (genitive λόγου); second
     declension" → "m (genitive λόγου); second declension"."""

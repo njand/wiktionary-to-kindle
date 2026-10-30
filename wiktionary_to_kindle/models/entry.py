@@ -235,11 +235,11 @@ class Entry:
         ]
 
     def filter_descendants(self, filter_langs):
-        """(language name, words) for each language in filter_langs (all if empty), in
+        """(language name, words) for each language in filter_langs (all if None), in
         the order the tree first names them. A word reached through several branches
         (French "à l'onni" under three Old French words of omnis) is listed once."""
         by_lang = {}
         for lang, word in self.descendants:
-            if not filter_langs or lang in filter_langs:
+            if filter_langs is None or lang in filter_langs:
                 by_lang.setdefault(lang, {})[word] = None
         return [(lang, list(words)) for lang, words in by_lang.items()]

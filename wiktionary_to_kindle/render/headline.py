@@ -19,8 +19,8 @@ ORDINALS = {
 ORDINAL_PATTERN = re.compile(r"\b(" + "|".join(ORDINALS) + r")\b")
 
 # Labels of the forms a dictionary lists after the headword, by part of speech
-# Turkish adds its own: a verb's aorist (gitmek, gider) and a noun's accusative (ev, evi),
-# which show the stem suffixes go on
+# Turkish adds its own: a verb's aorist (gitmek, -der) and a noun's accusative where the
+# stem changes (kitap, -bı), as languages.tr gives them
 VERB_PARTS = (
     "present infinitive",
     "perfect active",
@@ -132,10 +132,11 @@ def headline_tail(header, pos, language):
     shown = POS_NAMES.get(pos, pos)
     parts = None
     if header.labelled is not None and "<br/>" not in header.remainder:
-        labelled = language.head_line(header.labelled, pos)
+        labelled = language.head_line(header.labelled, pos, header.head_word)
         parts = headline(labelled, pos, language.genders)
     if parts is None:
-        grammar = compact_grammar(language.head_line(header.remainder or "", pos), pos)
+        text = language.head_line(header.remainder or "", pos, header.head_word)
+        grammar = compact_grammar(text, pos)
         return (f" {grammar}" if grammar else "") + (
             f" &#183; <i>{shown}</i>" if shown else ""
         )

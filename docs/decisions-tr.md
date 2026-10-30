@@ -19,7 +19,7 @@ While carrying out ROADMAP Stages 14–19 (2026-10-29), the user asked for the T
 3. **One suffix-chain entry per spelling, labelled with a leading hyphen** (`-lerimizden`). The hyphen weighs nothing, so a tap on `lerimizden` reaches it, but kindling stores a plain label first, so a word spelled like a chain (`de`, `in`, `dan`) is listed before the suffix entry. An entry lists every analysis of its spelling (`-leri`: their / plural + acc. / plural + his/her).
 4. **What the suffix grammar covers** (`languages/tr_suffixes.py`): nouns, with plural, possessive, case, `-ki` (with a plural and case after it) and the copula with its persons; verbs, with the passive, negation, ability, the tenses with persons and a copula, imperatives, verbal nouns and participles with possessive and case (no copula after them), infinitives and converbs; and six derivational suffixes (`-lI`, `-sIz`, `-lIk`, `-CI`, `-CA`, `-CIk`) with a short tail. Left out: causatives and reciprocals (Wiktionary has those verbs as words), and the copula after verbal nouns and participles. That last cut took the spellings from 447,000 to 58,000; with the passive and derivations added back the grammar makes 114,013 spellings.
 5. **Stem variants are read from each entry's own forms**, not guessed: a noun's stem from its accusative (`kitabı` → `kitab`), a verb's from its progressive (`gidiyor` → `gid`, `bekliyor` → `bekli`). Names are left out (`NATO'yu` would give `NATO'y`).
-6. **Descendants are kept in every language** for Turkish (Latin keeps five, Greek three). They close the entry, so they cost nothing on the popup's first screen.
+6. **No descendants** for Turkish (Latin keeps five, Greek three). What a modern language lent others does not help a reader of it; descendants are for historical languages.
 
 ## Stage 16: prepare-book
 
@@ -37,7 +37,7 @@ While carrying out ROADMAP Stages 14–19 (2026-10-29), the user asked for the T
 
 ## Stage 18: entries
 
-15. **Principal parts on the head line**: a noun's definite accusative (`ev, evi`) and a verb's aorist (`gitmek, gider`), since they show the stem the suffixes go on (`kitab-ı`, `gid-er`). Wiktionary gives no other principal parts for Turkish.
+15. **The head line as Turkish dictionaries write it** (TDK, Redhouse), not Latin's principal parts: a verb's aorist as an ending (`gitmek, -der`, `almak, -ır`), always, since monosyllabic stems take -Ar or -Ir unpredictably; a noun's accusative as an ending only where the stem changes or harmony is irregular (`kitap, -bı`, `burun, -rnu`, `hak, -kkı`, `saat, -ti`), and nothing for a regular noun (`ev · noun`). No plural: it is always regular.
 16. **The popup order is left to the existing estimate** (how much Wiktionary says about an entry), so where a stem folds onto another word the larger entry comes first (`ol`: ölmek, then olmak). A frequency list would fix it; none with a clear licence was at hand, and the user asked to be consulted on corpus licences.
 
 ## Stage 19: release
