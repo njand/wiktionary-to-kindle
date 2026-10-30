@@ -44,3 +44,4 @@ While carrying out ROADMAP Stages 14–19 (2026-10-29), the user asked for the T
 
 17. **The release is the local build**, not pushed: GitHub Actions has no minutes left, and pushing or opening a pull request waits for the user. The workflow's Turkish step was not run on GitHub; its command was run locally.
 18. **Turkish ships as "in testing"** in the pre-releases, like Ancient Greek, until the device check; the README says so.
+19. **Latin is unchanged.** A Latin build on this branch writes pages byte-identical to one from `origin/main`, and a `.mobi` of the same size. Found on the way: the popup order sizes entries by their JSON as `jsonl.json_dumps` writes it, which differs with and without `orjson`, so a build without the `fast` extra ranks some homographs' soft hyphens differently (brūchus and brūcus swap). CI installs every extra, so releases are consistent; not changed here.

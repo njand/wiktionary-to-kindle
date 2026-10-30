@@ -369,6 +369,8 @@ Decided 2026-10-29: the split point is chosen by a language model that reads the
 - [x] **Lookups**: every word in `tests/lookup_words_tr.txt` opens (lemmas, folded case, table forms, converbs, generated forms, names with apostrophes, stem variants, suffix chains); kindling agrees on the 300 most frequent corpus words; no label is hidden.
 - [x] **Coverage**: 88.4% of corpus tokens open something whole (BOUN 85.0–91.0%, the stories 88.0–92.0%); a prepared book 95.5% (`--decide rooted`; 7.4% of words split). On BOUN's held-out gold lemmas: 84.2% reach their lemma whole, 89.9% prepared; the model's decisions are right 78.7% of the time (rooted 78.1%, greedy 77.6%).
 - [x] The device test book is rebuilt against the release build (`outputs/device-test-tr/`).
+- [x] **Latin unchanged**: a Latin build of this branch writes pages byte-identical to `origin/main`'s. (With and without `orjson` the popup-order estimate differs, so compare builds made with the same extras.)
+- [x] **`prepare-book` end to end** on an EPUB of "Aleko" (`outputs/sample-tr/`): 288 words split, entities and markup kept, an `.azw3` built with kindling; the API backend checked against a local stand-in of the API (request shape, fallbacks, schema, answer to split).
 - [ ] **Device check** (`docs/device-check-tr.md`), including Stage 14's hair-space checks; then mark a release with Turkish as the latest.
 - [ ] **A real book**: run `prepare-book` with a model on a Turkish EPUB, measure its cost and time (Stage 17), and read it on the Kindle.
 
