@@ -44,19 +44,25 @@ def strip_tree(text, word):
     return "\n".join(lines[ends[-1] + 1 :])
 
 
+def prose(text, word):
+    """text as an etymology gives it: without the tree, words without a font
+    transliterated, paragraphs run on. A list item (Caesar's competing theories) keeps a
+    line of its own, marked "• ", which format_etymology breaks before."""
+    text = text and transliterate(strip_tree(text, word))
+    if text:
+        text = re.sub(r"\s*\n\s*\*+\s*", "\n• ", text)
+        text = re.sub(r"\s*\n(?!• )\s*", " ", text)
+    return text
+
+
 class Etymology:
     def __init__(self, etymology_text, etymology_templates, word=""):
-        # Paragraphs run on; a list item (Caesar's competing theories) keeps a line of its
-        # own, marked "• ", which format_etymology breaks before
-        text = etymology_text and transliterate(strip_tree(etymology_text, word))
-        if text:
-            text = re.sub(r"\s*\n\s*\*+\s*", "\n• ", text)
-            text = re.sub(r"\s*\n(?!• )\s*", " ", text)
-        self.etymology_text = text
+        self.etymology_text = prose(etymology_text, word)
         self.templates = [
+            # An {{ety}} expansion starts with the same tree as the text
             EtymologyTemplate(
                 template.get("name", ""),
-                transliterate(template.get("expansion", "")),
+                prose(template.get("expansion", ""), word),
                 template.get("args", {}),
             )
             for template in etymology_templates
@@ -69,7 +75,20 @@ class Etymology:
 ANCESTOR = {"inh", "inh+", "der", "der+", "bor", "bor+", "lbor", "slbor", "ubor"}
 # Templates naming a word in args 2 (a cognate, a mention), or several from args 2 on
 MENTION = {"cog", "noncog", "m", "l", "m+", "mention", "cognate"}
-AFFIXES = {"af", "affix", "prefix", "suffix", "compound", "confix", "surf"}
+AFFIXES = {
+    "af",
+    "affix",
+    "prefix",
+    "suffix",
+    "suf",
+    "compound",
+    "confix",
+    "surf",
+    "univ",
+}
+# {{ety|la|:af|con-<t:with>|la:pīlō}}: a keyword in args 2, then the words, each perhaps
+# with a language before it and modifiers after. Without a keyword the words start at 2.
+ETY_TERM = re.compile(r"^(?:[a-z]{2,3}(?:-[a-z]+)*:)?([^<]*)(?:.*<alt:([^<>]*)>)?")
 
 
 class EtymologyTemplate:
@@ -88,11 +107,20 @@ class EtymologyTemplate:
             keys = ["2"] if self.args.get("2") else ["3"]
         elif self.name in AFFIXES:
             keys = [k for k in self.args if k.isdigit() and int(k) >= 2]
+        elif self.name == "ety":
+            first = 3 if self.args.get("2", "").startswith((":", "[")) else 2
+            keys = [k for k in self.args if k.isdigit() and int(k) >= first]
         else:
             return []
         terms = []
         for key in keys:
             term = self.args.get(key, "")
+            if self.name == "ety":
+                # The form shown, when another than the word linked (aeternus<alt:aeternō>)
+                word, alt = ETY_TERM.match(term).groups()
+                term = (alt or word).strip()
+                if term == "-":  # an unknown source (ett:-)
+                    continue
             # A word in a script without a font is shown by its transliteration
             if re.search(f"[{NO_FONT}]", term) and self.args.get("tr"):
                 term = ("*" if term.startswith("*") else "") + self.args["tr"]

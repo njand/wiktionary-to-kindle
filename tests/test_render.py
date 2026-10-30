@@ -103,10 +103,60 @@ def inh(source, term, expansion, name="inh"):
             "From PIE <i>*bʰer-</i>.",
         ),
         ("No templates", [], "No templates"),
+        # Kaikki drops {{m}}: the word before a gloss is cited all the same (senium)
+        (
+            "From senex (“old man; aged”) or seneō (“to be weak, feeble”) + -ium.",
+            [
+                {
+                    "name": "af",
+                    "expansion": "seneō (“to be weak, feeble”) + -ium",
+                    "args": {
+                        "1": "la",
+                        "2": "seneō",
+                        "t1": "to be weak, feeble",
+                        "3": "-ium",
+                    },
+                }
+            ],
+            (
+                "From <i>senex</i> (“old man; aged”) or <i>seneō</i> (“to be weak, feeble”)"
+                " + <i>-ium</i>."
+            ),
+        ),
+        (
+            "Present participle of oblīvīscor. From *(s)ker- (“to cut”), βάθος (báthos, “depth”).",
+            [],
+            (
+                "Present participle of <i>oblīvīscor</i>. From <i>*(s)ker-</i> (“to cut”),"
+                " <i>βάθος</i> (báthos, “depth”)."
+            ),
+        ),
+        # {{ety}} repeats the tree before its prose, and gives each word with modifiers
+        (
+            (
+                "Etymology tree\nLatin con-\nLatin pīlō\nLatin compīlō\n"
+                "From con- (with) + pīlō + Gothic x."
+            ),
+            [
+                {
+                    "name": "ety",
+                    "expansion": "Etymology tree\nLatin con-\nLatin pīlō\nLatin compīlō\n"
+                    "From con- (with) + pīlō + Gothic x.",
+                    "args": {
+                        "1": "la",
+                        "2": ":af",
+                        "3": "con-<t:with>",
+                        "4": "la:pīlō<id:to fix>",
+                        "5": "ett:-",
+                    },
+                }
+            ],
+            "From <i>con-</i> (with) + <i>pīlō</i> + Gothic x.",
+        ),
     ],
 )
 def test_format_etymology(text, templates, expected):
-    assert format_etymology(Etymology(text, templates)) == expected
+    assert format_etymology(Etymology(text, templates, "compilo")) == expected
 
 
 def test_header_prefix_is_escaped_once():
@@ -136,8 +186,8 @@ def test_qualifier_only_parent_senses_keep_their_children():
     ]
     html = render(omnis)
     assert "<li><i>(as adjective)</i><ol>" in html
-    assert "<i>in sg.</i> every" in html
-    assert "<i>in pl.</i> all" in html
+    assert "<i>(in sg.)</i> every" in html
+    assert "<i>(in pl.)</i> all" in html
 
 
 def test_spaces_between_tags_survive_kindling():
@@ -251,7 +301,7 @@ def test_sense_labels_are_shortened():
             "raw_glosses": ["(transitive, or in absolute use) to love"],
         }
     ]
-    assert "<li><i>trans., or absol.</i> to love</li>" in render(amo)
+    assert "<li><i>(trans., or absol.)</i> to love</li>" in render(amo)
 
 
 def test_parts_of_speech_and_cases_are_spelled_as_dictionaries_do():
@@ -266,7 +316,7 @@ def test_trailing_construction_and_shared_glosses_are_shortened():
     amo["senses"] = [
         {"glosses": ["to like"], "raw_glosses": ["to like [with infinitive]"]}
     ]
-    assert "<li>to like <i>w. inf.</i></li>" in render(amo)
+    assert "<li>to like <i>[w. inf.]</i></li>" in render(amo)
     assert by_gloss([("CAES", "a title"), ("C.", ""), ("CAESS", "a title")]) == [
         (["CAES", "CAESS"], "a title"),
         (["C."], ""),

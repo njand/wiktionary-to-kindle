@@ -14,11 +14,21 @@ def keep_spaces(html_str):
     return SPACE_BETWEEN_TAGS.sub(r"\1&#160;", html_str)
 
 
+# A word glossed and not yet in italics: "senex (“old man”)", "βάθος (báthos, “depth”)".
+# Kaikki keeps no {{m}} or {{l}} template, so the words they cite are found by their gloss.
+GLOSSED = re.compile(
+    r"(?<![^\s(])([^\s<>()“”,;:][^\s<>“”,;:]*)(?= \((?:[^()<>“”,]+, )?“)"
+)
+# Or named after what it is the source of: "Present participle of oblīvīscor."
+SOURCE_OF = re.compile(r"((?:participle|[Dd]iminutive|[Dd]oublet) of )([^\s<>(),;:.]+)")
+
+
 def format_etymology(etymology):
     """Helper passed to Jinja: the etymology as markup, with the words it cites in italics
     and Proto-Indo-European as PIE. It is given whole: it closes the entry, after the
     meanings. Its list items start lines of their own."""
     markup = _cite(etymology.etymology_text, etymology.templates)
+    markup = SOURCE_OF.sub(r"\1<i>\2</i>", GLOSSED.sub(r"<i>\1</i>", markup))
     return markup.replace("Proto-Indo-European", "PIE").replace("\n", "<br/>")
 
 
@@ -143,15 +153,16 @@ TRAILING_LABELS = re.compile(r"<i> \[([^\[\]<>]*)\]</i>$")
 
 
 def short_sense_labels(gloss):
-    """gloss with the labels around it shortened and out of their brackets:
-    "<i>(transitive, or in absolute use) </i>to love" → "<i>trans., or absol.</i> to love",
-    "to like<i> [with infinitive]</i>" → "to like <i>w. inf.</i>"."""
+    """gloss with the labels around it shortened, kept in their brackets as Wiktionary
+    has them:
+    "<i>(transitive, or in absolute use) </i>to love" → "<i>(trans., or absol.)</i> to love",
+    "to like<i> [with infinitive]</i>" → "to like <i>[w. inf.]</i>"."""
 
     def short(labels):
         return SENSE_LABEL_PATTERN.sub(lambda m: SENSE_LABELS[m.group(1)], labels)
 
-    gloss = LEADING_LABELS.sub(lambda m: f"<i>{short(m.group(1))}</i> ", gloss)
-    return TRAILING_LABELS.sub(lambda m: f" <i>{short(m.group(1))}</i>", gloss)
+    gloss = LEADING_LABELS.sub(lambda m: f"<i>({short(m.group(1))})</i> ", gloss)
+    return TRAILING_LABELS.sub(lambda m: f" <i>[{short(m.group(1))}]</i>", gloss)
 
 
 def by_gloss(words):
