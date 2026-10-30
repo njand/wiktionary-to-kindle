@@ -9,7 +9,7 @@ from dataclasses import dataclass
 @dataclass(frozen=True)
 class Language:
     code: str  # Wiktionary's code (la, grc), which Kaikki puts on every entry
-    # Wiktionary's name: the dictionary's title, and the section links point to
+    # Wiktionary's name: in the dictionary's title, and the section links point to
     name: str
     index_name: str  # the lookup index: idx:entry's name and DefaultLookupIndex
     # The spelling an entry is filed and labelled under, from its first models.Header: the
@@ -40,6 +40,11 @@ class Language:
     homographs: str  # words spelled alike, as markup, for the front page
     # (causes, variant) a word that opens nothing is retried with, to name why
     miss_variants: Callable[[str], Iterable[tuple[tuple[str, ...], str]]]
+
+    @property
+    def title(self):
+        """The dictionary's title, which a Kindle lists it by: it names its source."""
+        return f"Wiktionary {self.name}-English Dictionary"
 
     @property
     def anchor(self):
