@@ -285,18 +285,34 @@ def test_turkish_copula(base, front, implied):
     assert [spelling for spelling, _ in tr_forms.copula(base, front)] == implied
 
 
-def test_turkish_copula_bases():
+def test_turkish_implied_forms():
     forms = [
         {"form": "saat", "tags": ["nominative", "singular"]},
         {"form": "saate", "tags": ["dative", "singular"]},
+        {"form": "saatte", "tags": ["locative", "singular"]},
         {"form": "saatim", "tags": ["first-person", "nominative", "possessive"]},
         {"form": "saati", "tags": ["third-person", "nominative", "possessive"]},
+        {"form": "saatinde", "tags": ["third-person", "locative", "possessive"]},
+        {"form": "saatimde", "tags": ["first-person", "locative", "possessive"]},
     ]
     implied = [s for s, _ in tr_forms.implied_forms(forms, set(), {"pos": "noun"})]
-    # Only the bare nominative and the third person's: saatimdi paid too little
-    assert implied == ["saatti", "saattir", "saatiydi", "saatidir"]
+    # The bare forms and the third person's: saatimdi, saatimle, saatimdeki paid too little
+    assert implied == [
+        *("saatti", "saattir", "saatle", "saatteki"),
+        *("saatiydi", "saatidir", "saatiyle", "saatindeki"),
+    ]
     var = {"word": "var", "pos": "adj", "senses": [{"glosses": ["existent"]}]}
-    assert [s for s, _ in tr_forms.implied_forms([], set(), var)] == ["vardı", "vardır"]
+    assert [s for s, _ in tr_forms.implied_forms([], set(), var)] == [
+        "vardı",
+        "vardır",
+        "varla",
+    ]
+    sonra = {"word": "sonra", "pos": "postp", "senses": [{"glosses": ["after"]}]}
+    assert [s for s, _ in tr_forms.implied_forms([], set(), sonra)] == [
+        "sonraydı",
+        "sonradır",
+        "sonraki",
+    ]
     pointer = {
         "word": "iyice",
         "pos": "adv",

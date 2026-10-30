@@ -1,25 +1,40 @@
-"""The copula forms a Turkish word implies, which no Wiktionary table lists: kadındı,
-yıllardır, oğluydu, konusudur, vardır, gibiydi (was, is).
+"""The forms a Turkish word implies that no Wiktionary table lists: the copula (kadındı,
+yıllardır, oğluydu, vardır: was, is), -(y)lA "with" (sesle, onlarla, nedeniyle) and -ki
+"the one in" (dünyadaki, arasındaki, sonraki).
 
-The copula is a suffix on a noun's case forms, or on an adjective, adverb or postposition,
-by vowel harmony: -(y)DI (past) and -DIr (present), where y follows a vowel, D is t after a
-voiceless consonant and I is ı, i, u or ü by the last vowel. A loanword's nominative may
-take front suffixes after a back vowel (saat, saatte): its own dative or locative says
-which. Adjectives with a table already list their copula forms (güzeldim).
+They are suffixes on a noun's nominative or locative, or on an adjective, adverb or
+postposition, by vowel harmony: -(y)DI (past), -DIr (present) and -(y)lA, where y follows a
+vowel, D is t after a voiceless consonant, I is ı, i, u or ü and A is a or e by the last
+vowel; -ki does not change. A loanword's nominative may take front suffixes after a back
+vowel (saat, saatte): its own dative or locative says which. Adjectives with a table
+already list their copula forms (güzeldim).
 
-Measured on the Stage 12 corpus (roadmap, Stage 13): these open 0.5% more tokens for 94K
-labels. The evidential -(y)mIş, the conditional -(y)sA, -(y)ken, and the copula on other
-cases (evdeydi) or other possessors (evimdi) together opened about 0.2% for 3.8M more, so
-they are not generated.
+Each kind was measured on the Stage 12 corpus first, as missed tokens its forms would open
+per label (roadmap, Stage 13), and only those that paid are generated. Not generated: the
+evidential -(y)mIş, the conditional -(y)sA, -(y)ken, the copula on other cases (evdeydi),
+any of these on a first- or second-person possessive (evimdi, elimle, evimdeki), and -ki on
+a genitive (bizimki).
 """
 
 import unicodedata
 
-# Copula suffixes: (template, tags). y: buffer after a vowel; D: d or t; I and A: vowels
-COPULA = (("yDI", ["past"]), ("DIr", ["present"]))
-# Parts of speech whose headword takes the copula when the entry has no table: vardır,
-# demektir, gibiydi, budur
-BARE_POS = {"adj", "adv", "postp", "det"}
+# Suffixes on a nominative: (template, tags). y: buffer after a vowel; D: d or t; I and A:
+# vowels by harmony
+NOMINATIVE_SUFFIXES = (
+    ("yDI", ["copula", "past"]),
+    ("DIr", ["copula", "present"]),
+    ("ylA", ["instrumental"]),
+)
+LOCATIVE_SUFFIXES = (("ki", ["relative"]),)
+# The suffixes a headword without case forms takes, by its part of speech: vardır,
+# demektir, gibiydi, budur, aceleyle, sonraki, oradaki
+BARE_SUFFIXES = {
+    "adj": NOMINATIVE_SUFFIXES,
+    "adv": NOMINATIVE_SUFFIXES + LOCATIVE_SUFFIXES,
+    "postp": NOMINATIVE_SUFFIXES[:2] + LOCATIVE_SUFFIXES,
+    "det": NOMINATIVE_SUFFIXES[:2],
+}
+COPULA = NOMINATIVE_SUFFIXES[:2]
 CASES = {"nominative", "accusative", "dative", "locative", "ablative", "genitive"}
 BACK, FRONT = set("aıou"), set("eiöü")
 ROUNDED = set("ouöü")
@@ -28,35 +43,41 @@ PLAIN_VOWELS = str.maketrans("âîûÂÎÛ", "aiuAIU")
 
 
 def implied_forms(forms, known, entry):
-    """(spelling, tags) of the copula on an entry's nominatives without a possessor or
-    with a third-person one (kadın-dı, oğlu-ydu), or on its headword when it is an
-    adjective, adverb, postposition or determiner without case forms (var-dır)."""
+    """(spelling, tags) of the copula and -(y)lA on an entry's nominatives, and -ki on its
+    locatives, without a possessor or with a third-person one (kadın-dı, ses-le, el-i-yle,
+    dünya-da-ki, ara-sı-nda-ki); or of the suffixes BARE_SUFFIXES gives its headword when
+    it is an adjective, adverb, postposition or determiner without case forms (var-dır,
+    sonra-ki)."""
     by_tags = {frozenset(form.get("tags", [])): form.get("form", "") for form in forms}
-    bases = []
+    bases = []  # (base, its tags, suffixes, front)
     for form in forms:
         word, tags = form.get("form", ""), set(form.get("tags", []))
-        if "nominative" not in tags or "copula" in tags:
+        if tags & {"copula", "instrumental", "relative", "predicative"}:
             continue
         if "possessive" in tags and "third-person" not in tags:
             continue
-        front = None
-        if tags == {"nominative", "singular"}:
-            front = _front_suffix(word, by_tags)
-        bases.append((word, sorted(tags - {"nominative"}), front))
-    word = entry.get("word", "")
+        if "nominative" in tags:
+            front = None
+            if tags == {"nominative", "singular"}:
+                front = _front_suffix(word, by_tags)
+            bases.append((word, tags - {"nominative"}, NOMINATIVE_SUFFIXES, front))
+        elif "locative" in tags:
+            bases.append((word, tags, LOCATIVE_SUFFIXES, None))
+    pos = entry.get("pos")
     if (
-        entry.get("pos") in BARE_POS
+        pos in BARE_SUFFIXES
         and not any(set(form.get("tags", [])) & CASES for form in forms)
         and not _only_points(entry)
     ):
-        bases.append((word, [], None))
+        bases.append((entry.get("word", ""), set(), BARE_SUFFIXES[pos], None))
     implied = []
-    for base, tags, front in bases:
-        if base.replace("'", "").isalpha():
-            implied += [
-                (spelling, [*tags, "copula", *copula_tags])
-                for spelling, copula_tags in copula(base, front)
-            ]
+    for base, tags, suffixes, front in bases:
+        if not base.replace("'", "").isalpha():
+            continue
+        for template, suffix_tags in suffixes:
+            spelling = attach(base, template, front)
+            if spelling:
+                implied.append((spelling, [*sorted(tags), *suffix_tags]))
     return implied
 
 
@@ -69,30 +90,35 @@ def _only_points(entry):
 def copula(base, front=None):
     """(spelling, tags) of the copula on base; front overrides the harmony its last vowel
     gives (True for saat, whose suffixes are front)."""
+    spellings = [(attach(base, template, front), tags) for template, tags in COPULA]
+    return [(spelling, tags) for spelling, tags in spellings if spelling]
+
+
+def attach(base, template, front=None):
+    """base with a suffix template by vowel harmony (y: buffer after a vowel; D: d or t;
+    I: ı, i, u or ü; A: a or e), or None when base writes no vowel (an abbreviation: AB,
+    TBMM). front overrides the harmony base's last vowel gives."""
     vowels = [c for c in _letters(base) if c in BACK | FRONT]
     if not vowels:
-        return []  # an abbreviation (AB, TBMM): its vowels are not written
+        return None
     last = vowels[-1]
     is_front = last in FRONT if front is None else front
     rounded = last in ROUNDED
     ends_vowel = _letters(base)[-1] in BACK | FRONT
     voiceless = base[-1] in VOICELESS
-    spellings = []
-    for template, tags in COPULA:
-        suffix = ""
-        for char in template:
-            if char == "y":
-                suffix += "y" if ends_vowel else ""
-            elif char == "D":
-                suffix += "t" if voiceless else "d"
-            elif char == "I":
-                suffix += ("üi" if is_front else "uı")[0 if rounded else 1]
-            elif char == "A":
-                suffix += "e" if is_front else "a"
-            else:
-                suffix += char
-        spellings.append((base + suffix, tags))
-    return spellings
+    suffix = ""
+    for char in template:
+        if char == "y":
+            suffix += "y" if ends_vowel else ""
+        elif char == "D":
+            suffix += "t" if voiceless else "d"
+        elif char == "I":
+            suffix += ("üi" if is_front else "uı")[0 if rounded else 1]
+        elif char == "A":
+            suffix += "e" if is_front else "a"
+        else:
+            suffix += char
+    return base + suffix
 
 
 def _front_suffix(word, by_tags):
