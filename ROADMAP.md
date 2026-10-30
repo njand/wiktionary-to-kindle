@@ -9,7 +9,7 @@ Update this file as stages finish. Stages 0–6 are Latin; Stage 7 makes the bui
 | --- | --- |
 | Compiler | **kindling only.** Drop Amazon kindlegen support, including the 200-form entry splitting (its 255-form limit is kindlegen-only; kindling has no per-entry limit). |
 | Homographs (latus / lātus) | **Keep entries separate.** A tap on a macronized word ("lātum") should open only the matching entry. Where a choice is unavoidable, prefer something the reader can swipe or jump between over one long merged entry where the boundary between entries is easy to miss. See Stage 2. |
-| Enclitics (-que, -ne, -ve) | **Not indexed.** Enclitics are pre-segmented in the e-books with a hair space (U+200A) instead: the only separator a long press stops at (device test, 2026-10-29; Stage 0). |
+| Enclitics (-que, -ne, -ve) | **Not indexed.** Enclitics are pre-segmented in the e-books with a hair space (U+200A) instead: the only separator a long press stops at (device test, 2026-10-29; Stage 0). Since 2026-10-30 the halves a book splits off open Wiktionary's `-que`, `-ne` and `-ve` entries, listed by their weight like any other entry (Stage 20); compounds (`virumque`) stay unindexed. |
 | Examples pipeline | **Remove it.** The CLI never enables `link_examples`. |
 | Disambiguation cards (2026-10-28) | **Drop them.** The device popup lists every entry a tap reaches (see Stage 6, found on the device), and links do not work in the popup, so a card only added a step. Each entry keeps all its own spellings. |
 | Next languages (2026-10-29) | **Ancient Greek, then Turkish.** Greek is closest to Latin: an inflected classical language whose Wiktionary tables list nearly every form, so most of the Latin pipeline carries over. Turkish needs morphology the tables cannot list (Stages 12–19). |
@@ -373,6 +373,18 @@ Decided 2026-10-29: the split point is chosen by a language model that reads the
 - [x] **`prepare-book` end to end** on an EPUB of "Aleko" (`outputs/sample-tr/`): 288 words split, entities and markup kept, an `.azw3` built with kindling; the API backend checked against a local stand-in of the API (request shape, fallbacks, schema, answer to split).
 - [ ] **Device check** (`docs/device-check-tr.md`), including Stage 14's hair-space checks; then mark a release with Turkish as the latest.
 - [ ] **A real book**: run `prepare-book` with a model on a Turkish EPUB, measure its cost and time (Stage 17), and read it on the Kindle.
+
+## Stage 20: Latin — words a real book misses (e-liber handoff) — built, size decision pending
+
+From [the e-liber handoff](docs/handoff-wiktionary-to-kindle.md): a long press simulated on every word of Barclay's *Argenis* I–II. Generated in `merge_dump` (`SORT_VERSION` 15), each form tagged `generated` and weighed like an alternative in the popup, so a word Wiktionary spells that way comes first (`blandior` the verb before the comparative).
+- [x] **Enclitic halves**: `-que`, `-ne`, `-ve` (and `-pe`) are entries (`Language.affix_pos`); a tap on `que` or `ve` reaches them. Not ranked first.
+- [x] **Comparison and adverbs** (`la_comparison.py`): `-ior`, `-issimus` (`-errimus`, `-illimus`), `-issimē`, and the adverb in `-ē` / `-iter` / `-nter` (`officiōsē`; Wiktionary's `officiōse` is the vocative) where the head line names none. For adjectives and for participles used as adjectives (a sense of their own, or a listed adverb or comparison); not relational adjectives (`-ānus`, `-ēnsis`, `-icus`, `-ālis`, `-fer`…), gerundives, or vowel stems. A page of another part of speech (`praesentior`, of praesentiō) does not block the comparative.
+- [x] **Other spellings** (`la_spellings.py`): every listed alternative is inflected (`Cēphissum`, `abvēxisse`, `exūdantis`); syncopated perfects (`adventāsse`, `audiit`); prefix assimilation both ways (`aggemēns`; the assimilated → unassimilated direction only when the etymology names the prefix), `exs-` → `ex-`, `adul-`/`adol-`, `rettul-` → `retul-`, `āfu-` → `abfu-`.
+- [x] **Nouns** (`la_forms.py`): Greek accusatives (`Ācim`, `Typhōeum`, `Philoctētem`, and for third-declension words from Greek `iaspida`, `Cyclōpas`); names without an accusative declined by their ending (`Anaximandrum`), second-declension names given a plural (`Lȳdōrum`); a noun's feminine in `-a` declined (`catulae`); genitive plural `-um` beside `-ntium` (`prūdentum`).
+- Left to books (e-liber): perfects Wiktionary does not give (`sancīvit`, `exsiliit`, `percurrērunt`: the `percurrī` label the handoff saw is the passive infinitive, and Kaikki does not carry the page's note; not generated, as no regular rule gives it), and spellings inside the stem (`inclytus`, `Enna`, `tōphus`, `Tibris`), which would respell letters in every word.
+- [x] **Measured** (same dump and kindling as `KindleDictionary-la (19)`; `outputs/measure/handoff/`): labels 1,662,301 → 2,043,531 (+22.9%), `.mobi` 60.2 → **73.5 MB** (+22.0%), built in 4.4 minutes, kindling's checks pass. Corpus 86.4% → 86.5% (Gate to Caesar +0.2 pp, Vergil +0.1); *Argenis* 96.2% → 96.6% (missed tokens 2,046 → 1,821). Every word in the lookup list opens. At the merge, by generator: superlatives 98K labels, comparatives 75K, inflected alternatives 60K, prefix spellings 40K, syncopated perfects 33K, adverbs 10K, names 9K.
+- [ ] Decide whether the size is worth it, or which generators to drop.
+- [ ] Device check: `que`, `ve`, a generated comparative, `blandior` listing the verb first.
 
 ## Later
 

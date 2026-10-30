@@ -29,7 +29,7 @@ from .pointers import (
 from .related import MERGED_KEY
 
 # Bump when merge_dump's output changes, so cached sorted files are rebuilt
-SORT_VERSION = 14
+SORT_VERSION = 15
 
 SORTED_SUFFIX = "(sorted)"
 
@@ -140,10 +140,9 @@ def merge_dump(path, language, chunk_size=200000, force=False):
                     word = normalize(obj["word"], lowercase=False)
                     part_of_speech = obj.get("pos")
 
-                    if (
-                        part_of_speech not in EXCLUDED_POS
-                        and not word.startswith("-")
-                        and not word.endswith("-")
+                    affix = word.startswith("-") or word.endswith("-")
+                    if part_of_speech not in EXCLUDED_POS and (
+                        not affix or part_of_speech in language.affix_pos
                     ):
                         header = get_header(obj, language)
                         root = root_form(obj.get("senses", []), language)
