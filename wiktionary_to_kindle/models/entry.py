@@ -5,7 +5,6 @@ from ..merge.related import MERGED_KEY, related_lines
 from ..utils import (
     form_of_root,
     kindle_fold,
-    lookup_spellings,
     remove_breves,
     sanitize_xhtml,
 )
@@ -24,24 +23,27 @@ INVALID_FORMS = {
 }
 PATTERN_INVALID_FORMS = r"^(?:" + "|".join(map(re.escape, INVALID_FORMS)) + r")"
 PATTERN_CONTAINS_PLUS = r".*\+.*"
-PATTERN_PERIPHRASTIC = r".* (sum|esse|fuisse|fore|erat|erit|est|sit|esset|iri|īrī)"
-INVALID_PATTERN = re.compile(
-    f"{PATTERN_INVALID_FORMS}|{PATTERN_CONTAINS_PLUS}|{PATTERN_PERIPHRASTIC}"
-)
 
-# Kaikki files participles and gerunds under "verb"; their head template says which they are
-POS_BY_HEAD_TEMPLATE = {"la-part": "participle", "la-gerund": "gerund"}
+
+def invalid_pattern(language):
+    """Forms that are no words: table notes, sums, and forms made with an auxiliary."""
+    patterns = [PATTERN_INVALID_FORMS, PATTERN_CONTAINS_PLUS]
+    if language.periphrastic:
+        patterns.append(language.periphrastic)
+    return re.compile("|".join(patterns))
 
 
 class Entry:
     def __init__(
         self,
         json_entry,
+        language,
         id_number=1,
         alt_id=None,
         alt_page=None,
     ):
         self.json_entry = json_entry
+        self.language = language
         self.id_number = id_number
         self.alt_word = None
         self.alt_id = alt_id
@@ -54,7 +56,9 @@ class Entry:
 
         self.pos = json_entry.get("pos", None)
         head_templates = json_entry.get("head_templates") or [{}]
-        self.pos = POS_BY_HEAD_TEMPLATE.get(head_templates[0].get("name"), self.pos)
+        self.pos = language.pos_by_head_template.get(
+            head_templates[0].get("name"), self.pos
+        )
         self.senses_blocks = self.get_senses_blocks()
         self.etymology = self.get_etymology()
         self.descendants = self.get_descendants()
@@ -96,7 +100,8 @@ class Entry:
         senses = self.json_entry.get("senses", [])
         # Hide "X of lemma" senses, unless that is all the entry has (its lemma is missing)
         pointer_senses = [
-            "form_of" in sense and form_of_root(sense) for sense in senses
+            "form_of" in sense and form_of_root(sense, self.language)
+            for sense in senses
         ]
         if all(pointer_senses):
             pointer_senses = [False] * len(senses)
@@ -167,6 +172,7 @@ class Entry:
         return _parse(raw_descendants)
 
     def get_inflected_forms(self):
+        invalid = invalid_pattern(self.language)
         forms = {}
         for form_obj in self.json_entry.get("forms", []):
             form = form_obj.get("form")
@@ -175,7 +181,7 @@ class Entry:
                 or form == self.head_word
                 or "<" in form
                 or ">" in form
-                or INVALID_PATTERN.match(form)
+                or invalid.match(form)
             ):
                 continue
 
@@ -203,13 +209,13 @@ class Entry:
         """Every spelling a tap should find this entry by, before label resolution.
 
         The device folds macrons and case itself, so no unmacronized or lowercase variants
-        are added; see utils.lookup_spellings for the spellings that are.
+        are added; see Language.lookup_spellings for the spellings that are.
         """
         all_forms = set()
         for form in [header.head_word for header in self.headers] + list(
             self.inflected_forms.keys()
         ):
-            all_forms.update(lookup_spellings(form))
+            all_forms.update(self.language.lookup_spellings(form))
         # A label of punctuation only (the Tironian et, ⁊) weighs nothing: no tap reaches it.
         # A symbol weighs nothing either, so "♃vis" (Iovis written with Jupiter's sign)
         # would be reached by "vis"; such forms are left out.

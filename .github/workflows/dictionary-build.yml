@@ -72,6 +72,7 @@ jobs:
           uv run python -m wiktionary_to_kindle.quality coverage
           outputs/KindleDictionary-${{ matrix.language }} corpus/${{ matrix.language }}.tsv
           -o outputs/coverage-${{ matrix.language }}
+          --lang ${{ matrix.language }}
           --kindling kindling-cli
           --mobi outputs/KindleDictionary-${{ matrix.language }}/${{ matrix.language }}-wiktionary.mobi
 

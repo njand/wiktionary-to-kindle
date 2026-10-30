@@ -4,6 +4,7 @@ import json
 
 import pytest
 
+from wiktionary_to_kindle.languages import LATIN
 from wiktionary_to_kindle.merge.related import (
     MERGED_KEY,
     merged_page,
@@ -107,12 +108,12 @@ def test_sort_records_merged_pages_on_the_lemma(tmp_path, monkeypatch):
         "".join(json.dumps(e, ensure_ascii=False) + "\n" for e in entries),
         encoding="utf-8",
     )
-    merged = merge_dump(str(src), "la")
+    merged = merge_dump(str(src), LATIN)
     with open(merged.path, encoding="utf-8") as f:
         frigidus = find([json.loads(line) for line in f], "frigidus", "adj")
     assert frigidus[MERGED_KEY] == [
         {"kind": "dim.", "word": "frīgidulus", "gloss": "somewhat cold"}
     ]
 
-    html = "\n".join(HTMLRenderer.render_entry(Entry(frigidus)))
+    html = "\n".join(HTMLRenderer.render_entry(Entry(frigidus, LATIN)))
     assert "<p><i>dim.</i>&#160;<b>frīgidulus</b>: somewhat cold</p>" in html

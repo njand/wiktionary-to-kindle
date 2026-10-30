@@ -187,21 +187,24 @@ From kindling's README and source (checked 2026-10-29), not yet measured on a de
 - Lemma, the Modern Greek dictionary kindling's author builds, adds case variants (`φας`/`Φας`) and corpus-attested polytonic forms (from Wikisource) to its 31K headwords and 568K forms: the same approach this plan takes.
 - Kaikki's Ancient Greek data (2026-10-29, λύω): the headword and the table forms carry macrons and breves (`λῡ̆́ω`, `λῡ́ουσῐν`), the page title does not (`λύω`). Participles are listed in the nominative only (`λῡ́ων`, `λῡ́ουσᾰ`, `λῦον`). Dialects (Epic, Ionic, ...) are named by `table-tags` rows that head each table, not on each form. A full verb's forms run to hundreds; the page for λύω is 640K characters.
 
-## Stage 7: Language profiles — Latin output unchanged
+## Stage 7: Language profiles — done
 
 Goal: one place per language for everything Latin-specific, so `--lang grc` builds through the same pipeline.
 
-- [ ] `wiktionary_to_kindle/languages/` with `la.py` and `grc.py`, chosen by `--lang`. A profile holds:
-  - The language name and code: `name="Latin"` in `entry.html.jinja`, the front page title (`front.html.jinja`), the OPF, and the description in `pipeline.py`.
-  - The Wiktionary section anchor for form-of links (`#Latin` in `utils.py`, `#Ancient_Greek`).
-  - The page key a pointer target is matched by (`merge/pointers.py`, `merge/sort.py`): Latin drops macrons and breves; Greek drops the same length marks but keeps accents and breathings, which belong to the spelling.
-  - `lookup_spellings`: Latin's u/v, i/j and disputed lengths; Greek's in Stage 9.
-  - The text spelling `render/popup_order.py` groups ambiguous labels by: Latin without macrons; Greek without length marks.
-  - Language-specific tags and filters: `ALTERNATIVE_TAGS` (`Medieval-Latin`), `PATTERN_PERIPHRASTIC` (the forms of sum), `POS_BY_HEAD_TEMPLATE` (`la-part`), the generated comparatives and participles (`merge/forms.py`).
-  - The headline style (`render/headline.py`), sense-label abbreviations and short language names (`render/html_renderer.py`), and the default descendant languages.
-  - The StarDict synonym rule (`stardict.py`), corpus formats and coverage miss causes (`ENCLITICS`, "j for i" in `quality/coverage.py`), and the device checklist path.
-- [ ] `kindle_fold` stops normalizing to NFC: a label is normalized where it is made, and a tapped word is weighed as the text prints it. Latin output does not change (its labels are already NFC); Greek coverage would otherwise count oxia and decomposed texts as hits.
-- Done when: a full Latin build writes XHTML pages and an OPF identical to the build before (as Stage 5 checked), and the tests pass.
+- [x] `wiktionary_to_kindle/languages/`: a `Language` profile per language (`la.py`, `grc.py`), chosen by `--lang` (`choices` are the registered codes) and passed to every stage: `merge_dump`, `read_entries` and `Entry`, `BookWriter`, `write_opf`, coverage and `quality sample`. A profile holds:
+  - Wiktionary's code and name: the `idx:entry` name and `DefaultLookupIndex` (`index_name`: `Latin`, `Greek`), the front page and OPF title, `DictionaryInLanguage`, the OPF identifier and the StarDict description.
+  - The section anchor form-of links end with (`#Latin`, `#Ancient_Greek`), from the name.
+  - `letters`, what a form-of target is matched by when no headword is spelled like it (`rekey_plain_roots`): Latin strips every accent (`normalize`); Greek drops only macrons and breves (`grc.strip_length`), since accents and breathings belong to the spelling (ὡς, ὥς).
+  - `lookup_spellings`: Latin's (moved from `utils.py`: disputed lengths, u for v, j for i); Greek's is the form itself until Stage 9.
+  - `alternative_tags` (`Medieval-Latin`), `periphrastic` (the forms of sum), `pos_by_head_template` (`la-part`), and `implied_forms`: Latin's participle, comparative and superlative declensions moved to `languages/la_forms.py`; `merge/forms.py` keeps the shared part.
+  - The default descendant languages (`--descendants` now defaults to the language's), the homographs the front page names, and `miss_variants`, the retries coverage names a miss's cause with (Latin's enclitics, j for i and u for v, moved from `quality/coverage.py`).
+- [x] `kindle_fold` and the corpus tokenizer no longer normalize to NFC: a word is weighed as the text prints it, as the device does (a decomposed ā, a Greek oxia). Labels were already NFC where they are made.
+- [x] The weekly workflow passes `--lang` to coverage; `docs/DEVELOPING.md` says how to add a language.
+- Left for the Greek stages, where there is something to decide: the headline style and sense-label abbreviations (Stage 10), the spelling `popup_order.py` ranks shared labels by (it ranks only ASCII-folding spellings, so none in Greek; Stage 9), the StarDict synonym rule and the device checklist path (Stage 11).
+
+Measured (2026-10-29, dump of 2026-10-25, kindling v0.45.6): a full Latin build before and after writes identical XHTML pages and OPF, and a `.mobi` of the same size (60,194,891 bytes, 1,662,329 index entries) that differs in 4 bytes of header timestamps. Corpus coverage is unchanged in every source (86.4% of tokens open something, 1.0% left to index order). 174 tests pass, 11 of them new (`tests/test_languages.py`).
+
+Greek smoke build (same dump): the `grc` filter keeps 69,171 lines (395 MB). `--lang grc` builds through the whole pipeline without errors: 21,383 entries, 1,104,887 lookup terms, a 39.9 MB `.mobi`, and kindling's checks pass. Nothing is tuned yet, and 68% of the 1.10M labels still carry macrons or breves (`λῡ́ω`), which no text prints, so those spellings open nothing. Removing them is the first item of Stage 9.
 
 ## Stage 8: Ancient Greek — measure first
 

@@ -34,13 +34,13 @@ The first build downloads a large file and takes a while. Later builds reuse the
 
 | Option | Description |
 | --- | --- |
-| `--lang <code>` | Language code to build (default: `la`). |
+| `--lang <code>` | Wiktionary language code to build: `la` (default) or `grc`, which is not usable yet. |
 | `--input <path>` | Build from a local `.jsonl` file instead of downloading. |
 | `--no-download` | Use the file already in `downloads/` instead of downloading a new one. |
 | `--resort` | Sort the data again even if a cached sorted file is up to date. |
 | `--kindling <path>` | Location of `kindling-cli`, if it isn't on your `PATH`. `--kindlegen` is accepted as an older name. |
 | `--stardict` | Also write `<lang>-wiktionary-stardict.zip` for KOReader and GoldenDict. |
-| `--descendants <names>` | Languages to keep in each entry's list of descendants (default: English Portuguese Spanish French Italian). |
+| `--descendants <names>` | Languages to keep in each entry's list of descendants (default: chosen for each language; for Latin, English Portuguese Spanish French Italian). |
 
 ### Faster development builds
 
@@ -66,6 +66,7 @@ uv run pytest
 
 | Stage | Module | What it does |
 | --- | --- | --- |
+| Language | `languages/` | Holds what each language does its own way (see [Adding a language](#adding-a-language)). Every later stage takes the language chosen with `--lang`. |
 | Ingest | `ingest.py` | Downloads the Wiktionary data from Kaikki.org, keeps the target language's entries, and records the date of the data. |
 | Merge | `merge/` | Sorts the entries on disk, so the multi-gigabyte dump never has to fit in memory. Folds pages that only point to a lemma (inflected forms, alternative spellings) into that lemma, generates implied forms (`forms.py`), and adds lines for related words (`related.py`). The result is cached next to the input. |
 | Model | `models/` | Parses the merged data into `Entry`, `Header`, `Sense` and `Inflection` objects and normalizes grammatical tags. |
@@ -105,7 +106,7 @@ uv run python -m wiktionary_to_kindle.quality coverage-diff old-coverage.json co
 
 `stats` summarizes a build's index, and `diff` compares two builds.
 
-`coverage` checks how many words in a set of real Latin texts (`corpus/la.tsv`) open an entry and explains why the rest don't, following the Kindle's own matching rules. Add `--kindling <binary> --mobi <file>` to also check the most frequent words with kindling's on-device lookup simulator.
+`coverage` checks how many words in a set of real texts (`corpus/la.tsv`, with `--lang` for another language) open an entry and explains why the rest don't, following the Kindle's own matching rules. Words are weighed as the text prints them, without Unicode normalization, as a Kindle does. Add `--kindling <binary> --mobi <file>` to also check the most frequent words with kindling's on-device lookup simulator.
 
 `coverage-diff` compares two coverage reports. With `--fail-on-drop` it exits with an error when any source's coverage falls by more than half a percentage point (adjustable with `--threshold`).
 
@@ -117,9 +118,21 @@ Each release's notes end with a [device checklist](device-check-la.md). Once a b
 
 ## Adding a language
 
-1. Add any language-specific normalization or tag parsing to `wiktionary_to_kindle/models/`.
-2. Add the language code to the build matrix in `.github/workflows/dictionary-build.yml`.
-3. Open a pull request.
+Everything a language does its own way is in a `Language` profile in `wiktionary_to_kindle/languages/` (`la.py` for Latin, `grc.py` for Ancient Greek):
+
+- its Wiktionary code and name, which name the dictionary, its lookup index and the section form-of links point to;
+- the spellings of a form a tap should find (Latin adds u for v, j for i and both lengths of a disputed vowel);
+- the letters a form-of target is matched by when it names a page title instead of a headword;
+- the tags of alternative spellings, forms made with an auxiliary, and parts of speech known by their head template;
+- the regular forms an entry implies (Latin's participle and comparative declensions, in `la_forms.py`);
+- the default descendant languages, the homographs the front page shows, and the variants coverage retries a missed word with.
+
+To add a language:
+
+1. Write its profile and register it in `languages/__init__.py`.
+2. Add a corpus (`corpus/<code>.tsv`) and a device checklist.
+3. Add the language code to the build matrix in `.github/workflows/dictionary-build.yml`.
+4. Open a pull request.
 
 ## Data dates
 

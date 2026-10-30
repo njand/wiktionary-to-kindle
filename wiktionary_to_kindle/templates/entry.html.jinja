@@ -1,5 +1,5 @@
 {%- import 'macros.html.jinja' as macros -%}
-<idx:entry name="Latin" scriptable="yes" spell="yes" exact="yes" id="{{ entry.id_number }}">
+<idx:entry name="{{ entry.language.index_name }}" scriptable="yes" spell="yes" exact="yes" id="{{ entry.id_number }}">
     {%- set main_header = valid_pairs[0][1] -%}
     {#- One line: headword, principal parts, gender, part of speech and class -#}
     <p><idx:orth value="{{ orth | e }}"><font size="+1"><b>

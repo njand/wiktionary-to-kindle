@@ -2,7 +2,9 @@
 
 import json
 
-from wiktionary_to_kindle.merge.forms import GENERATED, decline, enrich_forms
+from wiktionary_to_kindle.languages import LATIN
+from wiktionary_to_kindle.languages.la_forms import decline
+from wiktionary_to_kindle.merge.forms import GENERATED, enrich_forms
 from wiktionary_to_kindle.merge.sort import merge_dump
 from wiktionary_to_kindle.models.entry import Entry
 
@@ -48,21 +50,23 @@ def test_comparative_superlative_and_adverb():
         form("altissimus", "superlative"),
         form("altē", "adverb"),
     ]
-    added = {f["form"]: f["tags"] for f in enrich_forms(forms, set())[len(forms) :]}
+    added = {
+        f["form"]: f["tags"] for f in enrich_forms(forms, set(), LATIN)[len(forms) :]
+    }
     assert {"altius", "altiōris", "altiōrem", "altiōribus"} <= set(added)
     assert {"altissimī", "altissimae", "altissimōrum"} <= set(added)
     assert added["altissimē"] == ["adverb", "superlative", GENERATED]
     assert all(GENERATED in tags for tags in added.values())
 
     # The adverb's own page has its superlative; the comparative's page its declension
-    added = enrich_forms(forms, {"altē", "altior"})[len(forms) :]
+    added = enrich_forms(forms, {"altē", "altior"}, LATIN)[len(forms) :]
     assert "altissimē" not in {f["form"] for f in added}
     assert "altiōrem" not in {f["form"] for f in added}
 
 
 def test_listed_forms_are_not_generated_again():
     forms = [form("celsior", "comparative"), form("celsiōrem", "accusative")]
-    added = enrich_forms(forms, set())[len(forms) :]
+    added = enrich_forms(forms, set(), LATIN)[len(forms) :]
     assert "celsiōrem" not in {f["form"] for f in added}
 
 
@@ -75,7 +79,7 @@ def test_alternative_spellings_without_a_page_are_kept():
         form("rendō", "Late-Latin", "alternative", "reconstruction"),
     ]
     merged = [form("caussa", "alternative")]  # merged from its own page: kept
-    kept = enrich_forms(forms, {"abs", "caussa"}, merged)
+    kept = enrich_forms(forms, {"abs", "caussa"}, LATIN, merged)
     assert [f["form"] for f in kept] == ["inlābor", "prelium", "caussa"]
 
 
@@ -108,11 +112,11 @@ def test_alternative_and_generated_forms_reach_the_entry(tmp_path, monkeypatch):
         "".join(json.dumps(e, ensure_ascii=False) + "\n" for e in entries),
         encoding="utf-8",
     )
-    merged = merge_dump(str(src), "la")
+    merged = merge_dump(str(src), LATIN)
     with open(merged.path, encoding="utf-8") as f:
         sorted_entries = [json.loads(line) for line in f]
 
     dico = find(sorted_entries, "dico", "verb")
     assert "dīcentis" in forms_of(dico)
     assert "dictōrum" not in forms_of(dico)
-    assert {"deicō", "dīcentis"} <= Entry(dico).all_forms
+    assert {"deicō", "dīcentis"} <= Entry(dico, LATIN).all_forms

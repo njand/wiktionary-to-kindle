@@ -1,0 +1,109 @@
+"""Language profiles: what Latin and Ancient Greek do their own way."""
+
+import json
+
+import pytest
+
+from wiktionary_to_kindle.compiler import write_opf
+from wiktionary_to_kindle.languages import ANCIENT_GREEK, LANGUAGES, LATIN
+from wiktionary_to_kindle.languages.grc import strip_length
+from wiktionary_to_kindle.merge.sort import merge_dump
+from wiktionary_to_kindle.models.entry import Entry
+from wiktionary_to_kindle.quality.corpus import tokenize
+from wiktionary_to_kindle.render.html_renderer import HTMLRenderer
+from wiktionary_to_kindle.utils import form_of_root, kindle_fold
+
+from .test_sort_merge import lemma, pointer
+
+
+def greek(entry):
+    entry["lang_code"] = "grc"
+    entry["head_templates"][0]["name"] = entry["head_templates"][0]["name"].replace(
+        "la-", "grc-"
+    )
+    return entry
+
+
+def test_languages_by_code():
+    assert LANGUAGES == {"la": LATIN, "grc": ANCIENT_GREEK}
+    assert LATIN.anchor == "#Latin"
+    assert ANCIENT_GREEK.anchor == "#Ancient_Greek"
+
+
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        ("λῡ̆́ω", "λύω"),  # macron and breve on one vowel
+        ("ᾰ̓γᾰθός", "ἀγαθός"),  # breathing and accents stay
+        ("λύω", "λύω"),
+    ],
+)
+def test_strip_length_keeps_accents_and_breathings(text, expected):
+    assert strip_length(text) == expected
+
+
+def test_greek_letters_keep_their_accents_when_matching_pointers():
+    assert ANCIENT_GREEK.letters("ὡς") != ANCIENT_GREEK.letters("ὥς")
+    assert LATIN.letters("lātus") == LATIN.letters("latus")
+
+
+def test_kindle_fold_weighs_text_as_written():
+    # A decomposed macron and a Greek oxia are other characters to the device
+    assert kindle_fold("ā") != kindle_fold("ā")
+    assert kindle_fold("ά") != kindle_fold("ά")
+    assert kindle_fold("Λόγος") != kindle_fold("λόγος")  # Greek case counts
+
+
+def test_tokenize_keeps_the_text_as_printed():
+    assert tokenize("λάω") == {"λάω": 1}
+
+
+def test_form_of_link_names_the_language_section():
+    sense = {
+        "glosses": ["first-person singular future of λύω"],
+        "links": [["λύω", "λύω#Ancient_Greek"]],
+    }
+    assert form_of_root(sense, ANCIENT_GREEK) == "λύω"
+    assert form_of_root(sense, LATIN) is None
+
+
+def test_greek_pointer_finds_its_lemma_by_letters_with_accents(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    entries = [
+        greek(lemma("λύω", "verb", "λῡ̆́ω", ["to loose"])),
+        # The target is the page title, without length marks
+        greek(pointer("λύσω", "verb", "λῡ́σω", "future of λύω", "λύω")),
+        greek(lemma("ὡς", "adv", "ὡς", ["as"])),
+        # An unaccented target is no spelling of ὡς: it is left alone
+        greek(pointer("ως", "adv", "ως", "misspelling of ως", "ως")),
+    ]
+    src = tmp_path / "kaikki-grc.jsonl"
+    src.write_text(
+        "".join(json.dumps(e, ensure_ascii=False) + "\n" for e in entries),
+        encoding="utf-8",
+    )
+    with open(merge_dump(str(src), ANCIENT_GREEK).path, encoding="utf-8") as f:
+        merged = {e["word"]: e for e in map(json.loads, f)}
+    assert "λύσω" not in merged  # merged into λύω, not an entry of its own
+    assert "λύσω" in {f["form"] for f in merged["λύω"]["forms"]}
+    assert "ως" not in {f["form"] for f in merged["ὡς"].get("forms", [])}
+
+
+def test_greek_entry_is_indexed_under_its_language():
+    entry = Entry(greek(lemma("λόγος", "noun", "λόγος", ["word"])), ANCIENT_GREEK)
+    html = "\n".join(HTMLRenderer.render_entry(entry))
+    assert '<idx:entry name="Greek"' in html
+
+
+def test_front_page_and_package_name_the_language(tmp_path):
+    front = "\n".join(
+        HTMLRenderer.render_front(ANCIENT_GREEK, "2026-10-25", "2026-10-29", "0.1.0")
+    )
+    assert "<h1>Ancient Greek-English Dictionary</h1>" in front
+    assert "<i>εἶ</i>" in front
+
+    write_opf(str(tmp_path), ANCIENT_GREEK, 1, "2026-10-25", "2026-10-29", "0.1.0")
+    opf = (tmp_path / "dictionary.opf").read_text(encoding="utf-8")
+    assert "<DictionaryInLanguage>grc</DictionaryInLanguage>" in opf
+    assert "<DefaultLookupIndex>Greek</DefaultLookupIndex>" in opf
+    assert "ancient-greek-dictionary" in opf

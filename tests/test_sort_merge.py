@@ -7,6 +7,7 @@ import json
 
 import pytest
 
+from wiktionary_to_kindle.languages import LATIN
 from wiktionary_to_kindle.merge.sort import merge_dump
 from wiktionary_to_kindle.models.entry import Entry
 from wiktionary_to_kindle.utils import form_of_root
@@ -97,7 +98,7 @@ def sorted_entries(tmp_path, monkeypatch):
         "".join(json.dumps(e, ensure_ascii=False) + "\n" for e in ENTRIES),
         encoding="utf-8",
     )
-    merged = merge_dump(str(src), "la")
+    merged = merge_dump(str(src), LATIN)
     with open(merged.path, encoding="utf-8") as f:
         return [json.loads(line) for line in f]
 
@@ -129,7 +130,7 @@ def test_participle_with_own_meaning_is_kept(sorted_entries):
     amatus = find(sorted_entries, "amatus", "verb")
     assert "amātam" in forms_of(amatus)
     assert "amātam" not in forms_of(find(sorted_entries, "amo", "verb"))
-    glosses = [b.senses for b in Entry(amatus).senses_blocks]
+    glosses = [b.senses for b in Entry(amatus, LATIN).senses_blocks]
     assert "loved; having been loved" in glosses[0]
 
 
@@ -141,7 +142,7 @@ def test_alternative_form_chain_merges(sorted_entries):
 
 def test_orphan_is_kept_with_its_gloss(sorted_entries):
     fortis = find(sorted_entries, "fortis", "noun")
-    senses = Entry(fortis).senses_blocks[0].senses
+    senses = Entry(fortis, LATIN).senses_blocks[0].senses
     assert "genitive singular of fors" in senses
 
 
@@ -151,7 +152,7 @@ def test_sorted_file_is_cached_until_input_changes(tmp_path, monkeypatch):
     src.write_text(json.dumps(ENTRIES[0], ensure_ascii=False) + "\n", encoding="utf-8")
 
     def sort(**kwargs):
-        return merge_dump(str(src), "la", **kwargs).line_count  # None when reused
+        return merge_dump(str(src), LATIN, **kwargs).line_count  # None when reused
 
     assert sort() == 1
     assert sort() is None
@@ -206,7 +207,7 @@ def test_sorted_file_is_cached_until_input_changes(tmp_path, monkeypatch):
     ],
 )
 def test_form_of_root(sense, expected):
-    assert form_of_root(sense) == expected
+    assert form_of_root(sense, LATIN) == expected
 
 
 def sort_entries(tmp_path, monkeypatch, entries):
@@ -216,7 +217,7 @@ def sort_entries(tmp_path, monkeypatch, entries):
         "".join(json.dumps(e, ensure_ascii=False) + "\n" for e in entries),
         encoding="utf-8",
     )
-    merged = merge_dump(str(src), "la")
+    merged = merge_dump(str(src), LATIN)
     with open(merged.path, encoding="utf-8") as f:
         return [json.loads(line) for line in f]
 
@@ -256,7 +257,7 @@ def test_pointer_to_unmacronized_title_merges(tmp_path, monkeypatch):
 
 def test_form_of_without_gloss_points():
     sense = {"tags": ["form-of", "no-gloss", "participle"], "form_of": [{"word": "x"}]}
-    assert form_of_root(sense) == "x"
+    assert form_of_root(sense, LATIN) == "x"
 
 
 def test_pointer_without_forms_gives_its_headword(tmp_path, monkeypatch):
@@ -326,7 +327,7 @@ def test_chain_stops_at_a_form_spelled_like_another_lemma(tmp_path, monkeypatch)
         "".join(json.dumps(e, ensure_ascii=False) + "\n" for e in entries),
         encoding="utf-8",
     )
-    merged = merge_dump(str(src), "la")
+    merged = merge_dump(str(src), LATIN)
     with open(merged.path, encoding="utf-8") as f:
         merged = [json.loads(line) for line in f]
     assert "lātum" in forms_of(find(merged, "fero", "verb"))

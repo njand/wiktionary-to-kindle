@@ -2,7 +2,7 @@
 
 stats DICT_DIR -o stats.json        index statistics of a built dictionary
 diff OLD.json NEW.json              markdown comparison of two builds' statistics
-coverage DICT_DIR MANIFEST -o OUT   lookup coverage of a Latin corpus (OUT.json, OUT.md)
+coverage DICT_DIR MANIFEST -o OUT   lookup coverage of a corpus (OUT.json, OUT.md)
 coverage-diff OLD.json NEW.json     markdown comparison of two builds' coverage
 sample DUMP.jsonl OUT.jsonl         small, self-consistent sample of a filtered dump
 """
@@ -13,6 +13,7 @@ import sys
 from collections import Counter
 from pathlib import Path
 
+from ..languages import LANGUAGES, get_language
 from . import coverage, stats
 from .corpus import load_source, read_manifest, tokenize
 from .labels import build_index, read_entries
@@ -42,6 +43,7 @@ def main(argv=None):
     p.add_argument("manifest", type=Path, help="e.g. corpus/la.tsv")
     p.add_argument("-o", "--output", type=Path, help="writes OUTPUT.json and OUTPUT.md")
     p.add_argument("--cache", type=Path, default=Path("corpus/cache"))
+    p.add_argument("--lang", default="la", choices=sorted(LANGUAGES))
     p.add_argument(
         "--kindling", help="also check the most frequent words with kindling"
     )
@@ -75,7 +77,7 @@ def main(argv=None):
         default=Path("tests/lookup_words_la.txt"),
         help="word list whose words (and their lemmas) are always included",
     )
-    p.add_argument("--lang", default="la")
+    p.add_argument("--lang", default="la", choices=sorted(LANGUAGES))
 
     args = parser.parse_args(argv)
     return COMMANDS[args.command](args)
@@ -102,14 +104,15 @@ def run_diff(args):
 
 
 def run_coverage(args):
+    language = get_language(args.lang)
     index = build_index(read_entries(args.dict_dir / "files"))
     report = {"sources": {}}
     overall = Counter()
     for name, fmt, url in read_manifest(args.manifest):
         counts = tokenize(load_source(name, fmt, url, args.cache))
         overall.update(counts)
-        report["sources"][name] = coverage.measure(index, counts)
-    report["overall"] = coverage.measure(index, overall)
+        report["sources"][name] = coverage.measure(index, counts, language)
+    report["overall"] = coverage.measure(index, overall, language)
     report["sources"]["all"] = report["overall"]
     if args.kindling:
         report["kindling"] = coverage.verify_with_kindling(
@@ -143,7 +146,9 @@ def run_sample(args):
             word = line.split("#", 1)[0].strip().removeprefix("xfail:").strip()
             if word:
                 include.append(word)
-    count = extract_sample(args.src, args.dst, args.lemmas, include, args.lang)
+    count = extract_sample(
+        args.src, args.dst, get_language(args.lang), args.lemmas, include
+    )
     print(f"Wrote {count} entries to {args.dst}")
     return 0
 

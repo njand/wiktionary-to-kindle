@@ -10,13 +10,13 @@ reaches a lemma into entries; collect_forms gathers what a lemma takes from its 
 from collections import defaultdict
 
 from ..models.header import Header
-from ..utils import form_of_root, normalize, remove_breves
+from ..utils import form_of_root, remove_breves
 from .related import merged_page
 
 
-def root_form(senses):
+def root_form(senses, language):
     """Return the lemma this entry only points to, or None if any sense defines it."""
-    roots = [form_of_root(sense) for sense in senses]
+    roots = [form_of_root(sense, language) for sense in senses]
     if not roots or None in roots:
         return None
     return roots[0]
@@ -82,19 +82,19 @@ def collect_forms(pointers, head_key, part_of_speech, lemma_pos, promoted):
     return addl_forms, merged
 
 
-def rekey_plain_roots(pointers, known):
+def rekey_plain_roots(pointers, known, letters):
     """File pointers whose target is no headword under the headword with its letters, so
     they merge like any other pointer: the target is often a page title without macrons
     ("alternative form of iuro" for iūrō), sometimes macronized otherwise (acontīzō for
-    acontizō). known maps every headword to its parts of speech. When several headwords
-    have those letters (latus, lātus), the one with the pointer's part of speech is taken,
-    if one is."""
+    acontizō). letters (Language.letters) gives a spelling's letters; known maps every
+    headword to its parts of speech. When several headwords have those letters (latus,
+    lātus), the one with the pointer's part of speech is taken, if one is."""
     by_letters = defaultdict(list)
     for header in known:
-        by_letters[normalize(header)].append(header)
+        by_letters[letters(header)].append(header)
 
     for key in [k for k in pointers if k not in known]:
-        candidates = by_letters.get(normalize(key), [])
+        candidates = by_letters.get(letters(key), [])
         if not candidates:
             continue
         stay = []

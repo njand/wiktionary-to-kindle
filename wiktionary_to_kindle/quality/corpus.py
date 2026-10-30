@@ -1,4 +1,4 @@
-"""Fetch, clean and tokenize the Latin texts used to measure lookup coverage.
+"""Fetch, clean and tokenize the texts used to measure lookup coverage.
 
 A manifest is a TSV of `name<TAB>format<TAB>url` lines (`#` comments). Formats:
   latinlibrary  an HTML page from thelatinlibrary.com (navigation and footer removed)
@@ -9,7 +9,6 @@ A manifest is a TSV of `name<TAB>format<TAB>url` lines (`#` comments). Formats:
 
 import html
 import re
-import unicodedata
 import urllib.request
 from collections import Counter
 from pathlib import Path
@@ -69,4 +68,6 @@ def clean(raw, fmt):
 
 
 def tokenize(text):
-    return Counter(TOKEN.findall(unicodedata.normalize("NFC", text)))
+    """The words of text as it prints them: not normalized, since a Kindle weighs a
+    decomposed accent or a Greek oxia as written (utils.kindle_fold)."""
+    return Counter(TOKEN.findall(text))

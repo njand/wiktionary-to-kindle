@@ -14,12 +14,12 @@ from ..utils import remove_breves
 MAX_PASSES = 5
 
 
-def extract_sample(src, dst, lemmas=2000, include=(), lang_code="la"):
+def extract_sample(src, dst, language, lemmas=2000, include=()):
     include = set(include)
     keys = set()  # macronized headword keys of picked lemmas and their pointer chains
     lemma_count = 0
-    for _, obj in _entries(src, lang_code, json_loads):
-        root = root_form(obj.get("senses", []))
+    for _, obj in _entries(src, language.code, json_loads):
+        root = root_form(obj.get("senses", []), language)
         if root is None:
             lemma_count += 1
             if obj["word"] in include:
@@ -31,11 +31,11 @@ def extract_sample(src, dst, lemmas=2000, include=(), lang_code="la"):
     picked = set()  # line numbers
     for _ in range(MAX_PASSES):
         added = False
-        for line_no, obj in _entries(src, lang_code, json_loads):
+        for line_no, obj in _entries(src, language.code, json_loads):
             if line_no in picked:
                 continue
             key = remove_breves(get_header(obj))
-            root = root_form(obj.get("senses", []))
+            root = root_form(obj.get("senses", []), language)
             if root is None:
                 # lemmas=0 keeps only the included words
                 take = key in keys or (lemmas and _stable_hash(key) % modulus == 0)
