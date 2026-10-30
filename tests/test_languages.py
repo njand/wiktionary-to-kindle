@@ -5,7 +5,14 @@ import json
 import pytest
 
 from wiktionary_to_kindle.compiler import write_opf
-from wiktionary_to_kindle.languages import ANCIENT_GREEK, LANGUAGES, LATIN, TURKISH, grc
+from wiktionary_to_kindle.languages import (
+    ANCIENT_GREEK,
+    LANGUAGES,
+    LATIN,
+    TURKISH,
+    grc,
+    tr_forms,
+)
 from wiktionary_to_kindle.languages.grc import strip_length
 from wiktionary_to_kindle.merge.sort import merge_dump
 from wiktionary_to_kindle.models.entry import Entry
@@ -261,3 +268,38 @@ def test_turkish_miss_variants():
         "evde",
         "evd",
     ]  # longest first, at least 3 letters
+
+
+@pytest.mark.parametrize(
+    "base, front, implied",
+    [
+        ("kadın", None, ["kadındı", "kadındır"]),
+        ("kitap", None, ["kitaptı", "kitaptır"]),  # t after a voiceless consonant
+        ("oğlu", None, ["oğluydu", "oğludur"]),  # y after a vowel
+        ("göz", None, ["gözdü", "gözdür"]),
+        ("saat", True, ["saatti", "saattir"]),  # a loanword's front suffixes
+        ("TBMM", None, []),  # an abbreviation: its vowels are not written
+    ],
+)
+def test_turkish_copula(base, front, implied):
+    assert [spelling for spelling, _ in tr_forms.copula(base, front)] == implied
+
+
+def test_turkish_copula_bases():
+    forms = [
+        {"form": "saat", "tags": ["nominative", "singular"]},
+        {"form": "saate", "tags": ["dative", "singular"]},
+        {"form": "saatim", "tags": ["first-person", "nominative", "possessive"]},
+        {"form": "saati", "tags": ["third-person", "nominative", "possessive"]},
+    ]
+    implied = [s for s, _ in tr_forms.implied_forms(forms, set(), {"pos": "noun"})]
+    # Only the bare nominative and the third person's: saatimdi paid too little
+    assert implied == ["saatti", "saattir", "saatiydi", "saatidir"]
+    var = {"word": "var", "pos": "adj", "senses": [{"glosses": ["existent"]}]}
+    assert [s for s, _ in tr_forms.implied_forms([], set(), var)] == ["vardı", "vardır"]
+    pointer = {
+        "word": "iyice",
+        "pos": "adv",
+        "senses": [{"form_of": [{"word": "iyi"}]}],
+    }
+    assert tr_forms.implied_forms([], set(), pointer) == []

@@ -31,8 +31,11 @@ class Language:
     skips_form: Callable[[dict], bool]
     # Kaikki files participles and gerunds under "verb"; their head template says which
     pos_by_head_template: dict[str, str]
-    # (spelling, tags) of the regular forms an entry's forms imply (merge.forms)
-    implied_forms: Callable[[list[dict], set[str]], Iterable[tuple[str, list[str]]]]
+    # (spelling, tags) of the regular forms an entry's forms imply (merge.forms), given
+    # its forms, the dump's headwords and the entry
+    implied_forms: Callable[
+        [list[dict], set[str], dict], Iterable[tuple[str, list[str]]]
+    ]
     # The head line after the headword, made ready for render.headline: (text, pos) -> text
     head_line: Callable[[str, str | None], str]
     # How the head line's genders are shown: m -> m. (Latin), m -> ὁ (Greek)

@@ -29,7 +29,7 @@ from .pointers import (
 from .related import MERGED_KEY
 
 # Bump when merge_dump's output changes, so cached sorted files are rebuilt
-SORT_VERSION = 10
+SORT_VERSION = 11
 
 SORTED_SUFFIX = "(sorted)"
 
@@ -213,10 +213,11 @@ def merge_dump(path, language, chunk_size=200000, force=False):
                         promoted,
                         language,
                     )
-                    if "forms" in obj or addl_forms:
-                        obj["forms"] = enrich_forms(
-                            obj.get("forms", []), known, language, addl_forms
-                        )
+                    forms = enrich_forms(
+                        obj.get("forms", []), known, language, addl_forms, obj
+                    )
+                    if "forms" in obj or forms:
+                        obj["forms"] = forms
                     if merged:
                         obj[MERGED_KEY] = merged
 

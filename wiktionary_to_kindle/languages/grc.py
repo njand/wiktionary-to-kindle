@@ -140,7 +140,7 @@ def head_line(text, pos):
     return text
 
 
-def implied_forms(forms, known):
+def implied_forms(forms, known, entry):
     return []
 
 

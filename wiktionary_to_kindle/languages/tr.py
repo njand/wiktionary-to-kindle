@@ -9,6 +9,7 @@ list a noun's cases and possessives and a verb's tenses, but texts add the copul
 """
 
 from . import Language
+from .tr_forms import implied_forms
 
 # Suffixes left over when the longest stem the dictionary has is cut off a missed word,
 # grouped by length: what a book split after that stem would leave for the reader
@@ -28,10 +29,6 @@ def skips_form(form):
 def head_line(text, pos):
     """The head line after the headword: "(definite accusative evi, plural evler)"."""
     return text
-
-
-def implied_forms(forms, known):
-    return []
 
 
 def miss_variants(word):

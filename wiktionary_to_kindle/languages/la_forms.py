@@ -68,7 +68,7 @@ CASES = {NOM, GEN, DAT, ACC, ABL, VOC}
 TENSES = {"present", "perfect", "future"}
 
 
-def implied_forms(forms, known):
+def implied_forms(forms, known, entry=None):
     """(spelling, tags) of the declensions an entry's forms imply, and its superlative
     adverb. known holds the dump's headwords without breves."""
     implied = [pair for form in forms for pair in decline(form, known)]

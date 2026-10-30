@@ -15,17 +15,17 @@ from ..utils import remove_breves
 GENERATED = "generated"
 
 
-def enrich_forms(forms, known, language, merged=()):
+def enrich_forms(forms, known, language, merged=(), entry=None):
     """Return an entry's own forms, less alternative spellings that have a page (known holds
     the dump's headwords without breves), then the forms merged from pages that point to it,
-    then the forms these imply."""
+    then the forms these imply (entry: the page, for forms its headword implies)."""
     forms = [
         form
         for form in forms
         if not _redundant_alternative(form, known, language.alternative_tags)
     ]
     forms += merged
-    implied = language.implied_forms(forms, known)
+    implied = language.implied_forms(forms, known, entry or {})
 
     have = {form.get("form") for form in forms}
     generated = []
