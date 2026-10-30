@@ -90,17 +90,22 @@ def _prepare_block(block, lexicon, decide, report, nowrap):
         return block
 
     def rewrite_text(m):
-        return TOKEN.sub(lambda w: _spell(w.group(), splits, nowrap), m.group())
+        # Words are matched in the text as it reads (an apostrophe may be &#8217;); a
+        # run with no split is left exactly as it was, entities included
+        text = html.unescape(m.group())
+        pieces, last = [], 0
+        for word in TOKEN.finditer(text):
+            spelling = splits.get(word.group())
+            if spelling:
+                pieces.append(html.escape(text[last : word.start()], quote=False))
+                pieces.append(NOWRAP.format(spelling) if nowrap else spelling)
+                last = word.end()
+        if not pieces:
+            return m.group()
+        return "".join(pieces) + html.escape(text[last:], quote=False)
 
-    # Only text between tags; entities and tags themselves are left alone
+    # Only text between tags; the tags themselves are left alone
     return re.sub(r"(?<=>)[^<]+|^[^<]+", rewrite_text, block)
-
-
-def _spell(word, splits, nowrap):
-    spelling = splits.get(word)
-    if not spelling:
-        return word
-    return NOWRAP.format(spelling) if nowrap else spelling
 
 
 def prepare_plain(text, lexicon, decide):

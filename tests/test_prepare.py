@@ -200,3 +200,12 @@ def test_prepare_epub(tmp_path):
         assert z.infolist()[0].compress_type == zipfile.ZIP_STORED
         assert f"Ev{HAIR}lerimizden." in z.read("OEBPS/t.xhtml").decode("utf-8")
     assert report[0][2].stem == "Ev"
+
+
+def test_prepare_xhtml_reads_words_through_entities():
+    lexicon_with_name = lexicon({"Ali": ("Ali", "name"), "alının": ("al", "noun")})
+    page = "<html><body><p>Ali&#8217;nin &amp; Ali&#8217;nin.</p></body></html>"
+    out = prepare_xhtml(page, lexicon_with_name, rooted, [], nowrap=False)
+    assert out.endswith(
+        f"<p>Ali\u2019{HAIR}nin &amp; Ali\u2019{HAIR}nin.</p></body></html>"
+    )

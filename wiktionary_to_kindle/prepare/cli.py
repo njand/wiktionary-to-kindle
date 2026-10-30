@@ -68,11 +68,15 @@ def build_azw3(epub, out, kindling):
         with zipfile.ZipFile(epub) as z:
             z.extractall(tmp)
         opf = next(Path(tmp).rglob("*.opf"))
-        subprocess.run(
-            [kindling, "build", opf.name, "-o", str(Path(out).resolve())],
-            cwd=opf.parent,
-            check=True,
-        )
+        command = [kindling, "build", opf.name, "-o", str(Path(out).resolve())]
+        if subprocess.run(command, check=False, cwd=opf.parent).returncode != 0:
+            # kindling holds a book to Amazon's store rules (a table of contents, ...),
+            # which a book read from documents/ need not meet
+            print(
+                "kindling's checks failed on the book; building it without them",
+                file=sys.stderr,
+            )
+            subprocess.run([*command, "--no-validate"], cwd=opf.parent, check=True)
 
 
 def main(argv=None):
