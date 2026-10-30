@@ -30,7 +30,8 @@ def release_notes(current, previous=None, docs=Path("docs"), intro=""):
             points = coverage.opens(new_cov["overall"]) - coverage.opens(
                 old_cov["overall"]
             )
-            change = f"{points * 100:+.1f} pp"
+            change = f"{points * 100:+.1f} pp".replace("-0.0", "±0.0")
+            change = change.replace("+0.0", "±0.0")
         mobi = f"`{code}-wiktionary.mobi`, {new_stats['mobi_bytes'] / 1e6:.0f} MB"
         rows.append(
             f"| {name} | {new_stats['entries']:,} | {opens} | {change} | {mobi} |"
