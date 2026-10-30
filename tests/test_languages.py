@@ -11,7 +11,7 @@ from wiktionary_to_kindle.merge.sort import merge_dump
 from wiktionary_to_kindle.models.entry import Entry
 from wiktionary_to_kindle.quality.corpus import tokenize
 from wiktionary_to_kindle.render.html_renderer import HTMLRenderer
-from wiktionary_to_kindle.utils import form_of_root, kindle_fold
+from wiktionary_to_kindle.utils import MACRON, form_of_root, kindle_fold
 
 from .test_sort_merge import lemma, pointer
 
@@ -122,6 +122,7 @@ def test_front_page_and_package_name_the_language(tmp_path):
         ("καθʼ", ("elision",), "κατά"),
         ("ἔφατʼ", ("elision",), "ἔφατο"),
         ("λ\u1f7bω", ("oxia or decomposed",), "λύω"),
+        ("ἀγᾱθός", ("length marks",), "ἀγαθός"),  # marked where Wiktionary does not
         ("Καὶ", ("capitalized", "grave for acute"), "καί"),
     ],
 )
@@ -144,9 +145,27 @@ def test_with_grave(word, graved):
 
 
 def test_greek_lookup_spellings():
-    spellings = ANCIENT_GREEK.lookup_spellings("λῡ́ουσῐν")
-    assert spellings == ["λύουσιν"]  # no text prints the length marks
+    # As most editions print it, and with its long vowels marked; no breves
+    assert ANCIENT_GREEK.lookup_spellings("λῡ́ουσῐν") == [
+        "λύουσιν",
+        "λῡ́ουσιν",
+        f"λύ{MACRON}ουσιν",  # the macron after the accented letter
+    ]
     assert ANCIENT_GREEK.lookup_spellings("ᾰ̓γᾰθός") == ["ἀγαθός", "ἀγαθὸς"]
+    assert ANCIENT_GREEK.lookup_spellings("χώρᾱν") == ["χώραν", "χώρᾱν"]
+
+
+@pytest.mark.parametrize(
+    "word, marked",
+    [
+        ("ἀπεκρῑ́θη", ["ἀπεκρῑ́θη", f"ἀπεκρί{MACRON}θη"]),
+        ("ᾰ̓γᾰθός", ["ἀγαθός"]),  # short vowels are left plain
+        ("λῡ̆́ω", ["λῡ́ω", f"λύ{MACRON}ω", "λύω"]),  # disputed length: both
+        ("λόγος", ["λόγος"]),
+    ],
+)
+def test_long_marked(word, marked):
+    assert grc.long_marked(word) == marked
 
 
 def test_greek_capitals_for_headwords_and_closed_classes():
