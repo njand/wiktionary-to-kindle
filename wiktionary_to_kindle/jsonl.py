@@ -18,5 +18,6 @@ except ImportError:
     def json_loads(line):
         return json.loads(line)
 
+    # Written as orjson writes it, since popup_order weighs entries by this text's length
     def json_dumps(obj):
-        return json.dumps(obj)
+        return json.dumps(obj, ensure_ascii=False, separators=(",", ":"))

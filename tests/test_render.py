@@ -8,16 +8,16 @@ from PIL import Image, ImageDraw
 from wiktionary_to_kindle.languages import LATIN
 from wiktionary_to_kindle.models.entry import Entry
 from wiktionary_to_kindle.models.etymology import Etymology
+from wiktionary_to_kindle.render.cover import (
+    dictionary_cover,
+    labelled_cover,
+    title_lines,
+)
 from wiktionary_to_kindle.render.html_renderer import (
     HTMLRenderer,
     by_gloss,
     format_etymology,
     keep_spaces,
-)
-from wiktionary_to_kindle.render.cover import (
-    dictionary_cover,
-    labelled_cover,
-    title_lines,
 )
 from wiktionary_to_kindle.render.shared_labels import mark, unmark
 from wiktionary_to_kindle.utils import TEMPLATES
@@ -59,7 +59,10 @@ def test_each_language_gets_its_own_cover():
     [
         ("Latin", ["Latin-English"]),
         ("Turkish", ["Turkish-English"]),
-        ("Ancient Greek", ["Ancient Greek-", "English"]),  # never "Ancient" / "Greek-..."
+        (
+            "Ancient Greek",
+            ["Ancient Greek-", "English"],
+        ),  # never "Ancient" / "Greek-..."
     ],
 )
 def test_long_titles_break_after_the_language_name(name, lines):

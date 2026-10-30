@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from wiktionary_to_kindle import pipeline
+from wiktionary_to_kindle.jsonl import json_dumps
 from wiktionary_to_kindle.languages import LATIN
 from wiktionary_to_kindle.quality.labels import read_entries
 
@@ -112,3 +113,9 @@ def test_likeliest_entry_gets_the_spelling_without_macrons(tmp_path, monkeypatch
     assert labels["nōnae"] == ["nōnae", "n­on"]
     assert labels["suī"] == ["suī", "sē", "se"]
     assert labels["sī"] == ["sī", "s­e"]
+
+
+def test_json_is_written_alike_with_or_without_orjson():
+    # Popup order weighs entries by the length of this text, so it must not depend on
+    # whether the fast extra is installed
+    assert json_dumps({"word": "lātus", "tags": [1]}) == '{"word":"lātus","tags":[1]}'
