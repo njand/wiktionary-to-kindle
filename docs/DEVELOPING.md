@@ -112,19 +112,20 @@ uv run python -m wiktionary_to_kindle.quality coverage-diff old-coverage.json co
 
 ## Releases
 
-A scheduled GitHub Actions workflow builds every language in its matrix (Latin and Ancient Greek) every Sunday and publishes them in one pre-release, each with its `.mobi`, StarDict bundle, and statistics and coverage reports. The build fails if a language's coverage drops compared with the latest release. To publish an intentional drop, run the workflow manually with **Allow a coverage drop** checked.
+A scheduled GitHub Actions workflow builds every language in its matrix (Latin, Ancient Greek and Turkish) every Sunday and publishes them in one pre-release, each with its `.mobi`, StarDict bundle, and statistics and coverage reports. The build fails if a language's coverage drops compared with the latest release. To publish an intentional drop, run the workflow manually with **Allow a coverage drop** checked.
 
-Each release's notes end with each language's device checklist ([Latin](device-check-la.md), [Ancient Greek](device-check-grc.md)). Once a build has been checked on a Kindle, it is marked as the latest release, and the next build compares its coverage against it. A language's first build has no coverage in the latest release to compare with, so its gate starts with the release after the first one marked as the latest.
+Each release's notes end with each language's device checklist ([Latin](device-check-la.md), [Ancient Greek](device-check-grc.md), [Turkish](device-check-tr.md)). Turkish's notes also show how a book prepared with `prepare-book --decide rooted` reads. Once a build has been checked on a Kindle, it is marked as the latest release, and the next build compares its coverage against it. A language's first build has no coverage in the latest release to compare with, so its gate starts with the release after the first one marked as the latest.
 
 ## Adding a language
 
-Everything a language does its own way is in a `Language` profile in `wiktionary_to_kindle/languages/` (`la.py` for Latin, `grc.py` for Ancient Greek):
+Everything a language does its own way is in a `Language` profile in `wiktionary_to_kindle/languages/` (`la.py` for Latin, `grc.py` for Ancient Greek, `tr.py` for Turkish):
 
 - its Wiktionary code and name, which name the dictionary, its lookup index and the section form-of links point to;
 - the spellings of a form a tap should find (Latin adds u for v, j for i and both lengths of a disputed vowel);
 - the letters a form-of target is matched by when it names a page title instead of a headword;
 - the tags of alternative spellings, forms made with an auxiliary, and parts of speech known by their head template;
-- the regular forms an entry implies (Latin's participle and comparative declensions, in `la_forms.py`);
+- the regular forms an entry implies (Latin's participle and comparative declensions, in `la_forms.py`; Turkish's copula, `-(y)lA`, `-ki` and stem variants, in `tr_forms.py`);
+- entries of its own making (Turkish's suffix chains, in `tr_suffixes.py`);
 - the default descendant languages, the homographs the front page shows, and the variants coverage retries a missed word with.
 
 To add a language:
@@ -133,6 +134,22 @@ To add a language:
 2. Add a corpus (`corpus/<code>.tsv`) and a device checklist.
 3. Add the language code to the build matrix in `.github/workflows/dictionary-build.yml`.
 4. Open a pull request.
+
+## Preparing books (Turkish)
+
+Turkish stacks suffixes beyond what any table lists, so a Turkish book is prepared before reading: `prepare-book` (`wiktionary_to_kindle/prepare/`) puts a hair space (U+200A) between the stem and the suffixes of each word the dictionary cannot reach whole, so a tap on either half opens its own entry.
+
+```bash
+uv sync --extra segment                      # the anthropic package, for the model
+uv run prepare-book book.epub                # writes book-prepared.epub and a report
+uv run prepare-book book.epub --decide rooted --kindling kindling-cli
+```
+
+- `segment.py` finds the candidate splits: the stem must open a word of the built dictionary (read back by `lexicon.py` and cached as `lexicon.json.gz` beside it) and the rest must be a chain the suffix grammar (`languages/tr_suffixes.py`) spells after that stem.
+- `model.py` has Claude choose among them, sentence by sentence (`claude-opus-5-5` at effort `low` by default; `--model`, `--effort`, `--backend claude-cli`). Credentials are the Anthropic SDK's (`ANTHROPIC_API_KEY` or an `ant auth login` profile). Each decision is cached beside the book (`book.splits.jsonl`), so a rerun is free and gives the same book. Without a model it splits by the stem of the word's lemma (`--decide rooted`); `--decide export` writes the requests to answer elsewhere.
+- `epub.py` rewrites the text between tags only, and wraps each split word in `white-space: nowrap`.
+
+`scripts/measure_prepared.py` measures how a corpus reads after preparation, and `scripts/eval_segmenter.py` scores decisions against a treebank's gold lemmas. Decisions taken while building it are in [decisions-tr.md](decisions-tr.md).
 
 ## Data dates
 

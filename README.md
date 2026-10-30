@@ -4,7 +4,7 @@
 [![Downloads](https://img.shields.io/github/downloads/njand/wiktionary-to-kindle/total)](https://github.com/njand/wiktionary-to-kindle/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-A free Latin–English dictionary for Kindle, built from Wiktionary. Press and hold a word in any Latin book, and the dictionary opens the entry it belongs to, whatever its form or spelling.
+Free Kindle dictionaries built from Wiktionary. Press and hold a word in a Latin, Ancient Greek or Turkish book, and the dictionary opens the entry it belongs to, whatever its form or spelling.
 
 <!--
   Screenshot of the lookup popup goes here, for example:
@@ -13,46 +13,68 @@ A free Latin–English dictionary for Kindle, built from Wiktionary. Press and h
 
 **[Download the latest release](https://github.com/njand/wiktionary-to-kindle/releases/latest)**
 
+| Language | Status | File |
+| --- | --- | --- |
+| Latin–English | Released | `la-wiktionary.mobi` |
+| Ancient Greek–English | In testing, in the weekly [pre-releases](https://github.com/njand/wiktionary-to-kindle/releases) | `grc-wiktionary.mobi` |
+| Turkish–English | In testing, in the weekly [pre-releases](https://github.com/njand/wiktionary-to-kindle/releases) | `tr-wiktionary.mobi` |
+
+More languages will follow. The build is meant to work for any language Wiktionary covers well; see [Contributing](#contributing).
+
 ## What a lookup does
 
-| You tap | The popup opens |
-| --- | --- |
-| *amavisti* | **amō**, to love |
-| *tulerunt* | **ferō**, to bear, to carry |
-| *uirum* | **vir**, man |
-| *hominibus* | **homō**, human, person, man |
-| *prœlium* | **proelium**, battle |
-| *non* | **nōn**, not |
-
-Inflected forms lead to their lemma, including participles and comparatives that Wiktionary only implies. Lookups work with or without macrons, with *u* or *v*, and with *i* or *j*. When a spelling belongs to more than one word, the popup lists all of them, with the likeliest first.
-
-Each entry is laid out like a print dictionary, with the principal parts on the headword line, numbered senses, and the etymology.
+- **Any form opens its word.** *tulerunt* opens **ferō**, *hominibus* opens **homō**, and *amavisti* opens **amō**, including participles and comparatives that Wiktionary only implies.
+- **Any spelling opens it too.** Lookups work with or without macrons, with *u* or *v*, with *i* or *j*, and with ligatures: *uirum* opens **vir**, *prœlium* opens **proelium**.
+- **Nothing is hidden.** When a spelling belongs to more than one word, the popup lists all of them, likeliest first, and you swipe to the rest.
+- **Entries read like a print dictionary**, with the principal parts on the headword line, numbered senses, and the etymology.
 
 In the texts the project tests against, the dictionary opens an entry for 98.6% of the words in Cicero's first speech against Catiline, 97.6% in Book 1 of Caesar's *Gallic War*, 94.6% in Genesis in the Vulgate, and 93.2% in Book 1 of the *Aeneid*. The misses include words with *-que* attached, such as *dixitque*, which the dictionary doesn't split, and names Wiktionary doesn't list. If you can edit your book, put a hair space (U+200A) before the *-que*: a press on *dixit* then selects only *dixit* and opens **dīcō**. Zero-width and other thin spaces don't work; the Kindle selects the whole word through them.
 
-The dictionary is rebuilt every week from the latest Wiktionary data.
+The dictionaries are rebuilt every week from the latest Wiktionary data.
 
 ## Ancient Greek (in testing)
 
-An Ancient Greek–English dictionary is built the same way, from Wiktionary's Ancient Greek entries. Until it has been checked on a Kindle, it is published only in the weekly [pre-releases](https://github.com/njand/wiktionary-to-kindle/releases) as `grc-wiktionary.mobi`.
+The Ancient Greek–English dictionary is built the same way, from Wiktionary's Ancient Greek entries. Until it has been checked on a Kindle, it is published only in the weekly [pre-releases](https://github.com/njand/wiktionary-to-kindle/releases).
 
 A Kindle matches Greek accents, breathings and capitals exactly, so the dictionary lists every spelling a Greek text prints: without the length marks Wiktionary adds (ἀπεκρίθη opens **ἀποκρίνω**) and with the long vowels marked, as school editions print them (λῡ́ω opens **λύω**), with a grave for a final acute (καὶ opens **καί**), and capitalized for headwords and small words that start sentences (Καὶ, Οὐκ, Ταῦτα). In Perseus's editions of Homer, Herodotus, Xenophon, Plato, Lysias and the Gospel of John, it opens an entry for 91.7% of the words: 93–95% in most of them, 87.8% in Herodotus, whose Ionic forms Wiktionary often lacks.
 
+## Turkish (in testing)
+
+The Turkish–English dictionary is built from Wiktionary's Turkish entries. Until it has been checked on a Kindle, it is published only in the weekly [pre-releases](https://github.com/njand/wiktionary-to-kindle/releases).
+
+A Kindle ignores case and the Turkish letters' marks when it looks a word up (*KIZI* and *kizi* open **kız**), so the dictionary only has to reach the forms themselves. It lists every form in Wiktionary's tables (*evlerimizden* opens **ev**), the converbs (*gidip*, *giderken*) and the copula, *-(y)lA* and *-ki* forms texts use most (*vardır*, *nedeniyle*, *dünyadaki*). On its own it opens an entry for 88.4% of the words in a set of modern Turkish prose and Ömer Seyfettin's stories.
+
+Turkish stacks suffixes beyond what any table lists (*evlerimizdekilerden*, "from those in our houses"), so a Turkish book reads best **prepared**: `prepare-book` puts a hair space between the stem and the suffixes of each word the dictionary cannot reach whole. A press on *ev* then opens **ev**, and a press on *lerimizdekilerden* opens an entry that explains the suffixes: *plural + our + in + the one that is + plural + from*. In the same texts, a prepared book opens an entry for 95.5% of the words, and splits 7% of them. Claude reads each sentence to choose where to split (so *gözlükçüler* splits after **gözlükçü**, not **göz**), or `--decide rooted` splits without it.
+
+```bash
+uv sync --extra segment
+uv run prepare-book book.epub --kindling kindling-cli   # writes book-prepared.epub and .azw3
+```
+
+The model needs an [Anthropic API key](https://platform.claude.com/) (`ANTHROPIC_API_KEY`) and sends the book's sentences to it; a novel costs roughly $10, once, since every decision is cached beside the book. Books bought from the Kindle store have DRM and can't be prepared. The [developer guide](docs/DEVELOPING.md#preparing-books-turkish) has the options.
+
 ## Install on a Kindle
 
-1. Download `la-wiktionary.mobi` from the [latest release](https://github.com/njand/wiktionary-to-kindle/releases/latest) (or `grc-wiktionary.mobi` from a pre-release, for Ancient Greek).
+1. Download `la-wiktionary.mobi` from the [latest release](https://github.com/njand/wiktionary-to-kindle/releases/latest) (or `grc-wiktionary.mobi` or `tr-wiktionary.mobi` from a pre-release, for Ancient Greek or Turkish).
 2. Connect your Kindle to your computer with a USB cable.
 3. Open the Kindle drive and copy the file into `documents/dictionaries/`. If that folder doesn't exist, create it.
 4. Eject the Kindle.
-5. On the Kindle, go to **Settings → Device Options → Language and Dictionaries → Dictionaries**, tap **Latin**, and choose the Wiktionary dictionary. Under which language a Kindle lists the Ancient Greek dictionary is still being checked.
+5. On the Kindle, go to **Settings → Device Options → Language and Dictionaries → Dictionaries**, tap **Latin**, and choose the Wiktionary dictionary. Under which language a Kindle lists the Ancient Greek and Turkish dictionaries is still being checked.
 
 Send to Kindle no longer accepts `.mobi` files, so the dictionary has to be copied over USB.
 
 If another dictionary opens when you press a word, tap its name at the bottom of the popup to switch.
 
+### Updating to a newer release
+
+Copy the new file over the old one in `documents/dictionaries/`. The Kindle often keeps using the old copy in books where you have already looked words up, so lookups there may fail or show nothing. Either of these fixes it:
+
+- Restart the Kindle (hold the power button and choose **Restart**).
+- Open a book in another language and look up a word there with that language's dictionary. Once that entry opens, go back to your book; the updated dictionary works again.
+
 ## KOReader and GoldenDict
 
-Each release also includes `la-wiktionary-stardict.zip` (and `grc-wiktionary-stardict.zip` for Ancient Greek). Unzip it and copy the `la-wiktionary` folder into `koreader/data/dict/` for KOReader, or add it to your dictionary sources in GoldenDict. Words also match without macrons, and Greek words without accents or breathings.
+Each release also includes `la-wiktionary-stardict.zip` (and `grc-wiktionary-stardict.zip` and `tr-wiktionary-stardict.zip` for Ancient Greek and Turkish). Unzip it and copy the `la-wiktionary` folder into `koreader/data/dict/` for KOReader, or add it to your dictionary sources in GoldenDict. Words also match without macrons, and Greek words without accents or breathings.
 
 ## Build it yourself
 
@@ -66,13 +88,23 @@ uv sync --all-extras
 uv run wiktionary-to-kindle --lang la
 ```
 
-The dictionary is written to `outputs/KindleDictionary-la/`; `--lang grc` builds the Ancient Greek one. See the [developer guide](docs/DEVELOPING.md) for all build options, how the pipeline works, and the tools that measure lookup quality.
+The dictionary is written to `outputs/KindleDictionary-la/`; `--lang grc` builds the Ancient Greek one and `--lang tr` the Turkish one. See the [developer guide](docs/DEVELOPING.md) for all build options, how the pipeline works, and the tools that measure lookup quality.
+
+## Found a mistake in an entry?
+
+Every definition, inflection and etymology in these dictionaries comes from Wiktionary. If an entry has a wrong gloss, a missing sense or a wrong principal part, please fix it on Wiktionary itself rather than reporting it here. Anyone can edit Wiktionary, and a fix there helps everyone who uses it, not only readers of this dictionary.
+
+1. Open the word's page on [Wiktionary](https://en.wiktionary.org/) and edit the section for your language. Page titles have no macrons or length marks: **amō** is on the page `amo`. If you're new to editing, Wiktionary's guides for [Latin](https://en.wiktionary.org/wiki/Wiktionary:About_Latin) , [Ancient Greek](https://en.wiktionary.org/wiki/Wiktionary:About_Ancient_Greek) and [Turkish](https://en.wiktionary.org/wiki/Wiktionary:About_Turkish) explain how entries are laid out.
+2. Wait for the next release. Wiktionary's data is published every couple of weeks and the dictionary is rebuilt from it weekly, so an edit usually reaches the dictionary within two to three weeks. The dictionary's first page gives the date of the Wiktionary data it was built from.
+3. Download the new release and copy it over the old file on your Kindle (see [Updating to a newer release](#updating-to-a-newer-release) if lookups stop working).
+
+If the entry is right on Wiktionary but wrong in the dictionary, such as missing text, a garbled layout, or a word that opens the wrong entry, that's a bug here: please report it (see below).
 
 ## Contributing
 
 Bug reports are welcome, especially words that don't open the entry you expected. Include the word as it appears in your book.
 
-Latin and Ancient Greek are built so far, and the pipeline is meant to work for other languages. The [developer guide](docs/DEVELOPING.md#adding-a-language) explains how to add one.
+Latin, Ancient Greek and Turkish are built so far, and the pipeline is meant to work for other languages. The [developer guide](docs/DEVELOPING.md#adding-a-language) explains how to add one.
 
 ## License and credits
 

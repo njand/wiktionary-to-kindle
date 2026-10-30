@@ -150,6 +150,32 @@ def test_clean_tei_keeps_the_edition_without_notes():
     assert "ἄλλοι" in words and "Ἰλιάς" not in words and "Zenodotus" not in words
 
 
+CONLLU = """# sent_id = news_1
+# text = Türkiye'nin başkenti Ankara'dır.
+1-2	Türkiye'nin	_	_	_	_	_	_	_	_
+
+# sent_id = ess_2
+# text = Kimileri buna kader diyordu.
+"""
+
+
+def test_clean_conllu_by_genre_keeps_apostrophes():
+    assert clean(CONLLU, "conllu:ess") == "Kimileri buna kader diyordu."
+    words = tokenize(clean(CONLLU, "conllu"))
+    assert words["Türkiye'nin"] == 1 and words["Ankara'dır"] == 1 and "nin" not in words
+    assert tokenize("soldier’s, δʼ")["soldier’s"] == 1
+
+
+def test_clean_wikisource_keeps_paragraphs_and_dialogue():
+    raw = (
+        '<table><tr><td><span class="ws-title">Yüksek Ökçeler</span></td></tr></table>'
+        '<div>Çokdilli Vikikaynak</div><p id="a">Hatice Hanım dul kalmıştı.'
+        '<sup class="reference"><a>[1]</a></sup></p><dl><dd>— Aman, aman!</dd></dl>'
+        '<ol class="references"><li>somurtkan</li></ol>'
+    )
+    assert clean(raw, "wikisource") == "Hatice Hanım dul kalmıştı.\n— Aman, aman!"
+
+
 def test_extract_sample_follows_pointer_chains(tmp_path):
     src = tmp_path / "dump.jsonl"
     src.write_text(

@@ -1,11 +1,18 @@
-"""Language profiles: what Latin and Ancient Greek do their own way."""
+"""Language profiles: what Latin, Ancient Greek and Turkish do their own way."""
 
 import json
 
 import pytest
 
 from wiktionary_to_kindle.compiler import write_opf
-from wiktionary_to_kindle.languages import ANCIENT_GREEK, LANGUAGES, LATIN, grc
+from wiktionary_to_kindle.languages import (
+    ANCIENT_GREEK,
+    LANGUAGES,
+    LATIN,
+    TURKISH,
+    grc,
+    tr_forms,
+)
 from wiktionary_to_kindle.languages.grc import strip_length
 from wiktionary_to_kindle.merge.sort import merge_dump
 from wiktionary_to_kindle.models.entry import Entry
@@ -25,7 +32,7 @@ def greek(entry):
 
 
 def test_languages_by_code():
-    assert LANGUAGES == {"la": LATIN, "grc": ANCIENT_GREEK}
+    assert LANGUAGES == {"la": LATIN, "grc": ANCIENT_GREEK, "tr": TURKISH}
     assert LATIN.anchor == "#Latin"
     assert ANCIENT_GREEK.anchor == "#Ancient_Greek"
 
@@ -230,3 +237,86 @@ def test_greek_auxiliary_forms_and_final_sigma():
     eimi = greek(lemma("εἰμί", "verb", "εἰμί", ["to be"], [("εἶεν", ["optative"])]))
     eimi["forms"][0]["links"] = [["εἶεν", "εἶεν#Ancient_Greek"]]
     assert "εἶεν" in Entry(eimi, ANCIENT_GREEK).all_forms
+
+
+def test_kindle_fold_turkish_letters():
+    # ı, İ, I and i weigh the same, as do the other Turkish letters and their base letters
+    assert {kindle_fold(w) for w in ("kızı", "KIZI", "kizi", "Kİzİ")} == {"kizi"}
+    assert kindle_fold("şoğüç") == "soguc"
+    assert kindle_fold("Türkiye'nin") == "turkiyenin"
+
+
+def test_turkish_skips_forms_with_spaces():
+    assert TURKISH.skips_form({"form": "güzel miyim?"})
+    assert TURKISH.skips_form({"form": "Çerkez?ik"})
+    unrecognized = {"form": "güzeldim", "tags": ["error-unrecognized-form"]}
+    assert not TURKISH.skips_form(unrecognized)  # an adjective's copula form
+    assert LATIN.skips_form(unrecognized) and ANCIENT_GREEK.skips_form(unrecognized)
+    assert TURKISH.lookup_spellings("evlerimiz") == ["evlerimiz"]
+    assert not TURKISH.capitalizes("name", True)
+    assert TURKISH.letters("kâğıt") == "kağıt"
+
+
+def test_turkish_miss_variants():
+    variants = list(TURKISH.miss_variants("Türkiye'nin"))
+    assert variants[0] == (("apostrophe",), "Türkiye")
+    assert (("stem + 1–2 letters",), "Türkiyen") in variants
+    assert (("stem + 5+ letters",), "Türk") in variants
+    stems = [variant for _, variant in TURKISH.miss_variants("evdeydi")]
+    assert stems == [
+        "evdeyd",
+        "evdey",
+        "evde",
+        "evd",
+    ]  # longest first, at least 3 letters
+
+
+@pytest.mark.parametrize(
+    "base, front, implied",
+    [
+        ("kadın", None, ["kadındı", "kadındır"]),
+        ("kitap", None, ["kitaptı", "kitaptır"]),  # t after a voiceless consonant
+        ("oğlu", None, ["oğluydu", "oğludur"]),  # y after a vowel
+        ("göz", None, ["gözdü", "gözdür"]),
+        ("saat", True, ["saatti", "saattir"]),  # a loanword's front suffixes
+        ("TBMM", None, []),  # an abbreviation: its vowels are not written
+    ],
+)
+def test_turkish_copula(base, front, implied):
+    assert [spelling for spelling, _ in tr_forms.copula(base, front)] == implied
+
+
+def test_turkish_implied_forms():
+    forms = [
+        {"form": "saat", "tags": ["nominative", "singular"]},
+        {"form": "saate", "tags": ["dative", "singular"]},
+        {"form": "saatte", "tags": ["locative", "singular"]},
+        {"form": "saatim", "tags": ["first-person", "nominative", "possessive"]},
+        {"form": "saati", "tags": ["third-person", "nominative", "possessive"]},
+        {"form": "saatinde", "tags": ["third-person", "locative", "possessive"]},
+        {"form": "saatimde", "tags": ["first-person", "locative", "possessive"]},
+    ]
+    implied = [s for s, _ in tr_forms.implied_forms(forms, set(), {"pos": "noun"})]
+    # The bare forms and the third person's: saatimdi, saatimle, saatimdeki paid too little
+    assert implied == [
+        *("saatti", "saattir", "saatle", "saatteki"),
+        *("saatiydi", "saatidir", "saatiyle", "saatindeki"),
+    ]
+    var = {"word": "var", "pos": "adj", "senses": [{"glosses": ["existent"]}]}
+    assert [s for s, _ in tr_forms.implied_forms([], set(), var)] == [
+        "vardı",
+        "vardır",
+        "varla",
+    ]
+    sonra = {"word": "sonra", "pos": "postp", "senses": [{"glosses": ["after"]}]}
+    assert [s for s, _ in tr_forms.implied_forms([], set(), sonra)] == [
+        "sonraydı",
+        "sonradır",
+        "sonraki",
+    ]
+    pointer = {
+        "word": "iyice",
+        "pos": "adv",
+        "senses": [{"form_of": [{"word": "iyi"}]}],
+    }
+    assert tr_forms.implied_forms([], set(), pointer) == []

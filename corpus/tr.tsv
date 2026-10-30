@@ -1,0 +1,18 @@
+# Turkish texts for lookup coverage: name<TAB>format<TAB>url (see wiktionary_to_kindle/quality/corpus.py)
+# Downloads are cached in corpus/cache/. The BOUN treebank (Universal Dependencies,
+# CC BY-SA 4.0), training part, by genre: news, essays, biographies, instructional texts
+# and popular culture; modern prose. Ömer Seyfettin's stories (public domain; he died in
+# 1920) from Turkish Wikisource, in its modernized spelling: literary prose and dialogue.
+# Proper nouns take their suffixes after an apostrophe (Türkiye'nin).
+boun-news	conllu:news	https://raw.githubusercontent.com/UniversalDependencies/UD_Turkish-BOUN/master/tr_boun-ud-train.conllu
+boun-essays	conllu:ess	https://raw.githubusercontent.com/UniversalDependencies/UD_Turkish-BOUN/master/tr_boun-ud-train.conllu
+boun-biographies	conllu:bio	https://raw.githubusercontent.com/UniversalDependencies/UD_Turkish-BOUN/master/tr_boun-ud-train.conllu
+boun-instructional	conllu:ins	https://raw.githubusercontent.com/UniversalDependencies/UD_Turkish-BOUN/master/tr_boun-ud-train.conllu
+boun-popular	conllu:pop	https://raw.githubusercontent.com/UniversalDependencies/UD_Turkish-BOUN/master/tr_boun-ud-train.conllu
+seyfettin-bomba	wikisource	https://tr.wikisource.org/w/index.php?title=Bomba&action=render
+seyfettin-aleko	wikisource	https://tr.wikisource.org/w/index.php?title=Aleko&action=render
+seyfettin-kutuk	wikisource	https://tr.wikisource.org/w/index.php?title=K%C3%BCt%C3%BCk&action=render
+seyfettin-zeytin-ekmek	wikisource	https://tr.wikisource.org/w/index.php?title=Zeytin+Ekmek&action=render
+seyfettin-pembe-incili-kaftan	wikisource	https://tr.wikisource.org/w/index.php?title=Pembe+%C4%B0ncili+Kaftan&action=render
+seyfettin-diyet	wikisource	https://tr.wikisource.org/w/index.php?title=Diyet&action=render
+seyfettin-ferman	wikisource	https://tr.wikisource.org/w/index.php?title=Ferman&action=render

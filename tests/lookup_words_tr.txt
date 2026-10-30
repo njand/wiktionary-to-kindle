@@ -1,0 +1,61 @@
+# Words that must open an entry in the built Turkish dictionary.
+# Checked by scripts/check_lookups.py with `kindling-cli lookup`.
+# Prefix with `xfail:` for a known gap that should not fail the build yet.
+# A Kindle folds Turkish letters (ı, İ, I, i weigh the same; ş/s, ğ/g, ç/c, ö/o, ü/u),
+# so a tap in any case opens the same entry.
+
+# Lemmas
+ev
+kitap
+gitmek
+güzel
+ve
+bir
+Türkiye
+
+# Case and dotted/dotless i: the device folds them
+KIZI
+kizi
+İyi
+IRMAK
+
+# Table forms
+evlerimizden
+kitabı
+gidiyorum
+güzeldim
+
+# Converbs and copula forms kept from the tables (Stage 13)
+gidip
+giderken
+yoktu
+değildi
+
+# Generated forms (Stage 13): the copula, -(y)lA, -ki
+kadındı
+vardır
+nedeniyle
+sesle
+dünyadaki
+arasındaki
+sonraki
+
+# Names with suffixes after an apostrophe (the apostrophe weighs nothing)
+Türkiye'nin
+Türkiye’de
+
+# Stems a book split leaves (Stage 15): voiced, contracted and narrowed stems
+kitab
+ağz
+hakk
+gid
+bekli
+ol
+
+# Suffix chains a book split leaves (Stage 15), filed as -lerimizden
+lerimizden
+ması
+abilir
+madığını
+dekilerden
+ebilir

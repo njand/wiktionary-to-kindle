@@ -26,12 +26,16 @@ class Language:
     # Form tags marking an alternative spelling: indexed, but listed late in the popup
     alternative_tags: frozenset[str]
     # Whether a table form (Kaikki's form dict) is no spelling of its entry: made with an
-    # auxiliary ("amātus sum", the εἶεν of "λελυμένοι εἶεν"), or a romanization
+    # auxiliary ("amātus sum", the εἶεν of "λελυμένοι εἶεν"), or a romanization; or one
+    # Kaikki could not tag (unrecognized), which Latin and Greek skip and Turkish keeps
     skips_form: Callable[[dict], bool]
     # Kaikki files participles and gerunds under "verb"; their head template says which
     pos_by_head_template: dict[str, str]
-    # (spelling, tags) of the regular forms an entry's forms imply (merge.forms)
-    implied_forms: Callable[[list[dict], set[str]], Iterable[tuple[str, list[str]]]]
+    # (spelling, tags) of the regular forms an entry's forms imply (merge.forms), given
+    # its forms, the dump's headwords and the entry
+    implied_forms: Callable[
+        [list[dict], set[str], dict], Iterable[tuple[str, list[str]]]
+    ]
     # The head line after the headword, made ready for render.headline: (text, pos) -> text
     head_line: Callable[[str, str | None], str]
     # How the head line's genders are shown: m -> m. (Latin), m -> ὁ (Greek)
@@ -40,6 +44,8 @@ class Language:
     homographs: str  # words spelled alike, as markup, for the front page
     # (causes, variant) a word that opens nothing is retried with, to name why
     miss_variants: Callable[[str], Iterable[tuple[tuple[str, ...], str]]]
+    # Entries of the language's own making, added to Wiktionary's (Turkish suffix chains)
+    extra_entries: Callable[[], Iterable[dict]] = lambda: ()
 
     @property
     def title(self):
@@ -52,10 +58,17 @@ class Language:
         return "#" + self.name.replace(" ", "_")
 
 
+def unrecognized(form):
+    """Whether Kaikki could not tag a table form (it tags it error-unrecognized-form): in
+    Latin and Greek tables mostly notes, in Turkish ones converbs and copula forms."""
+    return "error-unrecognized-form" in form.get("tags", [])
+
+
 from .grc import ANCIENT_GREEK
 from .la import LATIN
+from .tr import TURKISH
 
-LANGUAGES = {language.code: language for language in (LATIN, ANCIENT_GREEK)}
+LANGUAGES = {language.code: language for language in (LATIN, ANCIENT_GREEK, TURKISH)}
 
 
 def get_language(code):
