@@ -28,7 +28,7 @@ Inflected forms lead to their lemma, including participles and comparatives that
 
 Each entry is laid out like a print dictionary, with the principal parts on the headword line, numbered senses, and the etymology.
 
-In the texts the project tests against, the dictionary opens an entry for 98.6% of the words in Cicero's first speech against Catiline, 97.6% in Book 1 of Caesar's *Gallic War*, 94.6% in Genesis in the Vulgate, and 93.2% in Book 1 of the *Aeneid*. The misses include words with *-que* attached, such as *dixitque*, which the dictionary doesn't split, and names Wiktionary doesn't list.
+In the texts the project tests against, the dictionary opens an entry for 98.6% of the words in Cicero's first speech against Catiline, 97.6% in Book 1 of Caesar's *Gallic War*, 94.6% in Genesis in the Vulgate, and 93.2% in Book 1 of the *Aeneid*. The misses include words with *-que* attached, such as *dixitque*, which the dictionary doesn't split, and names Wiktionary doesn't list. If you can edit your book, put a hair space (U+200A) before the *-que*: a press on *dixit* then selects only *dixit* and opens **dīcō**. Zero-width and other thin spaces don't work; the Kindle selects the whole word through them.
 
 The dictionary is rebuilt every week from the latest Wiktionary data.
 

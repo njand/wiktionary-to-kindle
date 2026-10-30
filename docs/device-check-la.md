@@ -10,7 +10,7 @@ Before marking this release as the latest, load the `.mobi` on a Kindle (`docume
 - [ ] Parts of speech and labels show in italics in the popup.
 - [ ] In the popup for `rex`, the headword is larger than the text after it, and the etymology and descendants are smaller than the definitions. Note whether they are also grey.
 - [ ] An entry with many `alt.` lines (iūrō, causa) reads well in the popup.
-- [ ] `virum​que` with U+200B before `que` selects only `virum` (the enclitic check in Stage 0).
+- [ ] `virum` + U+200A (hair space) + `que` selects only `virum` when `virum` is pressed. Checked 2026-10-29: only the hair space splits the selection; zero-width spaces (U+200B) and other thin spaces do not.
 
 For a wider check, build the test book (87 words: frequent and rare, macronized and not, inflections, spelling variants, homographs, forms of several words, enclitics), each with the entries its popup should list:
 
