@@ -263,12 +263,12 @@ Remaining misses (8.3% of tokens): unknown 4,358 tokens, mostly Herodotus's Ioni
 
 Measured (same dump; `SORT_VERSION` 10): Greek has 21,383 entries (unchanged), 998,072 labels (from 1,172,137), a 34.2 MB `.mobi`, and still opens 91.7% of corpus tokens; every word in `tests/lookup_words_grc.txt` opens. Latin: 192 entries change, all by losing `alt.` lines for spellings of participles and other forms (`adhaereō` loses `adhēsūrus`, `adnotō` loses `annotandus`, `annotātūrus`, `annotāns`); nine of them change labels without changing what a tap reaches (three pages now take their headword from the head line, `m͛cātor` for `m͛cator`; six only swap soft-hyphen ranks, their size estimates having changed). Latin coverage is unchanged in every source. The device test book is rebuilt (`outputs/device-test-grc/`).
 
-## Stage 11: Ancient Greek — releases
+## Stage 11: Ancient Greek — releases — done, first device check pending
 
-- [ ] `grc` in the workflow matrix, with its own coverage gate against `corpus/grc.tsv`.
-- [ ] `docs/device-check-grc.md`, with pre-releases marked as the latest after the check, as for Latin.
-- [ ] StarDict: a synonym without accents, breathings and length marks for every label, since KOReader and GoldenDict searches are often typed without them.
-- [ ] README: install instructions per language, and what `prepare-book` does if Stage 9 needed it.
+- [x] `grc` in the workflow matrix. The workflow was already language-neutral: each language finds its corpus (`corpus/grc.tsv`, the coverage gate), lookup list (`tests/lookup_words_grc.txt`) and device checklist by its code, and both languages go into one pre-release. Greek's first build has no coverage in the latest release, so its gate starts after the first release marked as the latest. Checked locally (Actions quota): the coverage step with kindling's check (300/300 agree), the lookup list (0 unexpected misses), and the release-notes step, which gives Greek its index note, coverage table and checklist.
+- [x] `docs/device-check-grc.md`: where Settings lists the dictionary (it declares `grc`), the front page, graves and capitals (`καὶ`, `Καὶ`), popup order (`εἶ`, `θεός`), a length-marked form (`ἀπεκρίθη`), elision (`δʼ`), the two predicted misses that would show the device folds more than kindling says (`Ἄνδρα`, an oxia `λύω`), the head line, and polytonic rendering; each prediction checked with kindling. Then the 32-word test book.
+- [x] StarDict needed nothing: `stardict.unaccented` drops every combining mark but abbreviation signs, so each Greek label gets a synonym without accents, breathings or iota subscript (`λογος`, `και`, `απεκριθη`, `ωδη` → ᾠδή and ἀοιδός; `ειμι` → εἰμί and εἶμι). The bundle (`grc-wiktionary-stardict.zip`, 8.3 MB) holds 21,383 words and 1,901,816 synonyms, titled "Ancient Greek-English Dictionary (grc-en)".
+- [x] README: an "Ancient Greek (in testing)" section (pre-releases only until a device check; what a lookup does; coverage), the Greek `.mobi` and StarDict files in the install steps, and that the language Settings lists it under is still being checked. `prepare-book` was not needed (Stage 9). The developer guide's Releases section names both checklists.
 
 ## Stage 12: Turkish — outline
 

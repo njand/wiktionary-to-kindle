@@ -112,9 +112,9 @@ uv run python -m wiktionary_to_kindle.quality coverage-diff old-coverage.json co
 
 ## Releases
 
-A scheduled GitHub Actions workflow builds the dictionary every Sunday and publishes it as a pre-release with the `.mobi`, the StarDict bundle, and the statistics and coverage reports. The build fails if coverage drops compared with the latest release. To publish an intentional drop, run the workflow manually with **Allow a coverage drop** checked.
+A scheduled GitHub Actions workflow builds every language in its matrix (Latin and Ancient Greek) every Sunday and publishes them in one pre-release, each with its `.mobi`, StarDict bundle, and statistics and coverage reports. The build fails if a language's coverage drops compared with the latest release. To publish an intentional drop, run the workflow manually with **Allow a coverage drop** checked.
 
-Each release's notes end with a [device checklist](device-check-la.md). Once a build has been checked on a Kindle, it is marked as the latest release, and the next build compares its coverage against it.
+Each release's notes end with each language's device checklist ([Latin](device-check-la.md), [Ancient Greek](device-check-grc.md)). Once a build has been checked on a Kindle, it is marked as the latest release, and the next build compares its coverage against it. A language's first build has no coverage in the latest release to compare with, so its gate starts with the release after the first one marked as the latest.
 
 ## Adding a language
 
