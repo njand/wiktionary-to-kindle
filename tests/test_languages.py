@@ -100,11 +100,12 @@ def test_front_page_and_package_name_the_language(tmp_path):
     front = "\n".join(
         HTMLRenderer.render_front(ANCIENT_GREEK, "2026-10-25", "2026-10-29", "0.1.0")
     )
-    assert "<h1>Ancient Greek-English Dictionary</h1>" in front
+    assert "<h1>Wiktionary Ancient Greek-English Dictionary</h1>" in front
     assert "<i>εἶ</i>" in front
 
     write_opf(str(tmp_path), ANCIENT_GREEK, 1, "2026-10-25", "2026-10-29", "0.1.0")
     opf = (tmp_path / "dictionary.opf").read_text(encoding="utf-8")
+    assert "<dc:title>Wiktionary Ancient Greek-English Dictionary</dc:title>" in opf
     assert "<DictionaryInLanguage>grc</DictionaryInLanguage>" in opf
     assert "<DefaultLookupIndex>Greek</DefaultLookupIndex>" in opf
     assert "ancient-greek-dictionary" in opf

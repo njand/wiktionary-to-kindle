@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" version="2.0" unique-identifier="bookid">
 <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
-<dc:title>$name-English Dictionary</dc:title>
+<dc:title>$title</dc:title>
 <dc:language>en</dc:language>
 <dc:creator>Wiktionary contributors</dc:creator>
 <dc:source>https://en.wiktionary.org/</dc:source>
