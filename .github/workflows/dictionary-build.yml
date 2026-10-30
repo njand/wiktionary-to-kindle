@@ -146,33 +146,14 @@ jobs:
           gh release download --repo "$GITHUB_REPOSITORY" --pattern 'stats-*.json' --pattern 'coverage-*.json' --dir previous
           || echo "No statistics in the latest release"
 
+      - name: Setup environment
+        uses: astral-sh/setup-uv@v5
+
+      # A table of every dictionary, with each one's details and device check folded away
       - name: Write release notes
         run: |
-          for stats in dictionaries/stats-*.json; do
-            lang=$(basename "$stats" .json | sed 's/^stats-//')
-            printf '## %s\n\n### Index compared with the latest release\n\n' "$lang" >> notes.md
-            if [ -f "previous/stats-$lang.json" ]; then
-              python3 -m wiktionary_to_kindle.quality diff "previous/stats-$lang.json" "$stats" >> notes.md
-            else
-              echo "No statistics in the latest release to compare with." >> notes.md
-            fi
-            if [ -f "dictionaries/coverage-$lang.md" ]; then
-              printf '\n### Corpus lookup coverage\n\n' >> notes.md
-              cat "dictionaries/coverage-$lang.md" >> notes.md
-            fi
-            if [ -f "dictionaries/prepared-$lang.md" ]; then
-              printf '\n### Coverage of a book prepared with prepare-book (--decide rooted)\n\n' >> notes.md
-              cat "dictionaries/prepared-$lang.md" >> notes.md
-            fi
-            if [ -f "previous/coverage-$lang.json" ] && [ -f "dictionaries/coverage-$lang.json" ]; then
-              printf '\n### Coverage compared with the latest release\n\n' >> notes.md
-              python3 -m wiktionary_to_kindle.quality coverage-diff "previous/coverage-$lang.json" "dictionaries/coverage-$lang.json" >> notes.md
-            fi
-            if [ -f "docs/device-check-$lang.md" ]; then
-              printf '\n### Device check\n\n' >> notes.md
-              cat "docs/device-check-$lang.md" >> notes.md
-            fi
-          done
+          echo "Built by GitHub Actions from ${GITHUB_SHA::7}. A pre-release until it is checked on a Kindle (each dictionary's device check is below)." > intro.md
+          uv run python -m wiktionary_to_kindle.quality notes dictionaries --previous previous --intro intro.md > notes.md
 
       - name: Get current date
         id: date

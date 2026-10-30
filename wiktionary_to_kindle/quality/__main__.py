@@ -4,6 +4,7 @@ stats DICT_DIR -o stats.json        index statistics of a built dictionary
 diff OLD.json NEW.json              markdown comparison of two builds' statistics
 coverage DICT_DIR MANIFEST -o OUT   lookup coverage of a corpus (OUT.json, OUT.md)
 coverage-diff OLD.json NEW.json     markdown comparison of two builds' coverage
+notes DIR [--previous DIR]          a release's notes from its stats and coverage files
 sample DUMP.jsonl OUT.jsonl         small, self-consistent sample of a filtered dump
 """
 
@@ -17,6 +18,7 @@ from ..languages import LANGUAGES, get_language
 from . import coverage, stats
 from .corpus import load_source, read_manifest, tokenize
 from .labels import build_index, read_entries
+from .notes import release_notes
 from .sample import extract_sample
 
 
@@ -66,6 +68,15 @@ def main(argv=None):
         action="store_true",
         help="exit 1 if any source's coverage drops by more than the threshold",
     )
+
+    p = sub.add_parser("notes", help="a release's notes")
+    p.add_argument(
+        "current", type=Path, help="folder with stats-LANG.json and the rest"
+    )
+    p.add_argument(
+        "--previous", type=Path, help="the same files from the latest release"
+    )
+    p.add_argument("--intro", type=Path, help="markdown to put before the table")
 
     p = sub.add_parser("sample", help="cut a small sample from a filtered dump")
     p.add_argument("src", type=Path)
@@ -139,6 +150,12 @@ def run_coverage_diff(args):
     return 1 if regressions and args.fail_on_drop else 0
 
 
+def run_notes(args):
+    intro = args.intro.read_text(encoding="utf-8") if args.intro else ""
+    sys.stdout.write(release_notes(args.current, args.previous, intro=intro))
+    return 0
+
+
 def run_sample(args):
     include = []
     if args.include and args.include.exists():
@@ -158,6 +175,7 @@ COMMANDS = {
     "diff": run_diff,
     "coverage": run_coverage,
     "coverage-diff": run_coverage_diff,
+    "notes": run_notes,
     "sample": run_sample,
 }
 
