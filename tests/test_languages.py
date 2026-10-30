@@ -240,7 +240,10 @@ def test_kindle_fold_turkish_letters():
 
 def test_turkish_skips_forms_with_spaces():
     assert TURKISH.skips_form({"form": "güzel miyim?"})
-    assert not TURKISH.skips_form({"form": "güzeldim"})
+    assert TURKISH.skips_form({"form": "Çerkez?ik"})
+    unrecognized = {"form": "güzeldim", "tags": ["error-unrecognized-form"]}
+    assert not TURKISH.skips_form(unrecognized)  # an adjective's copula form
+    assert LATIN.skips_form(unrecognized) and ANCIENT_GREEK.skips_form(unrecognized)
     assert TURKISH.lookup_spellings("evlerimiz") == ["evlerimiz"]
     assert not TURKISH.capitalizes("name", True)
     assert TURKISH.letters("kâğıt") == "kağıt"

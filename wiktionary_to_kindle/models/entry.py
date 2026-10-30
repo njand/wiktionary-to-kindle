@@ -183,11 +183,11 @@ class Entry:
                 continue
 
             tags = set(form_obj.get("tags", []))
-            # Alternative spellings are kept; merge_dump drops those with a page of their own
+            # Alternative spellings are kept; merge_dump drops those with a page of their own.
+            # Forms Kaikki could not tag are left to Language.skips_form
             filtered_tags = {
                 "table-tags",
                 "inflection-template",
-                "error-unrecognized-form",
                 "short-form",
                 "uppercase",
                 "class",

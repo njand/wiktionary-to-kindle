@@ -13,7 +13,7 @@ import unicodedata
 from itertools import product
 
 from ..utils import BREVE, MACRON
-from . import Language
+from . import Language, unrecognized
 
 GRAVE, ACUTE, CIRCUMFLEX = "\u0300", "\u0301", "\u0342"
 VOWELS = set("αεηιουω")
@@ -95,7 +95,10 @@ AUXILIARY_FORMS = {"εἶτον", "εἶτε", "εἶεν", "εἴτην", "ε�
 def skips_form(form):
     """Whether a table form is no spelling of its entry: one of εἰμί's, split off a
     periphrastic form (it links to the participle it goes with, not to itself), or one
-    with Latin letters, a romanization or a table note ("tēîsĭnĭ", "third declension")."""
+    with Latin letters, a romanization or a table note ("tēîsĭnĭ", "third declension"), or
+    one Kaikki could not tag."""
+    if unrecognized(form):
+        return True
     word = form.get("form", "")
     links = form.get("links") or []
     split_off = (

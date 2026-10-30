@@ -19,8 +19,10 @@ APOSTROPHES = "'’"
 
 def skips_form(form):
     """Whether a table form is no spelling a tap can reach: one with a space ("güzel
-    miyim?", "gide gide"), since a long press selects one word."""
-    return " " in form.get("form", "")
+    miyim?", "gide gide"), since a long press selects one word, or with a character no
+    word has ("Çerkez?ik"). Forms Kaikki could not tag are kept: they are the converbs
+    (gidip, giderken) and an adjective's copula forms (güzeldim)."""
+    return not all(char.isalpha() or char in "-" + APOSTROPHES for char in form["form"])
 
 
 def head_line(text, pos):

@@ -7,7 +7,7 @@ from itertools import product
 
 from ..render.headline import GENDERS
 from ..utils import BREVE, MACRON, VOWELS, normalize, strip_marks
-from . import Language
+from . import Language, unrecognized
 from .la_forms import implied_forms
 
 
@@ -146,7 +146,9 @@ LATIN = Language(
     # Page titles have no macrons (iuro for iūrō), and some targets other ones (acontīzō)
     letters=normalize,
     alternative_tags=frozenset({"alternative", "Medieval-Latin"}),
-    skips_form=lambda form: bool(PERIPHRASTIC.match(form.get("form", ""))),
+    skips_form=lambda form: (
+        unrecognized(form) or bool(PERIPHRASTIC.match(form.get("form", "")))
+    ),
     pos_by_head_template={"la-part": "participle", "la-gerund": "gerund"},
     implied_forms=implied_forms,
     head_line=lambda text, pos: text,

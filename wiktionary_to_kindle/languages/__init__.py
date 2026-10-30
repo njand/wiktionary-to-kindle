@@ -26,7 +26,8 @@ class Language:
     # Form tags marking an alternative spelling: indexed, but listed late in the popup
     alternative_tags: frozenset[str]
     # Whether a table form (Kaikki's form dict) is no spelling of its entry: made with an
-    # auxiliary ("amātus sum", the εἶεν of "λελυμένοι εἶεν"), or a romanization
+    # auxiliary ("amātus sum", the εἶεν of "λελυμένοι εἶεν"), or a romanization; or one
+    # Kaikki could not tag (unrecognized), which Latin and Greek skip and Turkish keeps
     skips_form: Callable[[dict], bool]
     # Kaikki files participles and gerunds under "verb"; their head template says which
     pos_by_head_template: dict[str, str]
@@ -45,6 +46,12 @@ class Language:
     def anchor(self):
         """What a link to this language's section of a Wiktionary page ends with."""
         return "#" + self.name.replace(" ", "_")
+
+
+def unrecognized(form):
+    """Whether Kaikki could not tag a table form (it tags it error-unrecognized-form): in
+    Latin and Greek tables mostly notes, in Turkish ones converbs and copula forms."""
+    return "error-unrecognized-form" in form.get("tags", [])
 
 
 from .grc import ANCIENT_GREEK
