@@ -29,6 +29,8 @@ KINDLE_LIGATURES = {
     "Œ": "oe",
     "ĳ": "ij",
     "Ĳ": "ij",
+    # Not a ligature, but no base letter to decompose to: Turkish dotless ı weighs as i
+    "ı": "i",
 }
 
 

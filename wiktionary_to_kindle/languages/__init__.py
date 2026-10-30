@@ -49,8 +49,9 @@ class Language:
 
 from .grc import ANCIENT_GREEK
 from .la import LATIN
+from .tr import TURKISH
 
-LANGUAGES = {language.code: language for language in (LATIN, ANCIENT_GREEK)}
+LANGUAGES = {language.code: language for language in (LATIN, ANCIENT_GREEK, TURKISH)}
 
 
 def get_language(code):
