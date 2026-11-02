@@ -89,7 +89,7 @@ The dictionary is written to `outputs/KindleDictionary-la/`; `--lang grc` builds
 
 ## Found a mistake in an entry?
 
-Every definition, inflection and etymology in these dictionaries comes from Wiktionary. If an entry has a wrong gloss, a missing sense or a wrong principal part, please fix it on Wiktionary itself rather than reporting it here. Anyone can edit Wiktionary, and a fix there helps everyone who uses it, not only readers of this dictionary.
+Every definition, inflection and etymology in these dictionaries comes from Wiktionary. If an entry has a wrong gloss, a missing sense or a wrong principal part, please fix it on Wiktionary itself rather than reporting it here. Anyone can edit Wiktionary, and a fix there helps everyone.
 
 1. Open the word's page on [Wiktionary](https://en.wiktionary.org/) and edit the section for your language. Page titles have no macrons or length marks: **amō** is on the page `amo`. If you're new to editing, Wiktionary's guides for [Latin](https://en.wiktionary.org/wiki/Wiktionary:About_Latin), [Ancient Greek](https://en.wiktionary.org/wiki/Wiktionary:About_Ancient_Greek) and [Turkish](https://en.wiktionary.org/wiki/Wiktionary:About_Turkish) explain how entries are laid out.
 2. Wait for the next build. Kaikki.org extracts Wiktionary's data about once a week and the dictionary is rebuilt from it every Sunday, so an edit usually reaches the dictionary within one to two weeks. The dictionary's first page gives the date of the Wiktionary data it was built from.
