@@ -1,6 +1,7 @@
 """A release's notes: one table of every dictionary in it, then each one's details folded
 away (index and coverage compared with the previous release, the device check)."""
 
+import re
 from pathlib import Path
 
 from ..languages import get_language
@@ -53,11 +54,11 @@ def release_notes(current, previous=None, docs=Path("docs"), intro=""):
         if body:
             details.append(_fold(f"{name}: index and coverage", body))
         if (docs / f"device-check-{code}.md").exists():
-            details.append(
-                _fold(
-                    f"{name}: device check", [_read(docs / f"device-check-{code}.md")]
-                )
+            # The fold's summary names the checklist, so its own title is dropped
+            checklist = re.sub(
+                r"\A# .*\n+", "", _read(docs / f"device-check-{code}.md")
             )
+            details.append(_fold(f"{name}: device check", [checklist]))
 
     parts = [intro.strip()] if intro.strip() else []
     parts += ["\n".join(rows), *details]

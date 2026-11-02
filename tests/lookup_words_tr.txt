@@ -25,13 +25,13 @@ kitabı
 gidiyorum
 güzeldim
 
-# Converbs and copula forms kept from the tables (Stage 13)
+# Converbs and copula forms kept from the tables
 gidip
 giderken
 yoktu
 değildi
 
-# Generated forms (Stage 13): the copula, -(y)lA, -ki
+# Generated forms: the copula, -(y)lA, -ki
 kadındı
 vardır
 nedeniyle
@@ -44,7 +44,7 @@ sonraki
 Türkiye'nin
 Türkiye’de
 
-# Stems a book split leaves (Stage 15): voiced, contracted and narrowed stems
+# Stems a book split leaves: voiced, contracted and narrowed stems
 kitab
 ağz
 hakk
@@ -52,7 +52,7 @@ gid
 bekli
 ol
 
-# Suffix chains a book split leaves (Stage 15), filed as -lerimizden
+# Suffix chains a book split leaves, filed as -lerimizden
 lerimizden
 ması
 abilir

@@ -248,7 +248,9 @@ def test_release_notes_lead_with_one_row_per_dictionary(tmp_path):
     write(tmp_path / "new", 120, 0.92)
     docs = tmp_path / "docs"
     docs.mkdir()
-    (docs / "device-check-la.md").write_text("- [ ] `et`", encoding="utf-8")
+    (docs / "device-check-la.md").write_text(
+        "# Latin device check\n\n- [ ] `et`", encoding="utf-8"
+    )
 
     notes = release_notes(tmp_path / "new", tmp_path / "old", docs, intro="Built.")
     assert notes.startswith("Built.\n\n| Dictionary |")

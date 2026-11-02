@@ -1,16 +1,12 @@
 .venv/
-.ipynb_checkpoints/
 __pycache__/
+.pytest_cache/
+.ruff_cache/
 
-# Exclude raw data, dumps, and built dictionary outputs
+# Wiktionary dumps, downloads and built dictionaries
 *.jsonl
-data/
-outputs/
-Untitled.ipynb
-codefetch/
-old_code/
 downloads/
-codefetch.config.mjs
-.codefetchignore
+outputs/
+
 # Coverage corpus downloads
 corpus/cache/

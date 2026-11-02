@@ -1,3 +1,5 @@
+# Latin device check
+
 Before marking this release as the latest, load the `.mobi` on a Kindle (`documents/dictionaries/`, set as the Latin dictionary) and tap each of these in a Latin book. The popup should list every entry a tap reaches, the one spelled like the tap first; for a tap without macrons, the entry the build estimates is most often meant.
 
 - [ ] The dictionary is listed as "Wiktionary Latin-English Dictionary" in Settings → Dictionaries and in the popup.
