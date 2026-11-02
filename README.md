@@ -41,14 +41,14 @@ The Turkish–English dictionary is built from Wiktionary's Turkish entries. Unt
 
 A Kindle ignores case and the Turkish letters' marks when it looks a word up (*KIZI* and *kizi* open **kız**), so the dictionary only has to reach the forms themselves. It lists every form in Wiktionary's tables (*evlerimizden* opens **ev**), the converbs (*gidip*, *giderken*) and the copula, *-(y)lA* and *-ki* forms texts use most (*vardır*, *nedeniyle*, *dünyadaki*). On its own it opens an entry for 88.4% of the words in a set of modern Turkish prose and Ömer Seyfettin's stories.
 
-Turkish stacks suffixes beyond what any table lists (*evlerimizdekilerden*, "from those in our houses"), so a Turkish book reads best **prepared**: `prepare-book` puts a hair space between the stem and the suffixes of each word the dictionary cannot reach whole. A press on *ev* then opens **ev**, and a press on *lerimizdekilerden* opens an entry that explains the suffixes: *plural + our + in + the one that is + plural + from*. In the same texts, a prepared book opens an entry for 95.5% of the words, and splits 7% of them. Claude, Anthropic's language model, reads each sentence to choose where to split (so *gözlükçüler* splits after **gözlükçü**, not **göz**), or `--decide rooted` splits without it.
+Turkish stacks suffixes beyond what any table lists (*evlerimizdekilerden*, "from those in our houses"), so a Turkish book reads best **prepared**: `prepare-book` puts a hair space between the stem and the suffixes of each word the dictionary cannot reach whole. A press on *ev* then opens **ev**, and a press on *lerimizdekilerden* opens an entry that explains the suffixes: *plural + our + in + the one that is + plural + from*. In the same texts, a prepared book opens an entry for 95.5% of the words, and splits 7% of them. A language model reads each sentence to choose where to split (so *gözlükçüler* splits after **gözlükçü**, not **göz**), or `--decide rooted` splits without one.
 
 ```bash
 uv sync --extra segment
 uv run prepare-book book.epub --kindling kindling-cli   # writes book-prepared.epub and .azw3
 ```
 
-The model needs an [Anthropic API key](https://platform.claude.com/) (`ANTHROPIC_API_KEY`) and sends the book's sentences to it; a novel costs roughly $10, once, since every decision is cached beside the book. Books bought from the Kindle store have DRM and can't be prepared. The [developer guide](docs/DEVELOPING.md#preparing-books-turkish) has the options.
+The book's sentences are sent to the model, and every decision is cached beside the book, so preparing it again gives the same result. Books bought from the Kindle store have DRM and can't be prepared. The [developer guide](docs/DEVELOPING.md#preparing-books-turkish) has the setup and the options.
 
 ## Install on a Kindle
 
