@@ -48,7 +48,7 @@ uv sync --extra segment
 uv run prepare-book book.epub --kindling kindling-cli   # writes book-prepared.epub and .azw3
 ```
 
-The model needs an API key and is sent the book's sentences; a novel costs roughly $10, once, since every decision is cached beside the book. Books bought from the Kindle store have DRM and can't be prepared. The [developer guide](docs/DEVELOPING.md#preparing-books-turkish) covers the key and the options.
+The book's sentences are sent to the model, and every decision is cached beside the book, so preparing it again gives the same result. Books bought from the Kindle store have DRM and can't be prepared. The [developer guide](docs/DEVELOPING.md#preparing-books-turkish) has the setup and the options.
 
 ## Install on a Kindle
 
