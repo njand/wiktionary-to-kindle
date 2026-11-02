@@ -10,7 +10,9 @@ from pathlib import Path
 from tqdm import tqdm
 
 KAIKKI_RAW_DUMP_URL = "https://kaikki.org/dictionary/raw-wiktextract-data.jsonl.gz"
-HEADERS = {"User-Agent": "Mozilla/5.0"}
+HEADERS = {
+    "User-Agent": "wiktionary-to-kindle (+https://github.com/njand/wiktionary-to-kindle)"
+}
 
 
 def download_kaikki_dump(lang: str, output_dir: Path) -> Path:

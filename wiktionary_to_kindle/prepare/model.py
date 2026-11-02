@@ -1,5 +1,5 @@
 """The context-aware segmenter: a model reads each sentence and chooses, for every word that
-needs it, among the candidate splits (roadmap, Stage 17).
+needs it, among the candidate splits.
 
 The model only chooses: the candidates come from the dictionary and the suffix grammar
 (prepare.segment), so whatever it answers, a split it makes opens an entry. An answer that
@@ -7,13 +7,14 @@ names no candidate leaves the word whole.
 
 Decisions are kept in a JSONL cache, one line per (word, sentence, candidates), so a book
 prepared twice costs nothing the second time and comes out the same. The cache records
-the model and date of each decision. Backends:
+the model and date of each decision. Backends (--backend):
   anthropic   the Anthropic API through the `anthropic` package (pip install
               "wiktionary-to-kindle[segment]"), with the credentials the SDK finds
               (ANTHROPIC_API_KEY, or a profile from `ant auth login`)
   claude-cli  a logged-in Claude Code CLI (`claude -p`)
-  offline     no calls: requests are written to a file to be answered elsewhere, and
-              their answers imported into the cache (export_requests, import_answers)
+
+Without a backend, `--decide export` writes the requests to a file to be answered
+elsewhere (export_requests); import_answers adds those answers to the cache.
 """
 
 import datetime

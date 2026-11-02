@@ -6,11 +6,6 @@
 
 Free Kindle dictionaries built from Wiktionary. Press and hold a word in a Latin, Ancient Greek or Turkish book, and the dictionary opens the entry it belongs to, whatever its form or spelling.
 
-<!--
-  Screenshot of the lookup popup goes here, for example:
-  <p align="center"><img src="docs/images/popup.png" alt="The dictionary's popup on a Kindle, open on amō" width="420"></p>
--->
-
 ## Download
 
 | Language | Kindle | KOReader, GoldenDict | Status |
@@ -19,7 +14,7 @@ Free Kindle dictionaries built from Wiktionary. Press and hold a word in a Latin
 | Ancient Greek–English | [grc-wiktionary.mobi](https://github.com/njand/wiktionary-to-kindle/releases/download/latest-build/grc-wiktionary.mobi) | [StarDict](https://github.com/njand/wiktionary-to-kindle/releases/download/latest-build/grc-wiktionary-stardict.zip) | In testing |
 | Turkish–English | [tr-wiktionary.mobi](https://github.com/njand/wiktionary-to-kindle/releases/download/latest-build/tr-wiktionary.mobi) | [StarDict](https://github.com/njand/wiktionary-to-kindle/releases/download/latest-build/tr-wiktionary-stardict.zip) | In testing |
 
-Each link downloads the file itself, then see [Install on a Kindle](#install-on-a-kindle). The Latin `.mobi` is the [latest release](https://github.com/njand/wiktionary-to-kindle/releases/latest), the newest build checked on a Kindle; the other links are the [newest build](https://github.com/njand/wiktionary-to-kindle/releases/tag/latest-build), replaced every week. Older builds are on the [releases page](https://github.com/njand/wiktionary-to-kindle/releases).
+Each link downloads the file itself; then follow [Install on a Kindle](#install-on-a-kindle). The Latin `.mobi` is the [latest release](https://github.com/njand/wiktionary-to-kindle/releases/latest), the newest build checked on a Kindle; the other links are the [newest build](https://github.com/njand/wiktionary-to-kindle/releases/tag/latest-build), replaced every week. Older builds are on the [releases page](https://github.com/njand/wiktionary-to-kindle/releases).
 
 More languages will follow. The build is meant to work for any language Wiktionary covers well; see [Contributing](#contributing).
 
@@ -96,7 +91,7 @@ The dictionary is written to `outputs/KindleDictionary-la/`; `--lang grc` builds
 
 Every definition, inflection and etymology in these dictionaries comes from Wiktionary. If an entry has a wrong gloss, a missing sense or a wrong principal part, please fix it on Wiktionary itself rather than reporting it here. Anyone can edit Wiktionary, and a fix there helps everyone who uses it, not only readers of this dictionary.
 
-1. Open the word's page on [Wiktionary](https://en.wiktionary.org/) and edit the section for your language. Page titles have no macrons or length marks: **amō** is on the page `amo`. If you're new to editing, Wiktionary's guides for [Latin](https://en.wiktionary.org/wiki/Wiktionary:About_Latin) , [Ancient Greek](https://en.wiktionary.org/wiki/Wiktionary:About_Ancient_Greek) and [Turkish](https://en.wiktionary.org/wiki/Wiktionary:About_Turkish) explain how entries are laid out.
+1. Open the word's page on [Wiktionary](https://en.wiktionary.org/) and edit the section for your language. Page titles have no macrons or length marks: **amō** is on the page `amo`. If you're new to editing, Wiktionary's guides for [Latin](https://en.wiktionary.org/wiki/Wiktionary:About_Latin), [Ancient Greek](https://en.wiktionary.org/wiki/Wiktionary:About_Ancient_Greek) and [Turkish](https://en.wiktionary.org/wiki/Wiktionary:About_Turkish) explain how entries are laid out.
 2. Wait for the next release. Wiktionary's data is published every couple of weeks and the dictionary is rebuilt from it weekly, so an edit usually reaches the dictionary within two to three weeks. The dictionary's first page gives the date of the Wiktionary data it was built from.
 3. Download the new release and copy it over the old file on your Kindle (see [Updating to a newer release](#updating-to-a-newer-release) if lookups stop working).
 
@@ -113,3 +108,7 @@ Latin, Ancient Greek and Turkish are built so far, and the pipeline is meant to 
 The code is released under the [MIT License](LICENSE).
 
 The dictionary text comes from [Wiktionary](https://www.wiktionary.org/), extracted by [Kaikki.org](https://kaikki.org/), and is licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). Each dictionary opens with a page that credits Wiktionary's contributors and Kaikki.org and gives the dates of the data and the build.
+
+The covers use lettering cropped from the [Wiktionary logo](https://commons.wikimedia.org/wiki/File:Wiktionary-logo-en-v2.svg) (by Dan Polansky after Smurrayinchester, CC BY-SA 4.0) and are set in [DejaVu Serif](https://dejavu-fonts.github.io/) (its license ships beside it). Wiktionary is a trademark of the Wikimedia Foundation; this project is not affiliated with or endorsed by it.
+
+The texts the coverage reports measure (from The Latin Library, Project Gutenberg, Perseus, the BOUN treebank and Wikisource; see `corpus/`) are downloaded when the reports run and are not part of this repository or the dictionaries.

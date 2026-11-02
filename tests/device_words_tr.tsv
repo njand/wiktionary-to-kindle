@@ -1,7 +1,7 @@
 # Words for the Turkish on-device lookup test (scripts/make_device_test.py --lang tr).
 # section<TAB>word<TAB>what it tests. Sections print in this order; words keep their order.
 # {hair} in a word stands for U+200A, the hair space prepare-book puts between a stem and
-# its suffixes (roadmap, Stages 14-17). The Expect line is kindling's prediction for each
+# its suffixes. The Expect line is kindling's prediction for each
 # part of a split word. A passage is running text from Ömer Seyfettin's "Aleko" (public
 # domain), with the words the dictionary misses split by hand.
 frequent	ve	the most frequent word
@@ -11,7 +11,7 @@ frequent	gitmek	a verb's dictionary form
 inflections	evlerimizden	a long table form: from our houses
 inflections	kitabı	a table form with a voiced stem (kitap)
 inflections	gidiyorum	a verb form from the table
-inflections	gidip	a converb, kept since Stage 13
+inflections	gidip	a converb, kept from the tables
 dotted	kızı	dotless ı
 dotted	KIZI	capital I for ı
 dotted	kizi	dotted i for ı: weighs the same

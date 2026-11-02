@@ -1,5 +1,5 @@
 """prepare-book: split the Turkish words of an e-book that the dictionary cannot reach, so a
-tap on the stem opens its entry (roadmap, Stages 16–17).
+tap on the stem opens its entry.
 
     prepare-book book.epub -o book-prepared.epub
     prepare-book book.epub --decide rooted          # no model: the stem of the lemma

@@ -118,7 +118,7 @@ CAPITALIZED_POS = {"pron", "det", "conj", "particle", "prep", "adv", "intj", "nu
 def capitalizes(pos, headword):
     """Whether a spelling also gets its capitalized form: every headword, and every form
     of a word in CAPITALIZED_POS. Capitalizing every form doubled the labels for 0.8% of
-    corpus tokens (roadmap, Stage 9)."""
+    corpus tokens."""
     return headword or pos in CAPITALIZED_POS
 
 

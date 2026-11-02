@@ -7,24 +7,27 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   checks:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup environment
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v10.3.3 # setup-uv has no major-version tag since v8
 
       - name: Sync dependencies
         run: uv sync --all-extras
 
       - name: Audit codebase
-        # Pinned: a new ruff release can reformat code that passed before
+        # ruff is pinned in the dev group: a new release can reformat code that passed before
         run: |
-          uvx ruff@0.17.3 check .
-          uvx ruff@0.17.3 format --check .
+          uv run ruff check .
+          uv run ruff format --check .
 
       - name: Run tests
         run: uv run pytest

@@ -3,8 +3,7 @@
 Each word in the list becomes a numbered line of the book with what it tests and the
 entries the popup should list: every entry with a label of the same weights, the one
 kindling predicts opens first, then the rest in the order kindling's index search returns
-them. Tap each word
-on the Kindle and report the numbers whose popup differs.
+them. Tap each word on the Kindle and note the numbers whose popup differs.
 
 Usage:
     python scripts/make_device_test.py outputs/KindleDictionary-la \

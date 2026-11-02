@@ -9,8 +9,8 @@ vowel; -ki does not change. A loanword's nominative may take front suffixes afte
 vowel (saat, saatte): its own dative or locative says which. Adjectives with a table
 already list their copula forms (güzeldim).
 
-Each kind was measured on the Stage 12 corpus first, as missed tokens its forms would open
-per label (roadmap, Stage 13), and only those that paid are generated. Not generated: the
+Each kind was measured on the Turkish corpus first, as missed tokens its forms would open
+per label, and only those that paid are generated. Not generated: the
 evidential -(y)mIş, the conditional -(y)sA, -(y)ken, the copula on other cases (evdeydi),
 any of these on a first- or second-person possessive (evimdi, elimle, evimdeki), and -ki on
 a genitive (bizimki).
