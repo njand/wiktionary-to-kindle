@@ -13,13 +13,13 @@ Free Kindle dictionaries built from Wiktionary. Press and hold a word in a Latin
 
 ## Download
 
-| Language | Kindle | KOReader, GoldenDict | Status |
-| --- | --- | --- | --- |
-| Latin–English | [la-wiktionary.mobi](https://github.com/njand/wiktionary-to-kindle/releases/latest/download/la-wiktionary.mobi) | [StarDict](https://github.com/njand/wiktionary-to-kindle/releases/download/latest-build/la-wiktionary-stardict.zip) | Released |
-| Ancient Greek–English | [grc-wiktionary.mobi](https://github.com/njand/wiktionary-to-kindle/releases/download/latest-build/grc-wiktionary.mobi) | [StarDict](https://github.com/njand/wiktionary-to-kindle/releases/download/latest-build/grc-wiktionary-stardict.zip) | In testing |
-| Turkish–English | [tr-wiktionary.mobi](https://github.com/njand/wiktionary-to-kindle/releases/download/latest-build/tr-wiktionary.mobi) | [StarDict](https://github.com/njand/wiktionary-to-kindle/releases/download/latest-build/tr-wiktionary-stardict.zip) | In testing |
+| Language | Kindle | KOReader, GoldenDict |
+| --- | --- | --- |
+| Latin–English | [la-wiktionary.mobi](https://github.com/njand/wiktionary-to-kindle/releases/latest/download/la-wiktionary.mobi) | [StarDict](https://github.com/njand/wiktionary-to-kindle/releases/latest/download/la-wiktionary-stardict.zip) |
+| Ancient Greek–English | [grc-wiktionary.mobi](https://github.com/njand/wiktionary-to-kindle/releases/latest/download/grc-wiktionary.mobi) | [StarDict](https://github.com/njand/wiktionary-to-kindle/releases/latest/download/grc-wiktionary-stardict.zip) |
+| Turkish–English | [tr-wiktionary.mobi](https://github.com/njand/wiktionary-to-kindle/releases/latest/download/tr-wiktionary.mobi) | [StarDict](https://github.com/njand/wiktionary-to-kindle/releases/latest/download/tr-wiktionary-stardict.zip) |
 
-Each link downloads the file itself, then see [Install on a Kindle](#install-on-a-kindle). The Latin `.mobi` is the [latest release](https://github.com/njand/wiktionary-to-kindle/releases/latest), the newest build checked on a Kindle; the other links are the [newest build](https://github.com/njand/wiktionary-to-kindle/releases/tag/latest-build), replaced every week. Older builds are on the [releases page](https://github.com/njand/wiktionary-to-kindle/releases).
+Each link downloads the file itself from the [latest release](https://github.com/njand/wiktionary-to-kindle/releases/latest), rebuilt every week; then see [Install on a Kindle](#install-on-a-kindle). Older builds are on the [releases page](https://github.com/njand/wiktionary-to-kindle/releases).
 
 More languages will follow. The build is meant to work for any language Wiktionary covers well; see [Contributing](#contributing).
 
@@ -34,15 +34,15 @@ In the texts the project tests against, the dictionary opens an entry for 98.6% 
 
 The dictionaries are rebuilt every week from the latest Wiktionary data.
 
-## Ancient Greek (in testing)
+## Ancient Greek
 
-The Ancient Greek–English dictionary is built the same way, from Wiktionary's Ancient Greek entries. Until it has been checked on a Kindle, it is published only in the weekly builds ([download](#download)).
+The Ancient Greek–English dictionary is built the same way, from Wiktionary's Ancient Greek entries.
 
 A Kindle matches Greek accents, breathings and capitals exactly, so the dictionary lists every spelling a Greek text prints: without the length marks Wiktionary adds (ἀπεκρίθη opens **ἀποκρίνω**) and with the long vowels marked, as school editions print them (λῡ́ω opens **λύω**), with a grave for a final acute (καὶ opens **καί**), and capitalized for headwords and small words that start sentences (Καὶ, Οὐκ, Ταῦτα). In Perseus's editions of Homer, Herodotus, Xenophon, Plato, Lysias and the Gospel of John, it opens an entry for 91.7% of the words: 93–95% in most of them, 87.8% in Herodotus, whose Ionic forms Wiktionary often lacks.
 
-## Turkish (in testing)
+## Turkish
 
-The Turkish–English dictionary is built from Wiktionary's Turkish entries. Until it has been checked on a Kindle, it is published only in the weekly builds ([download](#download)).
+The Turkish–English dictionary is built from Wiktionary's Turkish entries.
 
 A Kindle ignores case and the Turkish letters' marks when it looks a word up (*KIZI* and *kizi* open **kız**), so the dictionary only has to reach the forms themselves. It lists every form in Wiktionary's tables (*evlerimizden* opens **ev**), the converbs (*gidip*, *giderken*) and the copula, *-(y)lA* and *-ki* forms texts use most (*vardır*, *nedeniyle*, *dünyadaki*). On its own it opens an entry for 88.4% of the words in a set of modern Turkish prose and Ömer Seyfettin's stories.
 

@@ -139,8 +139,8 @@ jobs:
           outputs/KindleDictionary-${{ matrix.language }}/${{ matrix.language }}-wiktionary.mobi
           tests/lookup_words_${{ matrix.language }}.txt
 
-      # The latest release is the last one checked on a device (builds are published as
-      # pre-releases, which `gh release download` skips), so coverage is compared with that
+      # `gh release download` takes the latest release, the previous build, so coverage is
+      # compared with that
       - name: Compare ${{ matrix.language }} coverage with the latest release
         if: hashFiles(format('corpus/{0}.tsv', matrix.language)) != ''
         env:
@@ -184,7 +184,7 @@ jobs:
       # A table of every dictionary, with each one's details and device check folded away
       - name: Write release notes
         run: |
-          echo "Built by GitHub Actions from ${GITHUB_SHA::7}. A pre-release until it is checked on a Kindle (each dictionary's device check is below)." > intro.md
+          echo "Built by GitHub Actions from ${GITHUB_SHA::7}." > intro.md
           uv run python -m wiktionary_to_kindle.quality notes dictionaries --previous previous --intro intro.md > notes.md
 
       - name: Get current date
@@ -197,8 +197,7 @@ jobs:
           tag_name: v${{ steps.date.outputs.date }}
           name: "Dictionary Builds - ${{ steps.date.outputs.date }}"
           body_path: notes.md
-          # Marked as the latest by hand after the device check (see the notes)
-          prerelease: true
+          make_latest: true
           # Artifacts keep their paths below outputs/, so the .mobi sits one folder down
           files: |
             dictionaries/**/*.mobi
@@ -214,13 +213,13 @@ jobs:
         run: |
           shopt -s globstar
           {
-            echo "The newest build of every dictionary, replaced each week. Dated releases keep each build; the one marked Latest has been checked on a Kindle."
+            echo "The newest build of every dictionary, replaced each week. Dated releases keep each build."
             echo
             cat notes.md
           } > latest-notes.md
           if ! gh release view latest-build > /dev/null 2>&1; then
-            gh release create latest-build --prerelease --title "Latest build (in testing)" --notes-file latest-notes.md
+            gh release create latest-build --prerelease --title "Latest build" --notes-file latest-notes.md
           fi
           echo "${{ needs.check-dump.outputs.date }}" > dump-date.txt
           gh release upload latest-build --clobber dictionaries/**/*.mobi dictionaries/**/*-stardict.zip dump-date.txt
-          gh release edit latest-build --notes-file latest-notes.md
+          gh release edit latest-build --title "Latest build" --notes-file latest-notes.md
