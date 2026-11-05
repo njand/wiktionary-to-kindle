@@ -130,11 +130,14 @@ def test_clean_latin_library():
     assert "diuisa" in tokenize(clean(raw, "latinlibrary-u"))
 
 
-def test_clean_macron_lines_and_tokenize():
-    raw = "Notes in English.\nCum esset Caesar in citeriōre Gallia\nā̆b 12"
-    text = clean(raw, "macron-lines")
-    assert "English" not in text
-    assert tokenize(text)["citeriōre"] == 1
+def test_clean_reader_and_tokenize():
+    raw = (
+        "PREFACE.\nNotes in English.\nTEXT.\n_The Belgae form a league._\n"
+        "  1. Cum esset Caesar in citeriōre Gallia,   5\n  poterant.\n"
+        "    +crēber+, _frequens_.\nNOTES.\nCum: when. TEXT.\n"
+    )
+    text = clean(raw, "reader:TEXT./NOTES.")
+    assert tokenize(text) == tokenize("Cum esset Caesar in citeriōre Gallia poterant")
     assert tokenize("ā̆b")["ā̆b"] == 1
 
 

@@ -3,7 +3,8 @@
 A manifest is a TSV of `name<TAB>format<TAB>url` lines (`#` comments). Formats:
   latinlibrary  an HTML page from thelatinlibrary.com (navigation and footer removed)
   latinlibrary-u  the same, with lowercase v written u, as editions such as the OCT print it
-  macron-lines  plain text mixing Latin and English; keeps only lines with a macron
+  reader:A/B    a school reader in plain text: the lines between the line A and the line B
+                (its Latin text), without its English headings (_..._) and glosses (+...+)
   tei           a TEI edition, such as Perseus's: the text of its edition, without notes
   tei:N         the same, only its top-level part numbered N (a book: tei:1)
   text          plain text, used as is
@@ -21,7 +22,6 @@ from pathlib import Path
 from xml.etree import ElementTree
 
 HEADERS = {"User-Agent": "wiktionary-to-kindle coverage check"}
-MACRONS = "āēīōūȳĀĒĪŌŪȲ"
 # Letters plus combining marks, so a disputed vowel (ā̆) stays one token, and an apostrophe
 # between letters, which a Kindle keeps in the word it looks up (Türkiye'nin)
 LETTERS = r"(?:[^\W\d_]|[̀-ͯ])+"
@@ -67,10 +67,8 @@ def clean(raw, fmt):
         ):
             raw = re.sub(pattern, " ", raw, flags=re.DOTALL | re.IGNORECASE)
         return html.unescape(re.sub(r"<[^>]+>", " ", raw))
-    if fmt == "macron-lines":
-        return "\n".join(
-            line for line in raw.splitlines() if any(c in line for c in MACRONS)
-        )
+    if fmt.startswith("reader:"):
+        return reader_text(raw, *fmt.partition(":")[2].split("/"))
     if fmt == "tei" or fmt.startswith("tei:"):
         return tei_text(raw, fmt.partition(":")[2] or None)
     if fmt == "text":
@@ -80,6 +78,15 @@ def clean(raw, fmt):
     if fmt == "wikisource":
         return wikisource_text(raw)
     raise ValueError(f"unknown corpus format: {fmt}")
+
+
+def reader_text(raw, start, end):
+    """The lines of raw after the first line reading start and before the next reading
+    end, without the lines that are English headings (_..._) or glosses (+...+)."""
+    lines = [line.strip() for line in raw.splitlines()]
+    first = lines.index(start) + 1
+    section = lines[first : lines.index(end, first)]
+    return "\n".join(line for line in section if not line.startswith(("_", "+")))
 
 
 TEI = "{http://www.tei-c.org/ns/1.0}"
