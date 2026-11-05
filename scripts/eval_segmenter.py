@@ -1,4 +1,4 @@
-"""Score segmenter decisions against a treebank's gold lemmas (roadmap, Stage 17).
+"""Score segmenter decisions against a treebank's gold lemmas.
 
 A decision on a word that needs one is right when it splits after a stem whose entries
 include the word's gold lemma, or leaves the word whole when no candidate stem has that
@@ -7,7 +7,7 @@ greedy and rooted baselines and for cached model decisions.
 
 Usage:
     python scripts/eval_segmenter.py outputs/KindleDictionary-tr boun-test.conllu \
-        --cache outputs/measure/tr-stage17/decisions.jsonl
+        --cache outputs/measure/decisions.jsonl
 """
 
 import argparse

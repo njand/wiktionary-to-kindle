@@ -4,12 +4,7 @@
 [![Downloads](https://img.shields.io/github/downloads/njand/wiktionary-to-kindle/total)](https://github.com/njand/wiktionary-to-kindle/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Free Kindle dictionaries built from Wiktionary. Press and hold a word in a Latin, Ancient Greek or Turkish book, and the dictionary opens the entry it belongs to, whatever its form or spelling.
-
-<!--
-  Screenshot of the lookup popup goes here, for example:
-  <p align="center"><img src="docs/images/popup.png" alt="The dictionary's popup on a Kindle, open on amō" width="420"></p>
--->
+Free Kindle dictionaries built from Wiktionary, with StarDict versions for KOReader and GoldenDict. Press and hold a word in a Latin, Ancient Greek or Turkish book, and the dictionary opens the entry it belongs to, whatever its form or spelling.
 
 ## Download
 
@@ -19,7 +14,9 @@ Free Kindle dictionaries built from Wiktionary. Press and hold a word in a Latin
 | Ancient Greek–English | [grc-wiktionary.mobi](https://github.com/njand/wiktionary-to-kindle/releases/latest/download/grc-wiktionary.mobi) | [StarDict](https://github.com/njand/wiktionary-to-kindle/releases/latest/download/grc-wiktionary-stardict.zip) |
 | Turkish–English | [tr-wiktionary.mobi](https://github.com/njand/wiktionary-to-kindle/releases/latest/download/tr-wiktionary.mobi) | [StarDict](https://github.com/njand/wiktionary-to-kindle/releases/latest/download/tr-wiktionary-stardict.zip) |
 
-Each link downloads the file itself from the [latest release](https://github.com/njand/wiktionary-to-kindle/releases/latest), rebuilt every week; then see [Install on a Kindle](#install-on-a-kindle). Older builds are on the [releases page](https://github.com/njand/wiktionary-to-kindle/releases).
+Each link downloads the file itself from the [latest release](https://github.com/njand/wiktionary-to-kindle/releases/latest); then follow [Install on a Kindle](#install-on-a-kindle). Older builds are on the [releases page](https://github.com/njand/wiktionary-to-kindle/releases).
+
+The dictionaries are rebuilt every week from the latest Wiktionary data.
 
 More languages will follow. The build is meant to work for any language Wiktionary covers well; see [Contributing](#contributing).
 
@@ -30,9 +27,7 @@ More languages will follow. The build is meant to work for any language Wiktiona
 - **Nothing is hidden.** When a spelling belongs to more than one word, the popup lists all of them, likeliest first, and you swipe to the rest.
 - **Entries read like a print dictionary**, with the principal parts on the headword line, numbered senses, and the etymology.
 
-In the texts the project tests against, the dictionary opens an entry for 98.6% of the words in Cicero's first speech against Catiline, 97.6% in Book 1 of Caesar's *Gallic War*, 94.6% in Genesis in the Vulgate, and 93.2% in Book 1 of the *Aeneid*. The misses include words with *-que* attached, such as *dixitque*, which the dictionary doesn't split, and names Wiktionary doesn't list. If you can edit your book, put a hair space (U+200A) before the *-que*: a press on *dixit* then selects only *dixit* and opens **dīcō**. Zero-width and other thin spaces don't work; the Kindle selects the whole word through them.
-
-The dictionaries are rebuilt every week from the latest Wiktionary data.
+In the texts the project tests against, the dictionary opens an entry for 98.6% of the words in Cicero's first speech against Catiline, 97.7% in Book 1 of Caesar's *Gallic War*, 94.6% in Genesis in the Vulgate, and 93.4% in Book 1 of the *Aeneid*. (The release notes give a lower figure for Latin as a whole, about 86%, because the test texts also include a school edition of Caesar whose English notes count as misses.) The misses include words with *-que* attached, such as *dixitque*, which the dictionary doesn't split, and names Wiktionary doesn't list. If you can edit your book, put a hair space (U+200A) before the *-que*: a press on *dixit* then selects only *dixit* and opens **dīcō**. Zero-width and other thin spaces don't work; the Kindle selects the whole word through them.
 
 ## Ancient Greek
 
@@ -46,14 +41,14 @@ The Turkish–English dictionary is built from Wiktionary's Turkish entries.
 
 A Kindle ignores case and the Turkish letters' marks when it looks a word up (*KIZI* and *kizi* open **kız**), so the dictionary only has to reach the forms themselves. It lists every form in Wiktionary's tables (*evlerimizden* opens **ev**), the converbs (*gidip*, *giderken*) and the copula, *-(y)lA* and *-ki* forms texts use most (*vardır*, *nedeniyle*, *dünyadaki*). On its own it opens an entry for 88.4% of the words in a set of modern Turkish prose and Ömer Seyfettin's stories.
 
-Turkish stacks suffixes beyond what any table lists (*evlerimizdekilerden*, "from those in our houses"), so a Turkish book reads best **prepared**: `prepare-book` puts a hair space between the stem and the suffixes of each word the dictionary cannot reach whole. A press on *ev* then opens **ev**, and a press on *lerimizdekilerden* opens an entry that explains the suffixes: *plural + our + in + the one that is + plural + from*. In the same texts, a prepared book opens an entry for 95.5% of the words, and splits 7% of them. Claude reads each sentence to choose where to split (so *gözlükçüler* splits after **gözlükçü**, not **göz**), or `--decide rooted` splits without it.
+Turkish stacks suffixes beyond what any table lists (*evlerimizdekilerden*, "from those in our houses"), so a Turkish book reads best **prepared**: `prepare-book` puts a hair space between the stem and the suffixes of each word the dictionary cannot reach whole. A press on *ev* then opens **ev**, and a press on *lerimizdekilerden* opens an entry that explains the suffixes: *plural + our + in + the one that is + plural + from*. In the same texts, a prepared book opens an entry for 95.5% of the words, and splits 7% of them. A language model reads each sentence to choose where to split (so *gözlükçüler* splits after **gözlükçü**, not **göz**), or `--decide rooted` splits without one.
 
 ```bash
 uv sync --extra segment
 uv run prepare-book book.epub --kindling kindling-cli   # writes book-prepared.epub and .azw3
 ```
 
-The model needs an [Anthropic API key](https://platform.claude.com/) (`ANTHROPIC_API_KEY`) and sends the book's sentences to it; a novel costs roughly $10, once, since every decision is cached beside the book. Books bought from the Kindle store have DRM and can't be prepared. The [developer guide](docs/DEVELOPING.md#preparing-books-turkish) has the options.
+The book's sentences are sent to the model, and every decision is cached beside the book, so preparing it again gives the same result. Books bought from the Kindle store have DRM and can't be prepared. The [developer guide](docs/DEVELOPING.md#preparing-books-turkish) has the setup and the options.
 
 ## Install on a Kindle
 
@@ -61,7 +56,7 @@ The model needs an [Anthropic API key](https://platform.claude.com/) (`ANTHROPIC
 2. Connect your Kindle to your computer with a USB cable.
 3. Open the Kindle drive and copy the file into `documents/dictionaries/`. If that folder doesn't exist, create it.
 4. Eject the Kindle.
-5. On the Kindle, go to **Settings → Device Options → Language and Dictionaries → Dictionaries**, tap **Latin**, and choose the Wiktionary dictionary. Under which language a Kindle lists the Ancient Greek and Turkish dictionaries is still being checked.
+5. On the Kindle, go to **Settings → Device Options → Language and Dictionaries → Dictionaries**, tap **Latin**, and choose the Wiktionary dictionary. For Ancient Greek and Turkish, the language they appear under is still being checked.
 
 Send to Kindle no longer accepts `.mobi` files, so the dictionary has to be copied over USB.
 
@@ -94,17 +89,17 @@ The dictionary is written to `outputs/KindleDictionary-la/`; `--lang grc` builds
 
 ## Found a mistake in an entry?
 
-Every definition, inflection and etymology in these dictionaries comes from Wiktionary. If an entry has a wrong gloss, a missing sense or a wrong principal part, please fix it on Wiktionary itself rather than reporting it here. Anyone can edit Wiktionary, and a fix there helps everyone who uses it, not only readers of this dictionary.
+Every definition, inflection and etymology in these dictionaries comes from Wiktionary. If an entry has a wrong gloss, a missing sense or a wrong principal part, please fix it on Wiktionary itself rather than reporting it here. Anyone can edit Wiktionary, and a fix there helps everyone.
 
-1. Open the word's page on [Wiktionary](https://en.wiktionary.org/) and edit the section for your language. Page titles have no macrons or length marks: **amō** is on the page `amo`. If you're new to editing, Wiktionary's guides for [Latin](https://en.wiktionary.org/wiki/Wiktionary:About_Latin) , [Ancient Greek](https://en.wiktionary.org/wiki/Wiktionary:About_Ancient_Greek) and [Turkish](https://en.wiktionary.org/wiki/Wiktionary:About_Turkish) explain how entries are laid out.
-2. Wait for the next release. Wiktionary's data is published every couple of weeks and the dictionary is rebuilt from it weekly, so an edit usually reaches the dictionary within two to three weeks. The dictionary's first page gives the date of the Wiktionary data it was built from.
+1. Open the word's page on [Wiktionary](https://en.wiktionary.org/) and edit the section for your language. Page titles have no macrons or length marks: **amō** is on the page `amo`. If you're new to editing, Wiktionary's guides for [Latin](https://en.wiktionary.org/wiki/Wiktionary:About_Latin), [Ancient Greek](https://en.wiktionary.org/wiki/Wiktionary:About_Ancient_Greek) and [Turkish](https://en.wiktionary.org/wiki/Wiktionary:About_Turkish) explain how entries are laid out.
+2. Wait for the next build. Kaikki.org extracts Wiktionary's data about once a week and the dictionary is rebuilt from it every Sunday, so an edit usually reaches the dictionary within one to two weeks. The dictionary's first page gives the date of the Wiktionary data it was built from.
 3. Download the new release and copy it over the old file on your Kindle (see [Updating to a newer release](#updating-to-a-newer-release) if lookups stop working).
 
-If the entry is right on Wiktionary but wrong in the dictionary, such as missing text, a garbled layout, or a word that opens the wrong entry, that's a bug here: please report it (see below).
+If the entry is right on Wiktionary but wrong in the dictionary, such as missing text, a garbled layout, or a word that opens the wrong entry, that's a bug here: please [report it](#contributing).
 
 ## Contributing
 
-Bug reports are welcome, especially words that don't open the entry you expected. Include the word as it appears in your book.
+Bug reports are welcome in [Issues](https://github.com/njand/wiktionary-to-kindle/issues), especially words that don't open the entry you expected. Include the language, the word exactly as your book prints it, and your device (a Kindle model, KOReader or GoldenDict).
 
 Latin, Ancient Greek and Turkish are built so far, and the pipeline is meant to work for other languages. The [developer guide](docs/DEVELOPING.md#adding-a-language) explains how to add one.
 
@@ -113,3 +108,7 @@ Latin, Ancient Greek and Turkish are built so far, and the pipeline is meant to 
 The code is released under the [MIT License](LICENSE).
 
 The dictionary text comes from [Wiktionary](https://www.wiktionary.org/), extracted by [Kaikki.org](https://kaikki.org/), and is licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). Each dictionary opens with a page that credits Wiktionary's contributors and Kaikki.org and gives the dates of the data and the build.
+
+The covers use lettering cropped from the [Wiktionary logo](https://commons.wikimedia.org/wiki/File:Wiktionary-logo-en-v2.svg) (by Dan Polansky after Smurrayinchester, CC BY-SA 4.0) and are set in [DejaVu Serif](https://dejavu-fonts.github.io/) (its license ships beside it). Wiktionary is a trademark of the Wikimedia Foundation; this project is not affiliated with or endorsed by it.
+
+The texts the coverage reports measure (from The Latin Library, Project Gutenberg, Perseus, the BOUN treebank and Wikisource; see `corpus/`) are downloaded when the reports run and are not part of this repository or the dictionaries.

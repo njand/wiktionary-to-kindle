@@ -1,4 +1,4 @@
-"""Measure how a Turkish text reads after prepare-book (roadmap, Stages 16–17).
+"""Measure how a Turkish text reads after prepare-book.
 
 For each source of a corpus manifest: the share of word tokens that open something whole,
 and after preparation (whole, or split with a stem that opens); and, for a CoNLL-U source

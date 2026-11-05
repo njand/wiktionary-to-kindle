@@ -1,0 +1,7 @@
+cover-art.png is cropped from the Wiktionary logo:
+https://commons.wikimedia.org/wiki/File:Wiktionary-logo-en-v2.svg
+by Dan Polansky, after Smurrayinchester's original, licensed under CC BY-SA 4.0
+(https://creativecommons.org/licenses/by-sa/4.0/).
+
+Wiktionary is a trademark of the Wikimedia Foundation. This project is not affiliated
+with or endorsed by the Wikimedia Foundation.

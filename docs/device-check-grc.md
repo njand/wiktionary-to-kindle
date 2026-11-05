@@ -1,3 +1,5 @@
+# Ancient Greek device check
+
 Before marking this release as the latest, load `grc-wiktionary.mobi` on a Kindle (`documents/dictionaries/`) and tap each of these in an Ancient Greek book. A Kindle folds no Greek letter (kindling's measurements), so a tap opens only spellings the dictionary has as labels: without length marks or with the long vowels marked, with a grave for a final acute, and capitalized for headwords and closed-class words. The popup should list every entry a tap reaches, the one the build estimates is most often meant first.
 
 - [ ] Settings → Dictionaries: under which language the dictionary is listed (it declares `grc`) and that it is named "Wiktionary Ancient Greek-English Dictionary", and whether it opens from a book declared `grc`. Note the language, or that it is missing.

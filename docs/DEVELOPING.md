@@ -34,7 +34,7 @@ The first build downloads a large file and takes a while. Later builds reuse the
 
 | Option | Description |
 | --- | --- |
-| `--lang <code>` | Wiktionary language code to build: `la` (default) or `grc`, which is not usable yet. |
+| `--lang <code>` | Wiktionary language code to build: `la` (default), `grc` or `tr`. |
 | `--input <path>` | Build from a local `.jsonl` file instead of downloading. |
 | `--no-download` | Use the file already in `downloads/` instead of downloading a new one. |
 | `--resort` | Sort the data again even if a cached sorted file is up to date. |
@@ -83,6 +83,8 @@ The popup lists every entry a tap reaches, with an exact spelling match first. E
 Matching ignores macrons and case, but not *u*/*v* or *i*/*j*. Entries carry macronized labels, disputed vowel lengths (*ā̆*) get both spellings, and spellings with *u* and *j* are added explicitly.
 
 The popup applies no stylesheet, and kindling strips `class` attributes, so entries use `<b>` and `<i>` for formatting instead of CSS.
+
+[How Kindle lookup works](kindle-lookup.md) has the full rules, for Greek and Turkish too, and their sources.
 
 ## Measuring lookup quality
 
@@ -151,7 +153,7 @@ uv run prepare-book book.epub --decide rooted --kindling kindling-cli
 - `model.py` has Claude choose among them, sentence by sentence (`claude-opus-5-5` at effort `low` by default; `--model`, `--effort`, `--backend claude-cli`). Credentials are the Anthropic SDK's (`ANTHROPIC_API_KEY` or an `ant auth login` profile). Each decision is cached beside the book (`book.splits.jsonl`), so a rerun is free and gives the same book. Without a model it splits by the stem of the word's lemma (`--decide rooted`); `--decide export` writes the requests to answer elsewhere.
 - `epub.py` rewrites the text between tags only, and wraps each split word in `white-space: nowrap`.
 
-`scripts/measure_prepared.py` measures how a corpus reads after preparation, and `scripts/eval_segmenter.py` scores decisions against a treebank's gold lemmas. Decisions taken while building it are in [decisions-tr.md](decisions-tr.md).
+`scripts/measure_prepared.py` measures how a corpus reads after preparation, and `scripts/eval_segmenter.py` scores decisions against a treebank's gold lemmas.
 
 ## Data dates
 

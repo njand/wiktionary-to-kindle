@@ -1,11 +1,25 @@
 [project]
 name = "wiktionary-to-kindle"
 version = "0.1.0"
-description = "A parsing and rendering engine to convert large-scale Wiktionary JSONL dumps into Kindle dictionaries."
+description = "Kindle and StarDict dictionaries built from Wiktionary, where a lookup opens a word from any of its forms."
 authors = [
     { name = "Nathan Anderson" }
 ]
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+keywords = ["wiktionary", "kindle", "dictionary", "stardict", "latin", "ancient-greek", "turkish"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "Natural Language :: Latin",
+    "Natural Language :: Greek",
+    "Natural Language :: Turkish",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Text Processing :: Linguistic",
+]
 requires-python = ">=3.10"
 dependencies = [
     "jinja2>=3.1.6",
@@ -28,6 +42,7 @@ prepare-book = "wiktionary_to_kindle.prepare.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/njand/wiktionary-to-kindle"
+Issues = "https://github.com/njand/wiktionary-to-kindle/issues"
 
 [build-system]
 requires = ["hatchling"]
@@ -36,4 +51,5 @@ build-backend = "hatchling.build"
 [dependency-groups]
 dev = [
     "pytest>=9.2.0",
+    "ruff==0.17.3",
 ]

@@ -2,7 +2,7 @@
 follows each kind of stem, with its analysis (lerimizden: plural + our + from).
 
 prepare-book splits a word the dictionary cannot reach into its stem and its suffix chain
-with a hair space; a tap on the chain then opens the chain's own entry (roadmap, Stage 15).
+with a hair space; a tap on the chain then opens the chain's own entry.
 The same chains decide which splits are possible at all: a split must leave a chain this
 grammar makes for that kind of stem.
 
@@ -226,31 +226,28 @@ def verb_chains():
         if negative and ability:
             continue
         head = [x for x in (voice, negative, ability) if x]
-        if True:
-            for tense, persons, takes_copula in TENSES:
-                for person in persons:
-                    chain = head + [x for x in (tense, person) if x]
-                    chains.append(chain)
-                if takes_copula:
-                    for copula, copula_persons in COPULAS:
-                        for person in copula_persons:
-                            chains.append(
-                                head + [x for x in (tense, copula, person) if x]
-                            )
-            if not negative and not ability:
-                chains += [head + [form] for form in NEGATIVE_AORIST]
-                chains += [head + [form] for form in IMPERATIVES]
-                if voice:
-                    chains.append(head)  # the passive stem's imperative: beklen
-            elif negative:
-                chains.append(head)  # the negative imperative: gelme
-            for nominalizer in NOMINALIZERS:
-                chains.append(head + [nominalizer])
-                chains += [head + [nominalizer, *tail] for tail in noun_tails]
-            chains.append(head + [PARTICIPLE])
-            chains += [head + [PARTICIPLE, *tail] for tail in participle_tails]
-            chains += [head + [infinitive] for infinitive in INFINITIVES]
-            chains += [head + [converb] for converb in CONVERBS]
+        for tense, persons, takes_copula in TENSES:
+            for person in persons:
+                chain = head + [x for x in (tense, person) if x]
+                chains.append(chain)
+            if takes_copula:
+                for copula, copula_persons in COPULAS:
+                    for person in copula_persons:
+                        chains.append(head + [x for x in (tense, copula, person) if x])
+        if not negative and not ability:
+            chains += [head + [form] for form in NEGATIVE_AORIST]
+            chains += [head + [form] for form in IMPERATIVES]
+            if voice:
+                chains.append(head)  # the passive stem's imperative: beklen
+        elif negative:
+            chains.append(head)  # the negative imperative: gelme
+        for nominalizer in NOMINALIZERS:
+            chains.append(head + [nominalizer])
+            chains += [head + [nominalizer, *tail] for tail in noun_tails]
+        chains.append(head + [PARTICIPLE])
+        chains += [head + [PARTICIPLE, *tail] for tail in participle_tails]
+        chains += [head + [infinitive] for infinitive in INFINITIVES]
+        chains += [head + [converb] for converb in CONVERBS]
     return [tuple(chain) for chain in chains if chain]
 
 

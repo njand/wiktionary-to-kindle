@@ -1,4 +1,4 @@
-"""Where a Turkish word may be split, and which words need it (roadmap, Stages 16–17).
+"""Where a Turkish word may be split, and which words need it.
 
 A word is split, with a hair space (U+200A) between its stem and its suffix chain, only
 when a tap on it whole would open nothing, or, for a name with suffixes after an
@@ -89,7 +89,7 @@ def target(lexicon, word):
 
 
 def greedy(targets, sentence):
-    """The longest stem of each word: the baseline Stage 17 is measured against."""
+    """The longest stem of each word: the baseline the model is measured against."""
     return [0 for _ in targets]
 
 

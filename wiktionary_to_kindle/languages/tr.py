@@ -5,7 +5,7 @@ A Kindle folds case and accents in Latin letters, Turkish's among them: ı, İ, 
 the same, as do ş/s, ğ/g, ç/c, ö/o, ü/u and â/a, and an apostrophe weighs nothing. So a
 form needs no case or accent variants. What a tap misses is morphology: Wiktionary's tables
 list a noun's cases and possessives and a verb's tenses, but texts add the copula
-(evdeydi), -ki, -le and derivations that no table lists (roadmap, Stage 12).
+(evdeydi), -ki, -le and derivations that no table lists.
 """
 
 import re

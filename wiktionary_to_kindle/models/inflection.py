@@ -1,15 +1,13 @@
-from ..utils import normalize
 from .morph_tag import MorphTag
 
 
 class Inflection:
     def __init__(self, form, parent):
         self.form = form
-        self.unmacronized_form = normalize(form, lowercase=True)
         self.morph_tags = []
         self.parent = parent
 
-    def add_tags(self, tags, verbose=False):
+    def add_tags(self, tags):
         new_tag = MorphTag(tags)
         if len(new_tag) == 0:
             return
